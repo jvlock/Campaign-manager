@@ -1,36 +1,369 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Campaign Operating Workspace API
 servers:
   - url: /api
-    description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: campaigns
+  - name: portfolio
+  - name: governance
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
-      summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
           content:
             application/json:
+              schema: {$ref: "#/components/schemas/HealthStatus"}
+  /campaigns:
+    get:
+      operationId: listCampaigns
+      tags: [campaigns]
+      responses:
+        "200":
+          description: Campaigns
+          content:
+            application/json:
               schema:
-                $ref: "#/components/schemas/HealthStatus"
+                type: array
+                items: {$ref: "#/components/schemas/CampaignSummary"}
+    post:
+      operationId: createCampaign
+      tags: [campaigns]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CampaignInput"}
+      responses:
+        "201":
+          description: Created campaign
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CampaignDetail"}
+  /campaigns/{id}:
+    get:
+      operationId: getCampaign
+      tags: [campaigns]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      responses:
+        "200":
+          description: Campaign
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CampaignDetail"}
+    patch:
+      operationId: updateCampaign
+      tags: [campaigns]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CampaignUpdate"}
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CampaignDetail"}
+  /campaigns/{id}/map:
+    put:
+      operationId: saveCampaignMap
+      tags: [campaigns]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/MapInput"}
+      responses:
+        "200":
+          description: Saved map
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MapData"}
+  /campaigns/{id}/activities:
+    post:
+      operationId: createActivity
+      tags: [campaigns]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ActivityInput"}
+      responses:
+        "201":
+          description: Activity
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Activity"}
+  /campaigns/{id}/utm-links:
+    post:
+      operationId: generateUtmLink
+      tags: [governance]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/UtmInput"}
+      responses:
+        "201":
+          description: Generated link
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/UtmLink"}
+  /campaigns/{id}/export/{format}:
+    get:
+      operationId: exportCampaign
+      tags: [campaigns]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - name: format
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [activities-csv, utm-csv, json, plan]
+      responses:
+        "200":
+          description: Export file
+          content:
+            text/plain:
+              schema: {type: string}
+  /portfolio:
+    get:
+      operationId: getPortfolio
+      tags: [portfolio]
+      responses:
+        "200":
+          description: Portfolio
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Portfolio"}
+  /conflicts/run:
+    post:
+      operationId: runConflictDetection
+      tags: [portfolio]
+      responses:
+        "200":
+          description: Conflict results
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Conflict"}
+  /governance:
+    get:
+      operationId: getGovernance
+      tags: [governance]
+      responses:
+        "200":
+          description: Governance configuration
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Governance"}
+  /adapters/status:
+    get:
+      operationId: getAdapterStatus
+      tags: [governance]
+      responses:
+        "200":
+          description: Optional adapter status
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AdapterStatus"}
 components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        status: {type: string}
+    CampaignSummary:
+      type: object
+      required: [id, name, scope, region, audience, outcome, lifecycle, readiness, timing, owner, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        parentId: {type: [string, "null"], format: uuid}
+        name: {type: string}
+        scope: {type: string}
+        region: {type: string}
+        audience: {type: string}
+        outcome: {type: string}
+        lifecycle: {type: string}
+        readiness: {type: integer}
+        timing: {type: string}
+        owner: {type: string}
+        updatedAt: {type: string}
+    CampaignInput:
+      type: object
+      required: [name, scope, audience, outcome]
+      properties:
+        name: {type: string, minLength: 1}
+        scope: {type: string, enum: [Global, Regional, Decide later, Not applicable]}
+        audience: {type: string}
+        outcome: {type: string}
+    CampaignUpdate:
+      type: object
+      properties:
+        name: {type: string}
+        lifecycle: {type: string}
+        strategy: {type: object, additionalProperties: true}
+    CampaignDetail:
+      allOf:
+        - {$ref: "#/components/schemas/CampaignSummary"}
+        - type: object
+          required: [strategy, map, utmLinks, inheritance]
+          properties:
+            strategy: {type: object, additionalProperties: true}
+            map: {$ref: "#/components/schemas/MapData"}
+            utmLinks:
+              type: array
+              items: {$ref: "#/components/schemas/UtmLink"}
+            inheritance: {type: object, additionalProperties: {type: string}}
+    Position:
+      type: object
+      required: [x, y]
+      properties:
+        x: {type: number}
+        y: {type: number}
+    Activity:
+      type: object
+      required: [id, name, type, audience, region, timing, status, owner, conflict, position]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        type: {type: string}
+        audience: {type: string}
+        region: {type: string}
+        timing: {type: string}
+        status: {type: string}
+        owner: {type: string}
+        conflict: {type: boolean}
+        decisionStatus: {type: string}
+        position: {$ref: "#/components/schemas/Position"}
+    ActivityInput:
+      type: object
+      required: [name, type, audience, region, timing, status, owner, position]
+      properties:
+        name: {type: string}
+        type: {type: string}
+        audience: {type: string}
+        region: {type: string}
+        timing: {type: string}
+        status: {type: string}
+        owner: {type: string}
+        position: {$ref: "#/components/schemas/Position"}
+    Connection:
+      type: object
+      required: [id, source, target, trigger, timing, exclusions, sentence]
+      properties:
+        id: {type: string, format: uuid}
+        source: {type: string, format: uuid}
+        target: {type: string, format: uuid}
+        trigger: {type: string}
+        timing: {type: string}
+        exclusions:
+          type: array
+          items: {type: string}
+        sentence: {type: string}
+    MapData:
+      type: object
+      required: [activities, connections]
+      properties:
+        activities:
+          type: array
+          items: {$ref: "#/components/schemas/Activity"}
+        connections:
+          type: array
+          items: {$ref: "#/components/schemas/Connection"}
+    MapInput:
+      allOf:
+        - {$ref: "#/components/schemas/MapData"}
+    UtmInput:
+      type: object
+      required: [destinationUrl, source, medium, content, term, salesforceCampaignId]
+      properties:
+        destinationUrl: {type: string}
+        source: {type: string}
+        medium: {type: string}
+        content: {type: string}
+        term: {type: string}
+        salesforceCampaignId: {type: string}
+    UtmLink:
+      type: object
+      required: [id, destinationUrl, fullUrl, taxonomyVersion, validation, status]
+      properties:
+        id: {type: string, format: uuid}
+        destinationUrl: {type: string}
+        fullUrl: {type: string}
+        taxonomyVersion: {type: string}
+        validation: {type: string}
+        status: {type: string}
+    Conflict:
+      type: object
+      required: [id, classification, severity, title, reason, campaigns, dates, recommendation, owner, status]
+      properties:
+        id: {type: string, format: uuid}
+        classification: {type: string}
+        severity: {type: string}
+        title: {type: string}
+        reason: {type: string}
+        campaigns:
+          type: array
+          items: {type: string}
+        dates: {type: string}
+        recommendation: {type: string}
+        owner: {type: string}
+        status: {type: string}
+    Portfolio:
+      type: object
+      required: [campaigns, conflicts, summary]
+      properties:
+        campaigns:
+          type: array
+          items: {$ref: "#/components/schemas/CampaignSummary"}
+        conflicts:
+          type: array
+          items: {$ref: "#/components/schemas/Conflict"}
+        summary: {type: object, additionalProperties: {type: integer}}
+    Governance:
+      type: object
+      required: [version, activityTypes, taxonomyTerms, namingExamples]
+      properties:
+        version: {type: string}
+        activityTypes:
+          type: array
+          items: {type: string}
+        taxonomyTerms:
+          type: array
+          items: {type: object, additionalProperties: {type: string}}
+        namingExamples:
+          type: array
+          items: {type: string}
+    AdapterStatus:
+      type: object
+      required: [airtable, ai]
+      properties:
+        airtable: {type: object, additionalProperties: true}
+        ai: {type: object, additionalProperties: true}

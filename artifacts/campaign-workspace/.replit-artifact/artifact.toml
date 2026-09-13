@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Campaign Operating Workspace"
+description = "A structured marketing campaign planning workspace centered on audience engagement maps, progressive planning, global and regional campaign coordination, deterministic conflict detection, governed taxonomy and UTM generation, and practical campaign exports."
+version = "1.0.0"
+id = "artifacts/campaign-workspace"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25563
+
+[services.development]
+run = "pnpm --filter @workspace/campaign-workspace run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/campaign-workspace", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/campaign-workspace/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25563"
+BASE_PATH = "/"

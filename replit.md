@@ -1,6 +1,6 @@
-# [Project name]
+# Campaign Operating Workspace
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A structured campaign planning app centered on audience engagement maps, progressive planning, portfolio coordination, and governed campaign naming and links.
 
 ## Run & Operate
 
@@ -22,15 +22,25 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- Web app: `artifacts/campaign-workspace`
+- API routes: `artifacts/api-server/src/routes/campaigns.ts`
+- API contract: `lib/api-spec/openapi.yaml`
+- Database schema: `lib/db/src/schema/campaign.ts`
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Engagement-map connections are persisted domain rules, not presentation-only edges.
+- Campaign creation saves after four questions and generates an initial audience-to-outcome map.
+- Regional campaigns remain linked to their global parent through inheritance metadata.
+- Conflict detection is deterministic; optional AI only proposes changes requiring explicit acceptance.
+- Published UTM values are immutable records tied to the taxonomy version that generated them.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Plan campaigns using a persistent React Flow audience engagement map.
+- Manage strategy, timing, delivery, generated UTM links, and presentation views.
+- Coordinate global and regional campaigns through a portfolio and conflict center.
+- Govern activity types, readable taxonomy terms, naming conventions, and tracking links.
 
 ## User preferences
 
