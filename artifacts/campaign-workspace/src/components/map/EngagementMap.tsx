@@ -97,8 +97,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
     setNodes(initialNodes);
     setEdges(initialEdges);
     campaignVersion.current = (campaign as any).rowVersion ?? 1;
-    setTimeout(() => fitView({ padding: 0.2 }), 100);
-  }, [campaign, fitView]);
+  }, [campaign]);
 
   useEffect(() => {
     if (campaign && initializedId.current !== campaign.id) {
@@ -426,8 +425,10 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
         </ScrollArea>
       </div>
 
-      <div className="flex-1 relative flex" ref={reactFlowWrapper}>
+      <div className="flex-1 min-w-0 min-h-0 relative flex" ref={reactFlowWrapper}>
         <ReactFlow
+          fitView
+          fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
@@ -638,8 +639,8 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
 
 export default function EngagementMapWrapper({ campaign }: { campaign: CampaignDetail }) {
   return (
-    <div className="w-full h-[calc(100vh-12rem)] relative bg-muted/10 rounded-lg border border-border overflow-hidden">
-      <ReactFlowProvider>
+    <div className="w-full min-h-64 h-[calc(100vh-12rem)] relative bg-muted/10 rounded-lg border border-border overflow-hidden">
+      <ReactFlowProvider key={campaign.id}>
         <FlowCanvas campaign={campaign} />
       </ReactFlowProvider>
     </div>
