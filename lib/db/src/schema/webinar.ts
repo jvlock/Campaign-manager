@@ -16,6 +16,7 @@ export const webinarSessions = pgTable(
     timezone: text("timezone").notNull(),
     platform: text("platform").notNull(),
     speakers: jsonb("speakers").$type<WebinarSpeaker[]>().notNull().default([]),
+    recruitmentLaunchAt: timestamp("recruitment_launch_at", { withTimezone: true }),
     registrationRule: jsonb("registration_rule")
       .$type<{
         suppressRecruitmentAfterRegistration: boolean;
@@ -79,6 +80,7 @@ export const webinarRegistrationResults = pgTable(
     personId: uuid("person_id").notNull().references(() => webinarPeople.id, { onDelete: "cascade" }),
     result: text("result").notNull(),
     recordedAt: timestamp("recorded_at", { withTimezone: true }).defaultNow().notNull(),
+    firstRegisteredAt: timestamp("first_registered_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

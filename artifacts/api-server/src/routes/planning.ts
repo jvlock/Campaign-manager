@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import {
   activities,
   communications,
@@ -9,6 +9,7 @@ import {
   scheduledInstanceHistory,
   scheduledInstances,
   campaigns,
+  webinarStandardCommunications,
 } from "@workspace/db";
 import {
   adjustScheduledInstance,
@@ -84,6 +85,16 @@ async function validateRuleReferences(campaignId: string, body: Record<string, u
   }
 }
 
+async function standardRuleFor(campaignId: string, ruleId: string) {
+  const [row] = await db.select({ id: webinarStandardCommunications.id })
+    .from(webinarStandardCommunications)
+    .where(and(
+      eq(webinarStandardCommunications.campaignId, campaignId),
+      eq(webinarStandardCommunications.scheduleRuleId, ruleId),
+    ));
+  return row;
+}
+
 function errorStatus(error: unknown) {
   if (error instanceof ScheduleValidationError) return error.statusCode;
   if (error && typeof error === "object" && "statusCode" in error && typeof error.statusCode === "number") {
@@ -121,6 +132,21 @@ router.post("/campaigns/:id/schedule-rules", async (req, res, next): Promise<voi
       return;
     }
     await validateRuleReferences(campaignId, parsed.data as Record<string, unknown>);
+    if (parsed.data.communicationId) {
+      const [standard] = await db.select({ id: webinarStandardCommunications.id })
+        .from(webinarStandardCommunications)
+        .where(and(
+          eq(webinarStandardCommunications.campaignId, campaignId),
+          or(
+            eq(webinarStandardCommunications.id, parsed.data.communicationId),
+            eq(webinarStandardCommunications.communicationId, parsed.data.communicationId),
+          ),
+        ));
+      if (standard) {
+        res.status(409).json({ error: "Webinar standard timing is locked; use the standard endpoint for copy only" });
+        return;
+      }
+    }
     validateScheduleRuleInput(parsed.data);
     if (req.body.anchorAt) {
       const anchor = new Date(req.body.anchorAt);
@@ -166,6 +192,10 @@ router.patch("/campaigns/:id/schedule-rules/:ruleId", async (req, res, next): Pr
       res.status(404).json({ error: "Schedule rule not found" });
       return;
     }
+    if (await standardRuleFor(req.params.id, req.params.ruleId)) {
+      res.status(409).json({ error: "Webinar standard timing is locked; generic schedule edits are not allowed" });
+      return;
+    }
     if (req.body.rowVersion !== undefined && req.body.rowVersion !== existing.rowVersion) {
       res.status(409).json({ error: "Schedule rule has changed", rowVersion: existing.rowVersion });
       return;
@@ -206,6 +236,10 @@ router.delete("/campaigns/:id/schedule-rules/:ruleId", async (req, res, next): P
     );
     if (instance || history) {
       res.status(409).json({ error: "Cannot delete a schedule rule with scheduled instances or history" });
+      return;
+    }
+    if (await standardRuleFor(req.params.id, req.params.ruleId)) {
+      res.status(409).json({ error: "Webinar standard timing is locked; generic schedule deletion is not allowed" });
       return;
     }
     const [deleted] = await db.delete(scheduleRules).where(and(
@@ -262,6 +296,10 @@ router.post("/campaigns/:id/schedule-rules/recompute", async (req, res, next): P
         res.status(404).json({ error: "Schedule rule not found" });
         return;
       }
+      if (await standardRuleFor(req.params.id, req.body.ruleId)) {
+        res.status(409).json({ error: "Webinar standard timing is locked; use the standard endpoint" });
+        return;
+      }
       rows = [await recomputeRule(req.body.ruleId, req.body.anchorAt, req.body.timezone, req.body.reason ?? "manual recompute")];
     } else if (req.body.activityId) {
       rows = await recomputeForAnchor(req.body.activityId, req.body.anchorAt, req.body.timezone, req.body.reason ?? "anchor changed");
@@ -287,6 +325,13 @@ router.patch("/campaigns/:id/scheduled-instances/:instanceId/adjust", async (req
     ));
     if (!instance) {
       res.status(404).json({ error: "Scheduled instance not found" });
+      return;
+    }
+    const [standardInstance] = await db.select({ id: webinarStandardCommunications.id })
+      .from(webinarStandardCommunications)
+      .where(eq(webinarStandardCommunications.scheduleRuleId, instance.ruleId));
+    if (standardInstance) {
+      res.status(409).json({ error: "Webinar standard timing is locked; generic schedule adjustments are not allowed" });
       return;
     }
     const requestedAt = req.body.adjustedAt ?? req.body.calculatedAt;

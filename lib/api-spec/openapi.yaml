@@ -159,6 +159,16 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Communication"}
+    delete:
+      operationId: deleteCommunication
+      tags: [delivery]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/ItemId"}
+      responses:
+        "204": {description: Deleted}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
   /campaigns/{id}/tasks:
     post:
       operationId: createActivityTask
@@ -476,6 +486,70 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/WebinarEvaluation"}
+  /campaigns/{id}/webinars/{sessionId}/standard:
+    get:
+      operationId: getWebinarStandard
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/SessionId"}
+      responses:
+        "200":
+          description: Fixed nine-communication webinar standard
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarStandard"}
+        "404": {$ref: "#/components/responses/NotFound"}
+    patch:
+      operationId: updateWebinarStandard
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/SessionId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/WebinarStandardPatch"}
+      responses:
+        "200":
+          description: Updated standard copy and configuration
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarStandard"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /campaigns/{id}/webinars/{sessionId}/standard/eligibility:
+    get:
+      operationId: getWebinarStandardEligibility
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/SessionId"}
+      responses:
+        "200":
+          description: Planning-only eligibility
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarStandardEligibility"}
+  /campaigns/{id}/webinars/{sessionId}/standard/export:
+    get:
+      operationId: exportWebinarStandard
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/SessionId"}
+      responses:
+        "200":
+          description: Deployable JSON for active variants only
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarStandardExport"}
+        "422":
+          description: Active variant validation failure
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarStandardExportError"}
   /campaigns/{id}/utm-links:
     post:
       operationId: generateUtmLink
@@ -995,6 +1069,7 @@ components:
         decisionStatus: {type: string}
         rowVersion: {type: integer, minimum: 1}
         position: {$ref: "#/components/schemas/Position"}
+        webinarSetup: {$ref: "#/components/schemas/WebinarSetup"}
     ActivityInput:
       type: object
       required: [name, type, audience, region, timing, status, owner, position]
@@ -1008,6 +1083,7 @@ components:
         owner: {type: string}
         rowVersion: {type: integer, minimum: 1}
         position: {$ref: "#/components/schemas/Position"}
+        webinarSetup: {$ref: "#/components/schemas/WebinarSetup"}
     DeliveryStatus:
       type: string
       enum: [Known, Estimated, Decision needed, Not applicable, Confirmed]
@@ -1425,11 +1501,12 @@ components:
           type: array
           items: {$ref: "#/components/schemas/Speaker"}
         registrationRule: {$ref: "#/components/schemas/RegistrationRule"}
+        recruitmentLaunchAt: {type: [string, "null"], format: date-time, description: Webinar campaign launch instant}
         createdAt: {type: string, format: date-time}
         updatedAt: {type: string, format: date-time}
     WebinarInput:
       type: object
-      required: [activityId, name, sessionDate, startTime, durationMinutes, timezone, platform]
+      required: [activityId, name, sessionDate, startTime, durationMinutes, timezone, platform, recruitmentLaunchAt]
       properties:
         activityId: {type: string, format: uuid}
         name: {type: string, minLength: 1}
@@ -1443,6 +1520,22 @@ components:
           items: {$ref: "#/components/schemas/Speaker"}
           default: []
         registrationRule: {$ref: "#/components/schemas/RegistrationRule"}
+        recruitmentLaunchAt: {type: string, format: date-time}
+    WebinarSetup:
+      type: object
+      description: Required only when creating or converting a Webinar activity.
+      required: [eventDate, eventTime, durationMinutes, timezone, platform, recruitmentLaunchAt]
+      properties:
+        eventDate: {type: string, format: date}
+        eventTime: {type: string, pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"}
+        durationMinutes: {type: integer, minimum: 1, maximum: 1440}
+        timezone: {type: string, description: IANA timezone}
+        platform: {type: string, minLength: 1}
+        speakers:
+          type: array
+          items: {$ref: "#/components/schemas/Speaker"}
+          default: []
+        recruitmentLaunchAt: {type: string, format: date-time, description: Webinar campaign launch instant}
     WebinarUpdate:
       type: object
       description: Partial update; every property is optional.
@@ -1458,6 +1551,7 @@ components:
           type: array
           items: {$ref: "#/components/schemas/Speaker"}
         registrationRule: {$ref: "#/components/schemas/RegistrationRule"}
+        recruitmentLaunchAt: {type: string, format: date-time}
     WebinarPerson:
       type: object
       required: [id, campaignId, audienceBranchId, name, isSynthetic]
@@ -1503,6 +1597,220 @@ components:
         recruitmentSuppressed: {type: boolean}
         plannedAction: {type: string}
         externalSending: {type: boolean, const: false}
+    WebinarStandardContent:
+      type: object
+      required: [subject, preheader, hero, body, ctaLabel, ctaUrl, internalAssetName]
+      properties:
+        subject: {type: string}
+        preheader: {type: string}
+        hero: {type: string}
+        body: {type: string}
+        ctaLabel: {type: string}
+        ctaUrl: {type: string}
+        internalAssetName: {type: string}
+    WebinarStandardVariant:
+      type: object
+      required: [slot, name, inUse, audienceDefinition, messageAngle, valueProposition]
+      properties:
+        slot: {type: integer, minimum: 1, maximum: 4}
+        name: {type: string}
+        inUse: {type: boolean}
+        audienceDefinition: {type: string}
+        messageAngle: {type: string}
+        valueProposition: {type: string}
+    WebinarStandardVariantContent:
+      type: object
+      required: [slot, content, validation]
+      properties:
+        slot: {type: integer, minimum: 1, maximum: 4}
+        content: {$ref: "#/components/schemas/WebinarStandardContent"}
+        validation:
+          type: object
+          required: [valid, errors]
+          properties:
+            valid: {type: boolean}
+            errors:
+              type: array
+              items:
+                type: object
+                required: [field, message]
+                properties:
+                  field: {type: string}
+                  message: {type: string}
+    WebinarStandardTiming:
+      type: object
+      required: [kind, offset, unit, direction, weekendAdjustment, locked]
+      properties:
+        kind: {type: string, enum: [trigger, calendar, elapsed]}
+        offset: {type: integer}
+        unit: {type: string, enum: [instant, days, hours]}
+        direction: {type: string, enum: [trigger, before, after]}
+        weekendAdjustment: {type: string}
+        locked: {type: boolean, const: true}
+    WebinarStandardScheduled:
+      type: object
+      required: [status, originalAt, currentAt, effectiveAt, skipReason]
+      properties:
+        status: {type: string}
+        originalAt: {type: [string, "null"], format: date-time}
+        currentAt: {type: [string, "null"], format: date-time}
+        effectiveAt: {type: [string, "null"], format: date-time}
+        skipReason: {type: [string, "null"]}
+    WebinarStandardCommunication:
+      type: object
+      required: [id, key, name, sortOrder, status, timing, scheduled, audienceRule, variants]
+      properties:
+        id: {type: string, format: uuid}
+        key:
+          type: string
+          enum: [registration_confirmation, recruitment_1, recruitment_2, recruitment_3, final_recruitment, registered_reminder, final_reminder, attendee_followup, no_show_followup]
+        name: {type: string}
+        sortOrder: {type: integer}
+        status: {type: string}
+        timing: {$ref: "#/components/schemas/WebinarStandardTiming"}
+        scheduled: {$ref: "#/components/schemas/WebinarStandardScheduled"}
+        audienceRule: {type: string}
+        originalDate: {type: [string, "null"], format: date}
+        currentDate: {type: [string, "null"], format: date}
+        effectiveDate: {type: [string, "null"], format: date}
+        variants:
+          type: array
+          items: {$ref: "#/components/schemas/WebinarStandardVariantContent"}
+    WebinarStandardTemplateConfig:
+      type: object
+      required: [pilotLimits, variants]
+      properties:
+        pilotLimits:
+          type: object
+          required: [subject, preheader, hero, body, ctaLabel, ctaUrl, internalAssetName]
+          properties:
+            subject: {type: integer, minimum: 1, default: 50}
+            preheader: {type: integer, minimum: 1, default: 90}
+            hero: {type: integer, minimum: 1, default: 60}
+            body: {type: integer, minimum: 1, default: 1200}
+            ctaLabel: {type: integer, minimum: 1, default: 25}
+            ctaUrl: {type: integer, minimum: 1, default: 2000}
+            internalAssetName: {type: integer, minimum: 1, default: 120}
+        variants:
+          type: array
+          minItems: 1
+          maxItems: 4
+          items: {$ref: "#/components/schemas/WebinarStandardVariant"}
+    WebinarStandard:
+      type: object
+      required: [campaignId, sessionId, activityId, launchAt, templateConfig, communications]
+      properties:
+        campaignId: {type: string, format: uuid}
+        sessionId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        launchAt: {type: [string, "null"], format: date-time}
+        templateConfig: {$ref: "#/components/schemas/WebinarStandardTemplateConfig"}
+        communications:
+          type: array
+          minItems: 9
+          maxItems: 9
+          items: {$ref: "#/components/schemas/WebinarStandardCommunication"}
+    WebinarStandardContentPatch:
+      type: object
+      properties:
+        subject: {type: string}
+        preheader: {type: string}
+        hero: {type: string}
+        body: {type: string}
+        ctaLabel: {type: string}
+        ctaUrl: {type: string}
+        internalAssetName: {type: string}
+    WebinarStandardPatch:
+      type: object
+      properties:
+        launchAt: {type: string, format: date-time}
+        templateConfig:
+          type: object
+          properties:
+            pilotLimits: {$ref: "#/components/schemas/WebinarStandardTemplateConfig/properties/pilotLimits"}
+            variants:
+              type: array
+              minItems: 1
+              maxItems: 4
+              items: {$ref: "#/components/schemas/WebinarStandardVariant"}
+        communications:
+          type: array
+          items:
+            type: object
+            required: [key]
+            properties:
+              key: {type: string}
+              status: {type: string}
+              timing: {type: object, description: Rejected; standard timing is locked}
+              variants:
+                type: array
+                items:
+                  type: object
+                  required: [slot, content]
+                  properties:
+                    slot: {type: integer, minimum: 1, maximum: 4}
+                    content: {$ref: "#/components/schemas/WebinarStandardContentPatch"}
+    WebinarStandardEligibilityRow:
+      type: object
+      required: [personId, communicationKey, eligible, status, reason, attendanceResult]
+      properties:
+        personId: {type: string, format: uuid}
+        communicationKey: {type: string}
+        eligible: {type: boolean}
+        status: {type: string}
+        reason: {type: string}
+        eligibleAt: {type: [string, "null"], format: date-time}
+        registrationRecordedAt: {type: [string, "null"], format: date-time}
+        attendanceResult: {type: [string, "null"], enum: [attended, no_show, null]}
+    WebinarStandardEligibility:
+      type: object
+      required: [sessionId, people, externalSending]
+      properties:
+        sessionId: {type: string, format: uuid}
+        people:
+          type: array
+          items: {$ref: "#/components/schemas/WebinarStandardEligibilityRow"}
+        externalSending: {type: boolean, const: false}
+    WebinarStandardExport:
+      type: object
+      required: [campaignId, sessionId, launchAt, communications]
+      properties:
+        campaignId: {type: string, format: uuid}
+        sessionId: {type: string, format: uuid}
+        launchAt: {type: [string, "null"], format: date-time}
+        communications:
+          type: array
+          items:
+            type: object
+            required: [key, sortOrder, timing, audienceRule, variant]
+            properties:
+              key: {type: string}
+              sortOrder: {type: integer}
+              timing: {$ref: "#/components/schemas/WebinarStandardTiming"}
+              audienceRule: {type: string}
+              scheduled: {$ref: "#/components/schemas/WebinarStandardScheduled"}
+              variant:
+                allOf:
+                  - {$ref: "#/components/schemas/WebinarStandardVariant"}
+                  - type: object
+                    required: [content]
+                    properties:
+                      content: {$ref: "#/components/schemas/WebinarStandardContent"}
+    WebinarStandardExportError:
+      type: object
+      required: [error, errors]
+      properties:
+        error: {type: string}
+        errors:
+          type: array
+          items:
+            type: object
+            required: [key, slot, field, message]
+            properties:
+              key: {type: string}
+              slot: {type: integer}
+              field: {type: string}
+              message: {type: string}
     GovernanceActorReason:
       type: object
       required: [actor, reason]
@@ -1523,6 +1831,10 @@ components:
         legacyCodes:
           type: array
           items: {type: string}
+        source: {type: string, nullable: true}
+        sourceCodeProvenance:
+          type: [object, "null"]
+          additionalProperties: true
         isDeprecated: {type: boolean}
         deprecatedAt: {type: string, format: date-time, nullable: true}
         deprecationReason: {type: string, nullable: true}

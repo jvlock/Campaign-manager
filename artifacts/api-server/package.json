@@ -10,6 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:delivery": "tsx --test ./test/delivery.test.ts",
     "test:webinar": "tsx --test ./test/webinar.test.ts",
+    "test:webinar-standard": "tsx --test ./test/webinar-standard.test.ts ./test/webinar-standard.routes.test.ts",
+    "test:webinar-standard-routes": "tsx --test ./test/webinar-standard.routes.test.ts",
     "test:governance": "tsx --test ./test/governance.test.ts",
     "test:planning": "tsx --test ./test/planning.test.ts"
   },

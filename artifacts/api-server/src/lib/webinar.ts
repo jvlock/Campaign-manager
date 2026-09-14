@@ -47,6 +47,7 @@ export const webinarInputSchema = z.object({
   durationMinutes: z.number().int().positive().max(1440),
   timezone: timezoneSchema,
   platform: z.string().trim().min(1),
+  recruitmentLaunchAt: z.string().datetime({ offset: true }),
   speakers: z.array(speakerSchema).default([]),
   registrationRule: registrationRuleSchema.default({
     suppressRecruitmentAfterRegistration: true,
@@ -111,6 +112,7 @@ export function sessionResponse(row: typeof webinarSessions.$inferSelect) {
     durationMinutes: row.durationMinutes,
     timezone: row.timezone,
     platform: row.platform,
+    recruitmentLaunchAt: row.recruitmentLaunchAt?.toISOString() ?? null,
     speakers: speakerSchema.array().parse(row.speakers),
     registrationRule: parsedRule(row.registrationRule),
     createdAt: row.createdAt.toISOString(),
@@ -203,7 +205,8 @@ export async function evaluateWebinarPerson(campaignId: string, sessionId: strin
         : "not_registered";
   const rule = parsedRule(session.registrationRule);
   const recruitmentSuppressed =
-    registrationResult === "registered" && rule.suppressRecruitmentAfterRegistration;
+    (Boolean(registration?.firstRegisteredAt) || registrationResult === "registered") &&
+    rule.suppressRecruitmentAfterRegistration;
 
   return {
     person: personResponse(person),
@@ -219,7 +222,9 @@ export async function evaluateWebinarPerson(campaignId: string, sessionId: strin
           ? "Plan recording follow-up"
           : branch === "registered"
             ? "Hold recruitment; await attendance"
-            : "Eligible for recruitment planning",
+            : recruitmentSuppressed
+              ? "Hold recruitment; prior successful registration is permanent"
+              : "Eligible for recruitment planning",
     externalSending: false,
   };
 }

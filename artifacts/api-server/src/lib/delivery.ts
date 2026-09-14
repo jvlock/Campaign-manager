@@ -1,8 +1,9 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { activityTasks, audiences, campaigns, communications, db } from "@workspace/db";
+import { activityTasks, audiences, campaigns, communications, db, webinarSessions } from "@workspace/db";
 import { communicationDetails } from "@workspace/db/schema/communication-details";
 import { z } from "zod";
 import { assertTimezone, instanceResponse, recomputeForAnchor } from "./planning";
+import { ensureWebinarStandard } from "./webinar-standard";
 
 export class DeliveryValidationError extends Error {
   readonly status: number;
@@ -276,6 +277,16 @@ export async function recomputeWebinarDeliveryAnchor(input: {
     input.executor,
   );
   const executor = input.executor ?? db;
+  const [session] = await executor
+    .select()
+    .from(webinarSessions)
+    .where(and(
+      eq(webinarSessions.campaignId, input.campaignId),
+      eq(webinarSessions.activityId, input.activityId),
+    ));
+  if (session) {
+    await ensureWebinarStandard(session, executor);
+  }
   const rows = await executor
     .select({ id: communications.id })
     .from(communications)

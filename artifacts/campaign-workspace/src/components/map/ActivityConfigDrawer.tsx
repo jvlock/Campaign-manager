@@ -29,6 +29,8 @@ import {
   getListScheduleRulesQueryOptions,
   getListScheduledInstancesQueryOptions,
   getGetWebinarQueryOptions,
+  getGetWebinarStandardQueryKey,
+  getGetWebinarStandardEligibilityQueryKey,
   getEvaluateWebinarQueryOptions,
   ScheduleRuleInputBusinessDayStrategy,
 } from '@workspace/api-client-react';
@@ -41,6 +43,7 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import WebinarStandardPanel from './WebinarStandardPanel';
 
 interface ActivityConfigDrawerProps {
   campaignId: string;
@@ -144,6 +147,7 @@ export default function ActivityConfigDrawer({
   const updateWebinarInfo = useUpdateWebinar();
   const [adjustments, setAdjustments] = useState<Record<string, InstanceAdjustment>>({});
   const [localError, setLocalError] = useState('');
+  const [hasUnsavedWebinarChanges, setHasUnsavedWebinarChanges] = useState(false);
 
   const mutationError = [createComm.error, updateComm.error, createTask.error, updateTask.error, createSchedule.error, adjustInstance.error, updateSchedule.error, recomputeSchedule.error, updateWebinarInfo.error, webinarListError, webinarLoadError]
     .find(Boolean);
@@ -153,6 +157,8 @@ export default function ActivityConfigDrawer({
     if (!sessionId) return;
     queryClient.invalidateQueries({ queryKey: getListWebinarsQueryKey(campaignId) });
     queryClient.invalidateQueries({ queryKey: getGetWebinarQueryOptions(campaignId, sessionId).queryKey });
+    queryClient.invalidateQueries({ queryKey: getGetWebinarStandardQueryKey(campaignId, sessionId) });
+    queryClient.invalidateQueries({ queryKey: getGetWebinarStandardEligibilityQueryKey(campaignId, sessionId) });
     queryClient.invalidateQueries({ queryKey: getEvaluateWebinarQueryOptions(campaignId, sessionId).queryKey });
     queryClient.invalidateQueries({ queryKey: getListScheduledInstancesQueryOptions(campaignId).queryKey });
     queryClient.invalidateQueries({ queryKey: getListScheduleRulesQueryOptions(campaignId).queryKey });
@@ -242,12 +248,19 @@ export default function ActivityConfigDrawer({
   // Sort by sortOrder
   const sortedComms = [...communications].sort((a, b) => a.sortOrder - b.sortOrder);
   const sortedTasks = [...tasks].sort((a, b) => a.sortOrder - b.sortOrder);
+  const handleClose = () => {
+    if (isWebinar && hasUnsavedWebinarChanges) {
+      const discard = window.confirm('This webinar has unsaved standard drafts. Close and discard them?');
+      if (!discard) return;
+    }
+    onClose();
+  };
 
   return (
     <div className="w-full sm:w-[450px] bg-card border-l border-border h-full flex flex-col absolute right-0 top-0 shadow-xl animate-in slide-in-from-right-8 z-20">
       <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20 shrink-0">
         <h3 className="font-semibold text-sm">Activity Configuration</h3>
-        <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={onClose}>
+         <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={handleClose}>
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -439,6 +452,14 @@ export default function ActivityConfigDrawer({
           )}
 
           {/* Child Communications */}
+          {node.data.type === 'Webinar' ? (
+             <WebinarStandardPanel
+               campaignId={campaignId}
+               sessionId={sessionId}
+               sessionName={webinarData?.name || 'webinar'}
+               onDirtyChange={setHasUnsavedWebinarChanges}
+             />
+          ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-2">
               <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -841,6 +862,7 @@ export default function ActivityConfigDrawer({
               )}
             </div>
           </div>
+          )}
 
           {/* Linked Tasks */}
           <div className="space-y-4">

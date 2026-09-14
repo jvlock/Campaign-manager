@@ -132,6 +132,11 @@ function auditValue(value: unknown): any {
   return snapshot(value);
 }
 
+function sourceMetadataResponse(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
 function termResponse(term: any) {
   return {
     id: term.id,
@@ -142,6 +147,7 @@ function termResponse(term: any) {
     parentId: term.parentId,
     supersededBy: term.supersededBy,
     legacyCodes: Array.isArray(term.legacyCodes) ? term.legacyCodes : [],
+    sourceMetadata: sourceMetadataResponse(term.sourceMetadata),
     isDeprecated: Boolean(term.isDeprecated),
     deprecatedAt: term.deprecatedAt,
     deprecationReason: term.deprecationReason,

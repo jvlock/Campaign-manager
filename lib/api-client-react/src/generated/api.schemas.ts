@@ -64,6 +64,34 @@ export interface Position {
   y: number;
 }
 
+export interface Speaker {
+  /** @minLength 1 */
+  name: string;
+  role?: string;
+  organization?: string;
+}
+
+/**
+ * Required only when creating or converting a Webinar activity.
+ */
+export interface WebinarSetup {
+  eventDate: string;
+  /** @pattern ^([01]\d|2[0-3]):[0-5]\d$ */
+  eventTime: string;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  durationMinutes: number;
+  /** IANA timezone */
+  timezone: string;
+  /** @minLength 1 */
+  platform: string;
+  speakers?: Speaker[];
+  /** Webinar campaign launch instant */
+  recruitmentLaunchAt: string;
+}
+
 export interface Activity {
   id: string;
   name: string;
@@ -78,6 +106,7 @@ export interface Activity {
   /** @minimum 1 */
   rowVersion?: number;
   position: Position;
+  webinarSetup?: WebinarSetup;
 }
 
 export type ConnectionEntryCondition = { [key: string]: unknown };
@@ -191,6 +220,7 @@ export interface ActivityInput {
   /** @minimum 1 */
   rowVersion?: number;
   position: Position;
+  webinarSetup?: WebinarSetup;
 }
 
 export interface CommunicationInput {
@@ -492,13 +522,6 @@ export interface VersionedActivity {
   rowVersion?: number;
 }
 
-export interface Speaker {
-  /** @minLength 1 */
-  name: string;
-  role?: string;
-  organization?: string;
-}
-
 export interface RegistrationRule {
   suppressRecruitmentAfterRegistration: boolean;
   registeredBranch?: string;
@@ -524,6 +547,11 @@ export interface WebinarSession {
   platform: string;
   speakers: Speaker[];
   registrationRule: RegistrationRule;
+  /**
+     * Webinar campaign launch instant
+     * @nullable
+     */
+  recruitmentLaunchAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -543,6 +571,7 @@ export interface WebinarInput {
   platform: string;
   speakers?: Speaker[];
   registrationRule?: RegistrationRule;
+  recruitmentLaunchAt: string;
 }
 
 /**
@@ -564,6 +593,7 @@ export interface WebinarUpdate {
   platform?: string;
   speakers?: Speaker[];
   registrationRule?: RegistrationRule;
+  recruitmentLaunchAt?: string;
 }
 
 export interface WebinarPerson {
@@ -650,12 +680,309 @@ export interface WebinarEvaluation {
   externalSending: false;
 }
 
+export interface WebinarStandardContent {
+  subject: string;
+  preheader: string;
+  hero: string;
+  body: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  internalAssetName: string;
+}
+
+export interface WebinarStandardVariant {
+  /**
+     * @minimum 1
+     * @maximum 4
+     */
+  slot: number;
+  name: string;
+  inUse: boolean;
+  audienceDefinition: string;
+  messageAngle: string;
+  valueProposition: string;
+}
+
+export type WebinarStandardVariantContentValidationErrorsItem = {
+  field: string;
+  message: string;
+};
+
+export type WebinarStandardVariantContentValidation = {
+  valid: boolean;
+  errors: WebinarStandardVariantContentValidationErrorsItem[];
+};
+
+export interface WebinarStandardVariantContent {
+  /**
+     * @minimum 1
+     * @maximum 4
+     */
+  slot: number;
+  content: WebinarStandardContent;
+  validation: WebinarStandardVariantContentValidation;
+}
+
+export type WebinarStandardTimingKind = typeof WebinarStandardTimingKind[keyof typeof WebinarStandardTimingKind];
+
+
+export const WebinarStandardTimingKind = {
+  trigger: 'trigger',
+  calendar: 'calendar',
+  elapsed: 'elapsed',
+} as const;
+
+export type WebinarStandardTimingUnit = typeof WebinarStandardTimingUnit[keyof typeof WebinarStandardTimingUnit];
+
+
+export const WebinarStandardTimingUnit = {
+  instant: 'instant',
+  days: 'days',
+  hours: 'hours',
+} as const;
+
+export type WebinarStandardTimingDirection = typeof WebinarStandardTimingDirection[keyof typeof WebinarStandardTimingDirection];
+
+
+export const WebinarStandardTimingDirection = {
+  trigger: 'trigger',
+  before: 'before',
+  after: 'after',
+} as const;
+
+export interface WebinarStandardTiming {
+  kind: WebinarStandardTimingKind;
+  offset: number;
+  unit: WebinarStandardTimingUnit;
+  direction: WebinarStandardTimingDirection;
+  weekendAdjustment: string;
+  locked: true;
+}
+
+export interface WebinarStandardScheduled {
+  status: string;
+  /** @nullable */
+  originalAt: string | null;
+  /** @nullable */
+  currentAt: string | null;
+  /** @nullable */
+  effectiveAt: string | null;
+  /** @nullable */
+  skipReason: string | null;
+}
+
+export type WebinarStandardCommunicationKey = typeof WebinarStandardCommunicationKey[keyof typeof WebinarStandardCommunicationKey];
+
+
+export const WebinarStandardCommunicationKey = {
+  registration_confirmation: 'registration_confirmation',
+  recruitment_1: 'recruitment_1',
+  recruitment_2: 'recruitment_2',
+  recruitment_3: 'recruitment_3',
+  final_recruitment: 'final_recruitment',
+  registered_reminder: 'registered_reminder',
+  final_reminder: 'final_reminder',
+  attendee_followup: 'attendee_followup',
+  no_show_followup: 'no_show_followup',
+} as const;
+
+export interface WebinarStandardCommunication {
+  id: string;
+  key: WebinarStandardCommunicationKey;
+  name: string;
+  sortOrder: number;
+  status: string;
+  timing: WebinarStandardTiming;
+  scheduled: WebinarStandardScheduled;
+  audienceRule: string;
+  /** @nullable */
+  originalDate?: string | null;
+  /** @nullable */
+  currentDate?: string | null;
+  /** @nullable */
+  effectiveDate?: string | null;
+  variants: WebinarStandardVariantContent[];
+}
+
+export type WebinarStandardTemplateConfigPilotLimits = {
+  /** @minimum 1 */
+  subject: number;
+  /** @minimum 1 */
+  preheader: number;
+  /** @minimum 1 */
+  hero: number;
+  /** @minimum 1 */
+  body: number;
+  /** @minimum 1 */
+  ctaLabel: number;
+  /** @minimum 1 */
+  ctaUrl: number;
+  /** @minimum 1 */
+  internalAssetName: number;
+};
+
+export interface WebinarStandardTemplateConfig {
+  pilotLimits: WebinarStandardTemplateConfigPilotLimits;
+  /**
+     * @minItems 1
+     * @maxItems 4
+     */
+  variants: WebinarStandardVariant[];
+}
+
+export interface WebinarStandard {
+  campaignId: string;
+  sessionId: string;
+  activityId: string;
+  /** @nullable */
+  launchAt: string | null;
+  templateConfig: WebinarStandardTemplateConfig;
+  /**
+     * @minItems 9
+     * @maxItems 9
+     */
+  communications: WebinarStandardCommunication[];
+}
+
+export interface WebinarStandardContentPatch {
+  subject?: string;
+  preheader?: string;
+  hero?: string;
+  body?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  internalAssetName?: string;
+}
+
+export type WebinarStandardPatchTemplateConfigPilotLimits = {
+  /** @minimum 1 */
+  subject: number;
+  /** @minimum 1 */
+  preheader: number;
+  /** @minimum 1 */
+  hero: number;
+  /** @minimum 1 */
+  body: number;
+  /** @minimum 1 */
+  ctaLabel: number;
+  /** @minimum 1 */
+  ctaUrl: number;
+  /** @minimum 1 */
+  internalAssetName: number;
+};
+
+export type WebinarStandardPatchTemplateConfig = {
+  pilotLimits?: WebinarStandardPatchTemplateConfigPilotLimits;
+  /**
+     * @minItems 1
+     * @maxItems 4
+     */
+  variants?: WebinarStandardVariant[];
+};
+
+/**
+ * Rejected; standard timing is locked
+ */
+export type WebinarStandardPatchCommunicationsItemTiming = { [key: string]: unknown };
+
+export type WebinarStandardPatchCommunicationsItemVariantsItem = {
+  /**
+     * @minimum 1
+     * @maximum 4
+     */
+  slot: number;
+  content: WebinarStandardContentPatch;
+};
+
+export type WebinarStandardPatchCommunicationsItem = {
+  key: string;
+  status?: string;
+  /** Rejected; standard timing is locked */
+  timing?: WebinarStandardPatchCommunicationsItemTiming;
+  variants?: WebinarStandardPatchCommunicationsItemVariantsItem[];
+};
+
+export interface WebinarStandardPatch {
+  launchAt?: string;
+  templateConfig?: WebinarStandardPatchTemplateConfig;
+  communications?: WebinarStandardPatchCommunicationsItem[];
+}
+
+/**
+ * @nullable
+ */
+export type WebinarStandardEligibilityRowAttendanceResult = typeof WebinarStandardEligibilityRowAttendanceResult[keyof typeof WebinarStandardEligibilityRowAttendanceResult] | null;
+
+
+export const WebinarStandardEligibilityRowAttendanceResult = {
+  attended: 'attended',
+  no_show: 'no_show',
+} as const;
+
+export interface WebinarStandardEligibilityRow {
+  personId: string;
+  communicationKey: string;
+  eligible: boolean;
+  status: string;
+  reason: string;
+  /** @nullable */
+  eligibleAt?: string | null;
+  /** @nullable */
+  registrationRecordedAt?: string | null;
+  /** @nullable */
+  attendanceResult: WebinarStandardEligibilityRowAttendanceResult;
+}
+
+export interface WebinarStandardEligibility {
+  sessionId: string;
+  people: WebinarStandardEligibilityRow[];
+  externalSending: false;
+}
+
+export type WebinarStandardExportCommunicationsItemVariant = WebinarStandardVariant & {
+  content: WebinarStandardContent;
+};
+
+export type WebinarStandardExportCommunicationsItem = {
+  key: string;
+  sortOrder: number;
+  timing: WebinarStandardTiming;
+  audienceRule: string;
+  scheduled?: WebinarStandardScheduled;
+  variant: WebinarStandardExportCommunicationsItemVariant;
+};
+
+export interface WebinarStandardExport {
+  campaignId: string;
+  sessionId: string;
+  /** @nullable */
+  launchAt: string | null;
+  communications: WebinarStandardExportCommunicationsItem[];
+}
+
+export type WebinarStandardExportErrorErrorsItem = {
+  key: string;
+  slot: number;
+  field: string;
+  message: string;
+};
+
+export interface WebinarStandardExportError {
+  error: string;
+  errors: WebinarStandardExportErrorErrorsItem[];
+}
+
 export interface GovernanceActorReason {
   /** @minLength 1 */
   actor: string;
   /** @minLength 1 */
   reason: string;
 }
+
+/**
+ * @nullable
+ */
+export type TaxonomyTermSourceCodeProvenance = { [key: string]: unknown } | null;
 
 export interface TaxonomyTerm {
   id: string;
@@ -666,6 +993,9 @@ export interface TaxonomyTerm {
   parentId?: string | null;
   supersededBy?: string | null;
   legacyCodes: string[];
+  source?: string | null;
+  /** @nullable */
+  sourceCodeProvenance?: TaxonomyTermSourceCodeProvenance;
   isDeprecated: boolean;
   deprecatedAt?: string | null;
   deprecationReason?: string | null;

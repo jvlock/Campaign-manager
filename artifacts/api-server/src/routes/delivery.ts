@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import {
   CreateActivityTaskBody,
   CreateActivityTaskParams,
@@ -22,6 +22,7 @@ import {
   campaigns,
   communications,
   db,
+  webinarStandardCommunications,
 } from "@workspace/db";
 import {
   communicationDetailsInputSchema,
@@ -49,6 +50,19 @@ async function activityBelongsToCampaign(activityId: string, campaignId: string)
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.campaignId, campaignId)));
   return Boolean(activity);
+}
+
+async function standardCommunicationFor(campaignId: string, communicationId: string) {
+  const [row] = await db.select({ id: webinarStandardCommunications.id })
+    .from(webinarStandardCommunications)
+    .where(and(
+      eq(webinarStandardCommunications.campaignId, campaignId),
+      or(
+        eq(webinarStandardCommunications.id, communicationId),
+        eq(webinarStandardCommunications.communicationId, communicationId),
+      ),
+    ));
+  return row;
 }
 
 router.get("/campaigns/:id/delivery", async (req, res, next): Promise<void> => {
@@ -143,6 +157,10 @@ router.patch("/campaigns/:id/communications/:itemId", async (req, res, next): Pr
       res.status(404).json({ error: "Campaign not found" });
       return;
     }
+    if (await standardCommunicationFor(campaignId, itemId)) {
+      res.status(409).json({ error: "Standard webinar communications are managed by the webinar standard endpoint" });
+      return;
+    }
     const [existing] = await db
       .select()
       .from(communications)
@@ -180,6 +198,26 @@ router.patch("/campaigns/:id/communications/:itemId", async (req, res, next): Pr
   } catch (error) {
     if (error instanceof DeliveryValidationError) res.status(error.status).json({ error: error.message });
     else next(error);
+  }
+});
+
+router.delete("/campaigns/:id/communications/:itemId", async (req, res, next): Promise<void> => {
+  try {
+    if (await standardCommunicationFor(req.params.id, req.params.itemId)) {
+      res.status(409).json({ error: "Standard webinar communications cannot be deleted" });
+      return;
+    }
+    const [deleted] = await db.delete(communications).where(and(
+      eq(communications.id, req.params.itemId),
+      eq(communications.campaignId, req.params.id),
+    )).returning({ id: communications.id });
+    if (!deleted) {
+      res.status(404).json({ error: "Communication not found" });
+      return;
+    }
+    res.status(204).end();
+  } catch (error) {
+    next(error);
   }
 });
 

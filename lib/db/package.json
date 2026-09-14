@@ -15,6 +15,7 @@
     "seed:delivery": "node ./scripts/seed-delivery.mjs",
     "seed:webinar": "node ./scripts/seed-delivery.mjs",
     "seed:webinar-planning": "node ./scripts/seed-webinar-planning.mjs",
+    "reconcile:webinar-standard": "node ./scripts/reconcile-webinar-standard.mjs",
     "seed:governance": "node ./scripts/seed-governance.mjs"
   },
   "dependencies": {

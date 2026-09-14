@@ -27,4 +27,5 @@ export interface WebinarUpdate {
   platform?: string;
   speakers?: Speaker[];
   registrationRule?: RegistrationRule;
+  recruitmentLaunchAt?: Date;
 }

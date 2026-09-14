@@ -6,6 +6,7 @@ import {
   webinarSessions,
 } from "@workspace/db";
 import { deliveryFor } from "../lib/delivery";
+import { ensureWebinarForActivity } from "../lib/webinar-standard";
 
 const router: IRouter = Router();
 
@@ -298,7 +299,8 @@ router.put("/campaigns/:id/map", async (req, res, next) => {
           x: String(n.position?.x ?? 0), y: String(n.position?.y ?? 0), updatedAt: new Date(),
         };
         if (!existing) {
-          await tx.insert(activities).values({ id: n.id, campaignId: req.params.id, ...values });
+          const [createdActivity] = await tx.insert(activities).values({ id: n.id, campaignId: req.params.id, ...values }).returning();
+          await ensureWebinarForActivity(req.params.id, createdActivity, n.webinarSetup, tx);
         } else {
           if (n.rowVersion === undefined || n.rowVersion === null) throw versionError(428, `rowVersion is required for activity ${n.id}`);
           if (!Number.isInteger(Number(n.rowVersion)) || Number(n.rowVersion) < 1) {
@@ -309,6 +311,13 @@ router.put("/campaigns/:id/map", async (req, res, next) => {
             rowVersion: sql`${activities.rowVersion} + 1`,
           }).where(and(eq(activities.id, n.id), eq(activities.campaignId, req.params.id), eq(activities.rowVersion, Number(n.rowVersion)))).returning({ id: activities.id });
           if (!updated) throw versionError(409, `Activity ${n.id} has changed`);
+          const [updatedActivity] = await tx.select().from(activities).where(and(eq(activities.id, n.id), eq(activities.campaignId, req.params.id)));
+          // Existing legacy Webinar nodes may predate the required setup
+          // payload.  Preserve them during ordinary map saves; an explicit
+          // setup still provisions/reconciles their standard session.
+          if (updatedActivity && n.webinarSetup !== undefined) {
+            await ensureWebinarForActivity(req.params.id, updatedActivity, n.webinarSetup, tx);
+          }
         }
       }
       if (connectionsProvided) {
@@ -380,12 +389,14 @@ router.post("/campaigns/:id/activities", async (req, res, next) => {
         updatedAt: new Date(),
       }).where(and(eq(campaigns.id, req.params.id), eq(campaigns.rowVersion, version as number))).returning();
       if (!campaign) throw versionError(409, "Campaign has changed");
-      return tx.insert(activities).values({
+      const [activity] = await tx.insert(activities).values({
         name: req.body.name, type: req.body.type, audience: req.body.audience, region: req.body.region,
         timing: req.body.timing, status: req.body.status, owner: req.body.owner,
         conflict: req.body.conflict ?? false, decisionStatus: req.body.decisionStatus ?? "Estimated",
         campaignId: req.params.id, x: String(req.body.position?.x ?? 0), y: String(req.body.position?.y ?? 0),
       }).returning();
+      await ensureWebinarForActivity(req.params.id, activity, req.body.webinarSetup, tx);
+      return [activity];
     });
     res.status(201).json({ ...a, position: { x: Number(a.x), y: Number(a.y) } });
   } catch (e) {

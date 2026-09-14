@@ -1,0 +1,379 @@
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { createServer, type Server } from "node:http";
+import { after, before, test } from "node:test";
+import { and, eq, inArray } from "drizzle-orm";
+import app from "../src/app";
+import {
+  activities,
+  audiences,
+  campaigns,
+  communications,
+  db,
+  scheduleRules,
+  scheduledInstanceHistory,
+  scheduledInstances,
+  webinarPeople,
+  webinarRegistrationResults,
+  webinarSessions,
+  webinarStandardCommunications,
+  webinarStandardConfigs,
+  webinarStandardTriggerEvents,
+} from "@workspace/db";
+import { communicationDetails } from "@workspace/db/schema/communication-details";
+
+let server: Server;
+let baseUrl: string;
+const campaignIds: string[] = [];
+
+const setup = {
+  eventDate: "2027-04-21",
+  eventTime: "14:00",
+  durationMinutes: 60,
+  timezone: "America/New_York",
+  platform: "Planning platform",
+  speakers: [{ name: "Route test speaker" }],
+  recruitmentLaunchAt: "2027-03-01T15:00:00.000Z",
+};
+const standardKeys = [
+  "registration_confirmation",
+  "recruitment_1",
+  "recruitment_2",
+  "recruitment_3",
+  "final_recruitment",
+  "registered_reminder",
+  "final_reminder",
+  "attendee_followup",
+  "no_show_followup",
+] as const;
+
+before(async () => {
+  server = createServer(app);
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Route test server did not bind");
+  baseUrl = `http://127.0.0.1:${address.port}/api`;
+});
+
+async function campaign(name: string) {
+  const [created] = await db.insert(campaigns).values({
+    name,
+    scope: "Regional",
+    region: "EMEA",
+    audience: "Route test audience",
+    outcome: "Verify webinar standard routes",
+  }).returning();
+  campaignIds.push(created.id);
+  return created;
+}
+
+async function cleanupCampaign(campaignId: string) {
+  const sessionRows = await db.select({ id: webinarSessions.id }).from(webinarSessions).where(eq(webinarSessions.campaignId, campaignId));
+  const instanceRows = await db.select({ id: scheduledInstances.id }).from(scheduledInstances).where(eq(scheduledInstances.campaignId, campaignId));
+  if (instanceRows.length) {
+    await db.delete(scheduledInstanceHistory).where(inArray(scheduledInstanceHistory.scheduledInstanceId, instanceRows.map((row) => row.id)));
+  }
+  await db.delete(webinarStandardTriggerEvents).where(eq(webinarStandardTriggerEvents.campaignId, campaignId));
+  await db.delete(scheduledInstances).where(eq(scheduledInstances.campaignId, campaignId));
+  await db.delete(scheduleRules).where(eq(scheduleRules.campaignId, campaignId));
+  await db.delete(webinarStandardCommunications).where(eq(webinarStandardCommunications.campaignId, campaignId));
+  await db.delete(webinarStandardConfigs).where(eq(webinarStandardConfigs.campaignId, campaignId));
+  await db.delete(communicationDetails).where(eq(communicationDetails.campaignId, campaignId));
+  await db.delete(communications).where(eq(communications.campaignId, campaignId));
+  if (sessionRows.length) await db.delete(webinarSessions).where(eq(webinarSessions.campaignId, campaignId));
+  await db.delete(activities).where(eq(activities.campaignId, campaignId));
+  await db.delete(webinarPeople).where(eq(webinarPeople.campaignId, campaignId));
+  await db.delete(audiences).where(eq(audiences.campaignId, campaignId));
+  await db.delete(campaigns).where(eq(campaigns.id, campaignId));
+}
+
+after(async () => {
+  server.close();
+  for (const campaignId of campaignIds) await cleanupCampaign(campaignId);
+});
+
+test("activity POST provisions exactly nine standard rows and replay map is idempotent", async () => {
+  const createdCampaign = await campaign(`Webinar route activity ${randomUUID()}`);
+  const response = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/activities`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      name: "Route activity webinar",
+      type: "Webinar",
+      audience: "Route test audience",
+      region: "EMEA",
+      timing: "2027-04-21",
+      status: "Confirmed",
+      owner: "Route test",
+      position: { x: 0, y: 0 },
+      webinarSetup: setup,
+      rowVersion: 1,
+    }),
+  });
+  assert.equal(response.status, 201);
+  const activity = await response.json() as { id: string; rowVersion: number; position: { x: number; y: number } };
+  const [session] = await db.select().from(webinarSessions).where(eq(webinarSessions.activityId, activity.id));
+  assert.ok(session);
+  const standardRows = await db.select().from(webinarStandardCommunications).where(eq(webinarStandardCommunications.sessionId, session.id));
+  assert.equal(standardRows.length, 9);
+  assert.equal(new Set(standardRows.map((row) => row.key)).size, 9);
+  assert.equal(new Set(standardRows.map((row) => row.communicationId)).size, 9);
+  assert.equal((await db.select().from(communications).where(eq(communications.campaignId, createdCampaign.id))).length, 9);
+  const standardConfig = await db.select().from(webinarStandardConfigs).where(eq(webinarStandardConfigs.sessionId, session.id));
+  assert.equal(standardConfig.length, 1);
+
+  const currentCampaign = (await db.select().from(campaigns).where(eq(campaigns.id, createdCampaign.id)))[0];
+  const mapReplay = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/map`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      rowVersion: currentCampaign.rowVersion,
+      activities: [{
+        id: activity.id,
+        name: "Route activity webinar",
+        type: "Webinar",
+        audience: "Route test audience",
+        region: "EMEA",
+        timing: "2027-04-21",
+        status: "Confirmed",
+        owner: "Route test",
+        rowVersion: activity.rowVersion,
+        position: { x: 0, y: 0 },
+        webinarSetup: setup,
+      }],
+      connections: [],
+    }),
+  });
+  assert.equal(mapReplay.status, 200);
+  const sessionsAfterReplay = await db.select().from(webinarSessions).where(eq(webinarSessions.activityId, activity.id));
+  const [sessionAfterReplay] = await db.select().from(webinarSessions).where(eq(webinarSessions.activityId, activity.id));
+  const rowsAfterReplay = await db.select().from(webinarStandardCommunications).where(eq(webinarStandardCommunications.sessionId, sessionAfterReplay.id));
+  assert.equal(sessionsAfterReplay.length, 1);
+  assert.equal(rowsAfterReplay.length, 9);
+});
+
+test("session POST persists the nine standard identities and draft copy", async () => {
+  const createdCampaign = await campaign(`Webinar route session ${randomUUID()}`);
+  const [activity] = await db.insert(activities).values({
+    campaignId: createdCampaign.id,
+    name: "Route session activity",
+    type: "Webinar",
+    audience: "Route test audience",
+    region: "EMEA",
+    timing: "2027-04-21",
+    status: "Confirmed",
+    owner: "Route test",
+    x: "0",
+    y: "0",
+  }).returning();
+  const response = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      activityId: activity.id,
+      name: "Route session",
+      sessionDate: setup.eventDate,
+      startTime: setup.eventTime,
+      durationMinutes: setup.durationMinutes,
+      timezone: setup.timezone,
+      platform: setup.platform,
+      speakers: setup.speakers,
+      recruitmentLaunchAt: setup.recruitmentLaunchAt,
+      registrationRule: { suppressRecruitmentAfterRegistration: true },
+    }),
+  });
+  assert.equal(response.status, 201);
+  const session = await response.json() as { id: string };
+  const rows = await db.select().from(webinarStandardCommunications).where(eq(webinarStandardCommunications.sessionId, session.id));
+  assert.equal(rows.length, 9);
+  assert.ok(rows.every((row) => row.status === "DRAFT"));
+  const trigger = rows.find((row) => row.key === "registration_confirmation");
+  assert.equal(trigger?.originalScheduledAt, null);
+  assert.equal(trigger?.effectiveScheduledAt, null);
+
+  const draftPatch = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      communications: [{
+        key: "recruitment_1",
+        variants: [{ slot: 1, content: { subject: "x".repeat(51) } }],
+      }],
+    }),
+  });
+  assert.equal(draftPatch.status, 200);
+  const invalidExport = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard/export`);
+  assert.equal(invalidExport.status, 422);
+
+  const validPatch = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      templateConfig: { variants: [{ slot: 1, name: "Default", inUse: true, audienceDefinition: "All people", messageAngle: "Useful planning", valueProposition: "Clear next steps" }] },
+      communications: standardKeys.map((key) => ({
+        key,
+        variants: [{
+          slot: 1,
+          content: {
+            subject: "Subject",
+            preheader: "Preheader",
+            hero: "Hero",
+            body: "Body",
+            ctaLabel: "Join",
+            ctaUrl: "https://example.com",
+          },
+        }],
+      })),
+    }),
+  });
+  assert.equal(validPatch.status, 200);
+  const validExportResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard/export`);
+  assert.equal(validExportResponse.status, 200);
+  const validExport = await validExportResponse.json() as { communications: Array<{ key: string; scheduled?: { effectiveAt: string | null } }> };
+  assert.equal(validExport.communications.length, 9);
+  assert.ok(validExport.communications.find((communication) => communication.key === "recruitment_1")?.scheduled?.effectiveAt);
+  assert.equal(validExport.communications.find((communication) => communication.key === "registration_confirmation")?.scheduled, undefined);
+
+  const skipLaunch = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ launchAt: "2027-04-01T15:00:00.000Z" }),
+  });
+  assert.equal(skipLaunch.status, 200);
+  const skippedExportResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard/export`);
+  assert.equal(skippedExportResponse.status, 200);
+  const skippedExport = await skippedExportResponse.json() as { communications: Array<{ key: string }> };
+  assert.equal(skippedExport.communications.some((communication) => communication.key === "recruitment_1"), false);
+
+  const beforeAtomicFailure = (await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`)).json();
+  const beforeConfig = (await beforeAtomicFailure).templateConfig.variants;
+  const invalidPatch = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      templateConfig: { variants: [{ slot: 1, name: "Default", inUse: false, audienceDefinition: "a", messageAngle: "b", valueProposition: "c" }] },
+      communications: [{ key: "not_a_standard_key", variants: [] }],
+    }),
+  });
+  assert.equal(invalidPatch.status, 400);
+  const afterAtomicFailure = await (await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`)).json();
+  assert.deepEqual(afterAtomicFailure.templateConfig.variants, beforeConfig);
+});
+
+test("registration confirmation is persisted per successful person event", async () => {
+  const createdCampaign = await campaign(`Webinar route registration ${randomUUID()}`);
+  const [activity] = await db.insert(activities).values({
+    campaignId: createdCampaign.id,
+    name: "Registration activity",
+    type: "Webinar",
+    audience: "Route test audience",
+    region: "EMEA",
+    timing: "2027-04-21",
+    status: "Confirmed",
+    owner: "Route test",
+    x: "0",
+    y: "0",
+  }).returning();
+  const sessionResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      activityId: activity.id,
+      name: "Registration session",
+      sessionDate: setup.eventDate,
+      startTime: setup.eventTime,
+      durationMinutes: setup.durationMinutes,
+      timezone: setup.timezone,
+      platform: setup.platform,
+      speakers: setup.speakers,
+      recruitmentLaunchAt: setup.recruitmentLaunchAt,
+    }),
+  });
+  assert.equal(sessionResponse.status, 201);
+  const session = await sessionResponse.json() as { id: string };
+  const skippedLaunch = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ launchAt: "2027-04-01T15:00:00.000Z" }),
+  });
+  assert.equal(skippedLaunch.status, 200);
+  const [audience] = await db.select().from(audiences).where(eq(audiences.campaignId, createdCampaign.id));
+  const personResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/people`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ name: "Registration person", audienceBranchId: audience.id }),
+  });
+  assert.equal(personResponse.status, 201);
+  const person = await personResponse.json() as { id: string };
+  const secondPersonResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/people`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ name: "Unregistered person", audienceBranchId: audience.id }),
+  });
+  assert.equal(secondPersonResponse.status, 201);
+  const secondPerson = await secondPersonResponse.json() as { id: string };
+
+  const registrationPath = `${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/people/${person.id}/registration`;
+  const firstRegistration = await fetch(registrationPath, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ result: "registered" }),
+  });
+  assert.equal(firstRegistration.status, 200);
+  let triggerEvents = await db.select().from(webinarStandardTriggerEvents).where(eq(webinarStandardTriggerEvents.personId, person.id));
+  assert.equal(triggerEvents.length, 1);
+  const repeatedRegistration = await fetch(registrationPath, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ result: "registered" }),
+  });
+  assert.equal(repeatedRegistration.status, 200);
+  triggerEvents = await db.select().from(webinarStandardTriggerEvents).where(eq(webinarStandardTriggerEvents.personId, person.id));
+  assert.equal(triggerEvents.length, 1);
+  const firstRegisteredAt = (await db.select().from(webinarRegistrationResults).where(eq(webinarRegistrationResults.personId, person.id)))[0].firstRegisteredAt;
+  assert.ok(firstRegisteredAt);
+
+  const cancel = await fetch(registrationPath, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ result: "not_registered" }),
+  });
+  assert.equal(cancel.status, 200);
+  const secondRegistration = await fetch(registrationPath, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ result: "registered" }),
+  });
+  assert.equal(secondRegistration.status, 200);
+  const attendance = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/people/${person.id}/attendance`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ result: "attended" }),
+  });
+  assert.equal(attendance.status, 200);
+  triggerEvents = await db.select().from(webinarStandardTriggerEvents).where(eq(webinarStandardTriggerEvents.personId, person.id));
+  assert.equal(triggerEvents.length, 2);
+  const registration = (await db.select().from(webinarRegistrationResults).where(eq(webinarRegistrationResults.personId, person.id)))[0];
+  assert.equal(registration.firstRegisteredAt?.toISOString(), firstRegisteredAt.toISOString());
+  const standardResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`);
+  assert.equal(standardResponse.status, 200);
+  const [confirmation] = await db.select().from(webinarStandardCommunications).where(and(
+    eq(webinarStandardCommunications.sessionId, session.id),
+    eq(webinarStandardCommunications.key, "registration_confirmation"),
+  ));
+  assert.equal(confirmation.originalScheduledAt, null);
+  assert.equal(confirmation.effectiveScheduledAt, null);
+  const eligibilityResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard/eligibility`);
+  assert.equal(eligibilityResponse.status, 200);
+  const eligibility = await eligibilityResponse.json() as {
+    people: Array<{ personId: string; communicationKey: string; eligible: boolean; reason: string }>;
+  };
+  const eligibilityRow = (personId: string, communicationKey: string) =>
+    eligibility.people.find((row) => row.personId === personId && row.communicationKey === communicationKey)!;
+  assert.equal(eligibilityRow(secondPerson.id, "recruitment_1").eligible, false);
+  assert.match(eligibilityRow(secondPerson.id, "recruitment_1").reason, /launch|skip/i);
+  assert.equal(eligibilityRow(person.id, "recruitment_2").eligible, false);
+  assert.match(eligibilityRow(person.id, "recruitment_2").reason, /registration history/i);
+  assert.equal(eligibilityRow(person.id, "attendee_followup").eligible, true);
+  assert.equal(eligibilityRow(person.id, "no_show_followup").eligible, false);
+});

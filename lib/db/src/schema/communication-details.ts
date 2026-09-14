@@ -11,7 +11,7 @@ export const communicationDetails = pgTable("communication_details", {
   id: uuid("id").defaultRandom().primaryKey(),
   communicationId: uuid("communication_id").notNull().unique().references(() => communications.id, { onDelete: "cascade" }),
   campaignId: uuid("campaign_id").notNull().references(() => campaigns.id, { onDelete: "cascade" }),
-  audienceBranchId: uuid("audience_branch_id").notNull().references(() => audiences.id),
+  audienceBranchId: uuid("audience_branch_id").notNull().references(() => audiences.id, { onDelete: "cascade" }),
   communicationType: text("communication_type").notNull().default("Other"),
   channel: text("channel").notNull().default("other"),
   approvalStatus: text("approval_status").notNull().default("Not started"),
@@ -34,7 +34,7 @@ export const communicationDetails = pgTable("communication_details", {
       columns: [table.audienceBranchId, table.campaignId],
       foreignColumns: [audiences.id, audiences.campaignId],
       name: "communication_details_audience_campaign_fk",
-    }),
+    }).onDelete("cascade"),
   }),
 );
 

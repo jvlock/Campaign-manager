@@ -82,6 +82,11 @@ import type {
   WebinarPerson,
   WebinarPersonEvaluationInput,
   WebinarSession,
+  WebinarStandard,
+  WebinarStandardEligibility,
+  WebinarStandardExport,
+  WebinarStandardExportError,
+  WebinarStandardPatch,
   WebinarUpdate
 } from './api.schemas';
 
@@ -893,6 +898,76 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getUpdateCommunicationMutationOptions(options));
+    }
+
+export const getDeleteCommunicationUrl = (id: string,
+    itemId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/communications/${itemId}`
+}
+
+export const deleteCommunication = async (id: string,
+    itemId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteCommunicationUrl(id,itemId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteCommunicationMutationKey = () => ['deleteCommunication'] as const;
+
+export const getDeleteCommunicationMutationOptions = <TError = ErrorType<NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCommunication>>, TError,DeleteCommunicationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCommunication>>, TError,DeleteCommunicationMutationVariables, TContext> => {
+
+const mutationKey = getDeleteCommunicationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCommunication>>, DeleteCommunicationMutationVariables> = (props) => {
+          const {id,itemId} = props ?? {};
+
+          return  deleteCommunication(id,itemId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCommunicationMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCommunication>>>
+
+    export type DeleteCommunicationMutationError = ErrorType<NotFoundResponse | ConflictResponse>
+    export type DeleteCommunicationMutationVariables = {id: string;itemId: string}
+
+    export const useDeleteCommunication = <TError = ErrorType<NotFoundResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCommunication>>, TError,DeleteCommunicationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCommunication>>,
+        TError,
+        DeleteCommunicationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteCommunicationMutationOptions(options));
     }
 
 export const getCreateActivityTaskUrl = (id: string,) => {
@@ -2421,6 +2496,319 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getEvaluateWebinarPersonMutationOptions(options));
     }
+
+export const getGetWebinarStandardUrl = (id: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/webinars/${sessionId}/standard`
+}
+
+export const getWebinarStandard = async (id: string,
+    sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<WebinarStandard> => {
+
+  return customFetch<WebinarStandard>(getGetWebinarStandardUrl(id,sessionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWebinarStandardQueryKey = (id: string,
+    sessionId: string,) => {
+    return [
+    `/api/campaigns/${id}/webinars/${sessionId}/standard`
+    ] as const;
+    }
+
+
+export const getGetWebinarStandardQueryOptions = <TData = Awaited<ReturnType<typeof getWebinarStandard>>, TError = ErrorType<NotFoundResponse>>(id: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWebinarStandardQueryKey(id,sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWebinarStandard>>> = ({ signal }) => getWebinarStandard(id,sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWebinarStandardQueryResult = NonNullable<Awaited<ReturnType<typeof getWebinarStandard>>>
+export type GetWebinarStandardQueryError = ErrorType<NotFoundResponse>
+
+
+
+export function useGetWebinarStandard<TData = Awaited<ReturnType<typeof getWebinarStandard>>, TError = ErrorType<NotFoundResponse>>(
+ id: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWebinarStandardQueryOptions(id,sessionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateWebinarStandardUrl = (id: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/webinars/${sessionId}/standard`
+}
+
+export const updateWebinarStandard = async (id: string,
+    sessionId: string,
+    webinarStandardPatch: WebinarStandardPatch, options?: Parameters<typeof customFetch>[1]): Promise<WebinarStandard> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<WebinarStandard>(getUpdateWebinarStandardUrl(id,sessionId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(webinarStandardPatch)
+  }
+);}
+
+
+
+
+
+export const getUpdateWebinarStandardMutationKey = () => ['updateWebinarStandard'] as const;
+
+export const getUpdateWebinarStandardMutationOptions = <TError = ErrorType<BadRequestResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWebinarStandard>>, TError,UpdateWebinarStandardMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateWebinarStandard>>, TError,UpdateWebinarStandardMutationVariables, TContext> => {
+
+const mutationKey = getUpdateWebinarStandardMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateWebinarStandard>>, UpdateWebinarStandardMutationVariables> = (props) => {
+          const {id,sessionId,data} = props ?? {};
+
+          return  updateWebinarStandard(id,sessionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateWebinarStandardMutationResult = NonNullable<Awaited<ReturnType<typeof updateWebinarStandard>>>
+    export type UpdateWebinarStandardMutationBody = BodyType<WebinarStandardPatch>
+    export type UpdateWebinarStandardMutationError = ErrorType<BadRequestResponse | ConflictResponse>
+    export type UpdateWebinarStandardMutationVariables = {id: string;sessionId: string;data: BodyType<WebinarStandardPatch>}
+
+    export const useUpdateWebinarStandard = <TError = ErrorType<BadRequestResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWebinarStandard>>, TError,UpdateWebinarStandardMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateWebinarStandard>>,
+        TError,
+        UpdateWebinarStandardMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateWebinarStandardMutationOptions(options));
+    }
+
+export const getGetWebinarStandardEligibilityUrl = (id: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/webinars/${sessionId}/standard/eligibility`
+}
+
+export const getWebinarStandardEligibility = async (id: string,
+    sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<WebinarStandardEligibility> => {
+
+  return customFetch<WebinarStandardEligibility>(getGetWebinarStandardEligibilityUrl(id,sessionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWebinarStandardEligibilityQueryKey = (id: string,
+    sessionId: string,) => {
+    return [
+    `/api/campaigns/${id}/webinars/${sessionId}/standard/eligibility`
+    ] as const;
+    }
+
+
+export const getGetWebinarStandardEligibilityQueryOptions = <TData = Awaited<ReturnType<typeof getWebinarStandardEligibility>>, TError = ErrorType<unknown>>(id: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardEligibility>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWebinarStandardEligibilityQueryKey(id,sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWebinarStandardEligibility>>> = ({ signal }) => getWebinarStandardEligibility(id,sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardEligibility>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWebinarStandardEligibilityQueryResult = NonNullable<Awaited<ReturnType<typeof getWebinarStandardEligibility>>>
+export type GetWebinarStandardEligibilityQueryError = ErrorType<unknown>
+
+
+
+export function useGetWebinarStandardEligibility<TData = Awaited<ReturnType<typeof getWebinarStandardEligibility>>, TError = ErrorType<unknown>>(
+ id: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardEligibility>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWebinarStandardEligibilityQueryOptions(id,sessionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getExportWebinarStandardUrl = (id: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/webinars/${sessionId}/standard/export`
+}
+
+export const exportWebinarStandard = async (id: string,
+    sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<WebinarStandardExport> => {
+
+  return customFetch<WebinarStandardExport>(getExportWebinarStandardUrl(id,sessionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportWebinarStandardQueryKey = (id: string,
+    sessionId: string,) => {
+    return [
+    `/api/campaigns/${id}/webinars/${sessionId}/standard/export`
+    ] as const;
+    }
+
+
+export const getExportWebinarStandardQueryOptions = <TData = Awaited<ReturnType<typeof exportWebinarStandard>>, TError = ErrorType<WebinarStandardExportError>>(id: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportWebinarStandard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportWebinarStandardQueryKey(id,sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportWebinarStandard>>> = ({ signal }) => exportWebinarStandard(id,sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportWebinarStandard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportWebinarStandardQueryResult = NonNullable<Awaited<ReturnType<typeof exportWebinarStandard>>>
+export type ExportWebinarStandardQueryError = ErrorType<WebinarStandardExportError>
+
+
+
+export function useExportWebinarStandard<TData = Awaited<ReturnType<typeof exportWebinarStandard>>, TError = ErrorType<WebinarStandardExportError>>(
+ id: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportWebinarStandard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportWebinarStandardQueryOptions(id,sessionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGenerateUtmLinkUrl = (id: string,) => {
 

@@ -4,8 +4,11 @@ import {
   scheduleRules,
   scheduledInstanceHistory,
   scheduledInstances,
+  webinarSessions,
+  webinarStandardCommunications,
   type ScheduleRule,
 } from "@workspace/db";
+import { ensureWebinarStandard } from "./webinar-standard";
 
 export const BUSINESS_DAY_STRATEGIES = [
   "calendar",
@@ -292,6 +295,12 @@ export async function recomputeRule(
   const anchor = new Date(anchorAt);
   const [rule] = await db.select().from(scheduleRules).where(eq(scheduleRules.id, ruleId));
   if (!rule) throw new Error("Schedule rule not found");
+  const [standard] = await db.select({ id: webinarStandardCommunications.id })
+    .from(webinarStandardCommunications)
+    .where(eq(webinarStandardCommunications.scheduleRuleId, ruleId));
+  if (standard) {
+    throw new ScheduleValidationError("Webinar standard timing is locked; use the webinar standard scheduler");
+  }
   return db.transaction((tx) => recomputeRuleInTransaction(tx, rule, anchor, timezone, reason));
 }
 
@@ -320,8 +329,18 @@ export async function recomputeForAnchor(
     );
     const rows = [];
     for (const rule of rules) {
+      // Webinar standard rules have their own calendar/elapsed engine.  The
+      // generic schedule editor may not silently turn elapsed-hour reminders
+      // into wall-clock calculations through DST.
+      const [standardRule] = await tx
+        .select({ id: webinarStandardCommunications.id })
+        .from(webinarStandardCommunications)
+        .where(eq(webinarStandardCommunications.scheduleRuleId, rule.id));
+      if (standardRule) continue;
       rows.push(await recomputeRuleInTransaction(tx, rule, anchor, timezone, reason));
     }
+    const [session] = await tx.select().from(webinarSessions).where(eq(webinarSessions.activityId, activityId));
+    if (session) await ensureWebinarStandard(session, tx);
     return rows;
   };
   return executor ? recompute(executor) : db.transaction(recompute);

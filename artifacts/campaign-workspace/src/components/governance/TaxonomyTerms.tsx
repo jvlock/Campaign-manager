@@ -29,7 +29,7 @@ export default function TaxonomyTerms({ version }: { version?: string }) {
 
   const categories = Object.keys(categoriesMap).map(cat => ({
     id: cat,
-    label: cat,
+    label: cat.replaceAll('_', ' '),
     current: categoriesMap[cat]
   }));
 
@@ -70,6 +70,11 @@ export default function TaxonomyTerms({ version }: { version?: string }) {
                       {term.legacyCodes?.length > 0 && (
                         <div className="text-[10px] text-muted-foreground mt-1">
                           Legacy: {term.legacyCodes.join(', ')}
+                        </div>
+                      )}
+                      {'sourceMetadata' in term && !!term.sourceMetadata && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Source: {String((term.sourceMetadata as { sourceLabel?: string }).sourceLabel ?? 'Not specified')}
                         </div>
                       )}
                     </div>

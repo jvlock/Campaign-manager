@@ -14,3 +14,9 @@ Governance actor values are declared attribution until managed authentication ex
 **Why:** Authentication was not part of this refinement and the prior authentication follow-up was cancelled. Recording an actor is useful but must not imply identity verification or access control.
 
 **How to apply:** Label declared attribution accurately. If authentication is later added, derive actors from the session and enforce governance roles rather than trusting submitted actor text.
+
+For the standard webinar template, calendar-day offsets retain the event's local clock time; 24-hour and 1-hour reminders use elapsed time.
+
+**Why:** The supplied nine-message specification defines days and weekend direction but does not supply a separate invitation/follow-up send time. Retaining the event clock avoids inventing a 09:00 default. Hour-based reminders must remain exact through daylight-saving changes.
+
+**How to apply:** Keep the fixed webinar template distinct from freely editable generic schedule rules. If a separate local send-time policy is later supplied, treat it as a deliberate template change, retaining prior calculations and history.

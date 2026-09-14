@@ -21,4 +21,5 @@ export * from "./campaign";
 export * from "./activity-task";
 export * from "./governance";
 export * from "./webinar";
+export * from "./webinar-standard";
 export * from "./communication-details";

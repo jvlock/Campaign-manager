@@ -23,4 +23,5 @@ export interface WebinarInput {
   platform: string;
   speakers?: Speaker[];
   registrationRule?: RegistrationRule;
+  recruitmentLaunchAt: Date;
 }

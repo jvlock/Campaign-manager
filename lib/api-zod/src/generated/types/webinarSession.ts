@@ -26,6 +26,11 @@ export interface WebinarSession {
   platform: string;
   speakers: Speaker[];
   registrationRule: RegistrationRule;
+  /**
+     * Webinar campaign launch instant
+     * @nullable
+     */
+  recruitmentLaunchAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { Router, type IRouter, type NextFunction, type Request, type Response } from "express";
 import { z } from "zod";
 import { activities, audiences, campaigns, db } from "@workspace/db";
@@ -22,6 +22,14 @@ import {
   webinarForCampaign,
 } from "../lib/webinar";
 import { recomputeWebinarDeliveryAnchor } from "../lib/delivery";
+import {
+  WebinarStandardValidationError,
+  eligibilityForSession,
+  ensureWebinarStandard,
+  patchStandard,
+  standardForSession,
+  triggerRegistrationConfirmation,
+} from "../lib/webinar-standard";
 
 const router: IRouter = Router();
 const idParams = z.object({ id: z.string().uuid() });
@@ -89,6 +97,10 @@ function reportError(error: unknown, res: Response, next: NextFunction) {
     res.status(error.status).json({ error: error.message });
     return;
   }
+  if (error instanceof WebinarStandardValidationError) {
+    res.status(error.status).json({ error: error.message });
+    return;
+  }
   if (error && typeof error === "object" && "statusCode" in error && typeof error.statusCode === "number") {
     res.status(error.statusCode).json({ error: error instanceof Error ? error.message : "Invalid webinar schedule" });
     return;
@@ -139,9 +151,10 @@ router.post("/campaigns/:id/webinars", async (req, res, next): Promise<void> => 
     const row = await db.transaction(async (tx) => {
       const [created] = await tx
         .insert(webinarSessions)
-        .values({ ...body, campaignId })
+        .values({ ...body, campaignId, recruitmentLaunchAt: new Date(body.recruitmentLaunchAt) })
         .returning();
       if (!created) throw new WebinarValidationError("Unable to create webinar session", 500);
+       await ensureWebinarStandard(created, tx);
       await recomputeWebinarDeliveryAnchor({
         campaignId,
         activityId: created.activityId,
@@ -202,12 +215,14 @@ router.patch("/campaigns/:id/webinars/:sessionId", async (req, res, next): Promi
     if (body.platform !== undefined) patch.platform = body.platform;
     if (body.speakers !== undefined) patch.speakers = body.speakers;
     if (body.registrationRule !== undefined) patch.registrationRule = body.registrationRule;
+    if (body.recruitmentLaunchAt !== undefined) patch.recruitmentLaunchAt = new Date(body.recruitmentLaunchAt);
     const anchorChanged =
       body.activityId !== undefined ||
       body.sessionDate !== undefined ||
       body.startTime !== undefined ||
       body.durationMinutes !== undefined ||
-      body.timezone !== undefined;
+      body.timezone !== undefined ||
+      body.recruitmentLaunchAt !== undefined;
     const row = await db.transaction(async (tx) => {
       const [updated] = await tx
         .update(webinarSessions)
@@ -226,6 +241,7 @@ router.patch("/campaigns/:id/webinars/:sessionId", async (req, res, next): Promi
           executor: tx,
         });
       }
+       await ensureWebinarStandard(updated, tx);
       return updated;
     });
     res.json(sessionResponse(row));
@@ -297,13 +313,51 @@ async function recordRegistration(req: Request, res: Response, next: NextFunctio
   const { id: campaignId, sessionId, personId } = parsedParams.data;
   await sessionForCampaign(campaignId, sessionId);
   await personForCampaign(campaignId, personId);
-  await db
-    .insert(webinarRegistrationResults)
-    .values({ campaignId, sessionId, personId, result: parsedBody.data.result, updatedAt: new Date() })
-    .onConflictDoUpdate({
-      target: [webinarRegistrationResults.sessionId, webinarRegistrationResults.personId],
-      set: { result: parsedBody.data.result, recordedAt: new Date(), updatedAt: new Date() },
-    });
+  const recordedAt = new Date();
+  await db.transaction(async (tx) => {
+    // Serialize state transitions for one person.  This prevents concurrent
+    // registrations from both observing the same prior state and emitting
+    // duplicate confirmation events.
+    await tx.select({ id: webinarPeople.id })
+      .from(webinarPeople)
+      .where(and(eq(webinarPeople.id, personId), eq(webinarPeople.campaignId, campaignId)))
+      .for("update");
+    const [previous] = await tx.select({ result: webinarRegistrationResults.result })
+      .from(webinarRegistrationResults)
+      .where(and(
+        eq(webinarRegistrationResults.sessionId, sessionId),
+        eq(webinarRegistrationResults.personId, personId),
+      ));
+    await tx
+      .insert(webinarRegistrationResults)
+      .values({
+        campaignId,
+        sessionId,
+        personId,
+        result: parsedBody.data.result,
+        recordedAt,
+        firstRegisteredAt: parsedBody.data.result === "registered" ? recordedAt : null,
+        updatedAt: recordedAt,
+      })
+      .onConflictDoUpdate({
+        target: [webinarRegistrationResults.sessionId, webinarRegistrationResults.personId],
+        set: {
+          result: parsedBody.data.result,
+          recordedAt,
+          updatedAt: recordedAt,
+          firstRegisteredAt: parsedBody.data.result === "registered"
+            ? sql`coalesce(${webinarRegistrationResults.firstRegisteredAt}, ${recordedAt})`
+            : sql`${webinarRegistrationResults.firstRegisteredAt}`,
+        },
+      });
+    const [session] = await tx.select().from(webinarSessions).where(eq(webinarSessions.id, sessionId));
+    if (session) {
+      await ensureWebinarStandard(session, tx);
+      if (parsedBody.data.result === "registered" && previous?.result !== "registered") {
+        await triggerRegistrationConfirmation(campaignId, sessionId, personId, recordedAt, tx);
+      }
+    }
+  });
   res.json(await evaluateWebinarPerson(campaignId, sessionId, personId));
 }
 
@@ -375,6 +429,116 @@ router.post("/campaigns/:id/webinars/:sessionId/evaluate", async (req, res, next
       return;
     }
     res.json(await evaluateWebinarPerson(parsed.data.id, parsed.data.sessionId, person.data.personId));
+  } catch (error) {
+    reportError(error, res, next);
+  }
+});
+
+router.get("/campaigns/:id/webinars/:sessionId/standard", async (req, res, next): Promise<void> => {
+  try {
+    const parsed = sessionParams.safeParse(req.params);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    res.json(await standardForSession(parsed.data.id, parsed.data.sessionId));
+  } catch (error) {
+    reportError(error, res, next);
+  }
+});
+
+router.patch("/campaigns/:id/webinars/:sessionId/standard", async (req, res, next): Promise<void> => {
+  try {
+    const parsed = sessionParams.safeParse(req.params);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const patched = await db.transaction((tx) =>
+      patchStandard(parsed.data.id, parsed.data.sessionId, req.body, tx),
+    );
+    res.json(patched);
+  } catch (error) {
+    reportError(error, res, next);
+  }
+});
+
+router.get("/campaigns/:id/webinars/:sessionId/standard/eligibility", async (req, res, next): Promise<void> => {
+  try {
+    const parsed = sessionParams.safeParse(req.params);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    res.json(await eligibilityForSession(parsed.data.id, parsed.data.sessionId));
+  } catch (error) {
+    reportError(error, res, next);
+  }
+});
+
+router.get("/campaigns/:id/webinars/:sessionId/standard/export", async (req, res, next): Promise<void> => {
+  try {
+    const parsed = sessionParams.safeParse(req.params);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const standard = await standardForSession(parsed.data.id, parsed.data.sessionId);
+    const activeVariants = standard.templateConfig.variants.filter((variant) => variant.inUse);
+    const errors: Array<{ key: string; slot: number; field: string; message: string }> = [];
+    const communications = standard.communications
+      .filter((communication) => communication.scheduled.status !== "skipped")
+      .map((communication) => ({
+      ...communication,
+      variants: communication.variants.filter((variant) => {
+        const config = activeVariants.find((candidate) => candidate.slot === variant.slot);
+        return Boolean(config?.inUse);
+      }),
+      }));
+    for (const variant of activeVariants) {
+      for (const communication of communications) {
+        const communicationVariant = communication.variants.find((candidate) => candidate.slot === variant.slot);
+        if (!communicationVariant) {
+          errors.push({ key: communication.key, slot: variant.slot, field: "content", message: "Content is required for every active variant" });
+          continue;
+        }
+        const content = communicationVariant.content;
+        for (const field of ["subject", "preheader", "hero", "body", "ctaLabel", "ctaUrl", "internalAssetName"] as const) {
+          if (!content[field]?.trim()) errors.push({ key: communication.key, slot: variant.slot, field, message: "Required for active variant" });
+          if (Array.from(content[field]).length > standard.templateConfig.pilotLimits[field]) {
+            errors.push({ key: communication.key, slot: variant.slot, field, message: `Must be at most ${standard.templateConfig.pilotLimits[field]} characters` });
+          }
+        }
+      }
+      for (const field of ["audienceDefinition", "messageAngle", "valueProposition"] as const) {
+        if (!variant[field].trim()) {
+          errors.push({ key: "*", slot: variant.slot, field, message: "Required for active variant" });
+        }
+      }
+    }
+    if (errors.length) {
+      res.status(422).type("application/json").json({ error: "Standard webinar export validation failed", errors });
+      return;
+    }
+    res.type("application/json").json({
+      campaignId: standard.campaignId,
+      sessionId: standard.sessionId,
+      launchAt: standard.launchAt,
+      communications: communications.flatMap((communication) => communication.variants.map((variant) => {
+        const config = activeVariants.find((candidate) => candidate.slot === variant.slot)!;
+        return {
+          key: communication.key,
+          sortOrder: communication.sortOrder,
+          timing: communication.timing,
+          audienceRule: communication.audienceRule,
+          ...(communication.timing.kind === "trigger" ? {} : { scheduled: communication.scheduled }),
+          variant: {
+            ...config,
+            content: variant.content,
+          },
+        };
+      })),
+    });
   } catch (error) {
     reportError(error, res, next);
   }

@@ -17,6 +17,12 @@ const audit = {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 };
 
+export type TaxonomyTermSourceMetadata = {
+  sourceLabel?: string;
+  codeProvenance?: string;
+  [key: string]: unknown;
+};
+
 /**
  * The governance representation of taxonomy_terms deliberately lives in this
  * module rather than campaign.ts.  There must only be one Drizzle declaration
@@ -34,6 +40,7 @@ export const taxonomyTerms = pgTable(
     parentId: uuid("parent_id"),
     supersededBy: uuid("superseded_by"),
     legacyCodes: jsonb("legacy_codes").$type<string[]>().default([]).notNull(),
+    sourceMetadata: jsonb("source_metadata").$type<TaxonomyTermSourceMetadata>().default({}).notNull(),
     isDeprecated: boolean("is_deprecated").default(false).notNull(),
     deprecatedAt: timestamp("deprecated_at", { withTimezone: true }),
     deprecationReason: text("deprecation_reason"),

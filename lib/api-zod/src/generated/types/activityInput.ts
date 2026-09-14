@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Position } from './position';
+import type { WebinarSetup } from './webinarSetup';
 
 export interface ActivityInput {
   name: string;
@@ -18,4 +19,5 @@ export interface ActivityInput {
   /** @minimum 1 */
   rowVersion?: number;
   position: Position;
+  webinarSetup?: WebinarSetup;
 }

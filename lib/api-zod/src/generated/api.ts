@@ -46,7 +46,12 @@ export const CreateCampaignBody = zod.object({
 
 
 
+export const createCampaignResponseTwoMapActivitiesItemWebinarSetupEventTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const createCampaignResponseTwoMapActivitiesItemWebinarSetupDurationMinutesMax = 1440;
 
+
+
+export const createCampaignResponseTwoMapActivitiesItemWebinarSetupSpeakersDefault = [];
 export const createCampaignResponseTwoCommunicationsItemTypeDefault = `Other`;
 export const createCampaignResponseTwoCommunicationsItemTimingDefault = `TBD`;
 export const createCampaignResponseTwoCommunicationsItemSortOrderDefault = 0;
@@ -87,7 +92,20 @@ export const CreateCampaignResponse = zod.object({
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
-})
+}),
+  "webinarSetup": zod.object({
+  "eventDate": zod.coerce.date(),
+  "eventTime": zod.string().regex(createCampaignResponseTwoMapActivitiesItemWebinarSetupEventTimeRegExp),
+  "durationMinutes": zod.number().int().min(1).max(createCampaignResponseTwoMapActivitiesItemWebinarSetupDurationMinutesMax),
+  "timezone": zod.string().describe('IANA timezone'),
+  "platform": zod.string().min(1),
+  "speakers": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "role": zod.string().optional(),
+  "organization": zod.string().optional()
+})).default(createCampaignResponseTwoMapActivitiesItemWebinarSetupSpeakersDefault),
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
+}).optional().describe('Required only when creating or converting a Webinar activity.')
 })),
   "connections": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -154,7 +172,12 @@ export const GetCampaignParams = zod.object({
 
 
 
+export const getCampaignResponseTwoMapActivitiesItemWebinarSetupEventTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const getCampaignResponseTwoMapActivitiesItemWebinarSetupDurationMinutesMax = 1440;
 
+
+
+export const getCampaignResponseTwoMapActivitiesItemWebinarSetupSpeakersDefault = [];
 export const getCampaignResponseTwoCommunicationsItemTypeDefault = `Other`;
 export const getCampaignResponseTwoCommunicationsItemTimingDefault = `TBD`;
 export const getCampaignResponseTwoCommunicationsItemSortOrderDefault = 0;
@@ -195,7 +218,20 @@ export const GetCampaignResponse = zod.object({
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
-})
+}),
+  "webinarSetup": zod.object({
+  "eventDate": zod.coerce.date(),
+  "eventTime": zod.string().regex(getCampaignResponseTwoMapActivitiesItemWebinarSetupEventTimeRegExp),
+  "durationMinutes": zod.number().int().min(1).max(getCampaignResponseTwoMapActivitiesItemWebinarSetupDurationMinutesMax),
+  "timezone": zod.string().describe('IANA timezone'),
+  "platform": zod.string().min(1),
+  "speakers": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "role": zod.string().optional(),
+  "organization": zod.string().optional()
+})).default(getCampaignResponseTwoMapActivitiesItemWebinarSetupSpeakersDefault),
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
+}).optional().describe('Required only when creating or converting a Webinar activity.')
 })),
   "connections": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -272,7 +308,12 @@ export const UpdateCampaignBody = zod.object({
 
 
 
+export const updateCampaignResponseTwoMapActivitiesItemWebinarSetupEventTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateCampaignResponseTwoMapActivitiesItemWebinarSetupDurationMinutesMax = 1440;
 
+
+
+export const updateCampaignResponseTwoMapActivitiesItemWebinarSetupSpeakersDefault = [];
 export const updateCampaignResponseTwoCommunicationsItemTypeDefault = `Other`;
 export const updateCampaignResponseTwoCommunicationsItemTimingDefault = `TBD`;
 export const updateCampaignResponseTwoCommunicationsItemSortOrderDefault = 0;
@@ -313,7 +354,20 @@ export const UpdateCampaignResponse = zod.object({
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
-})
+}),
+  "webinarSetup": zod.object({
+  "eventDate": zod.coerce.date(),
+  "eventTime": zod.string().regex(updateCampaignResponseTwoMapActivitiesItemWebinarSetupEventTimeRegExp),
+  "durationMinutes": zod.number().int().min(1).max(updateCampaignResponseTwoMapActivitiesItemWebinarSetupDurationMinutesMax),
+  "timezone": zod.string().describe('IANA timezone'),
+  "platform": zod.string().min(1),
+  "speakers": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "role": zod.string().optional(),
+  "organization": zod.string().optional()
+})).default(updateCampaignResponseTwoMapActivitiesItemWebinarSetupSpeakersDefault),
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
+}).optional().describe('Required only when creating or converting a Webinar activity.')
 })),
   "connections": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -379,7 +433,12 @@ export const SaveCampaignMapParams = zod.object({
 })
 
 
+export const saveCampaignMapBodyOneActivitiesItemWebinarSetupEventTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const saveCampaignMapBodyOneActivitiesItemWebinarSetupDurationMinutesMax = 1440;
 
+
+
+export const saveCampaignMapBodyOneActivitiesItemWebinarSetupSpeakersDefault = [];
 
 
 
@@ -399,7 +458,20 @@ export const SaveCampaignMapBody = zod.object({
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
-})
+}),
+  "webinarSetup": zod.object({
+  "eventDate": zod.coerce.date(),
+  "eventTime": zod.string().regex(saveCampaignMapBodyOneActivitiesItemWebinarSetupEventTimeRegExp),
+  "durationMinutes": zod.number().int().min(1).max(saveCampaignMapBodyOneActivitiesItemWebinarSetupDurationMinutesMax),
+  "timezone": zod.string().describe('IANA timezone'),
+  "platform": zod.string().min(1),
+  "speakers": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "role": zod.string().optional(),
+  "organization": zod.string().optional()
+})).default(saveCampaignMapBodyOneActivitiesItemWebinarSetupSpeakersDefault),
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
+}).optional().describe('Required only when creating or converting a Webinar activity.')
 })),
   "connections": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -419,7 +491,12 @@ export const SaveCampaignMapBody = zod.object({
 }))
 
 
+export const saveCampaignMapResponseActivitiesItemWebinarSetupEventTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const saveCampaignMapResponseActivitiesItemWebinarSetupDurationMinutesMax = 1440;
 
+
+
+export const saveCampaignMapResponseActivitiesItemWebinarSetupSpeakersDefault = [];
 
 
 export const SaveCampaignMapResponse = zod.object({
@@ -438,7 +515,20 @@ export const SaveCampaignMapResponse = zod.object({
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
-})
+}),
+  "webinarSetup": zod.object({
+  "eventDate": zod.coerce.date(),
+  "eventTime": zod.string().regex(saveCampaignMapResponseActivitiesItemWebinarSetupEventTimeRegExp),
+  "durationMinutes": zod.number().int().min(1).max(saveCampaignMapResponseActivitiesItemWebinarSetupDurationMinutesMax),
+  "timezone": zod.string().describe('IANA timezone'),
+  "platform": zod.string().min(1),
+  "speakers": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "role": zod.string().optional(),
+  "organization": zod.string().optional()
+})).default(saveCampaignMapResponseActivitiesItemWebinarSetupSpeakersDefault),
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
+}).optional().describe('Required only when creating or converting a Webinar activity.')
 })),
   "connections": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -461,7 +551,12 @@ export const CreateActivityParams = zod.object({
 })
 
 
+export const createActivityBodyWebinarSetupEventTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const createActivityBodyWebinarSetupDurationMinutesMax = 1440;
 
+
+
+export const createActivityBodyWebinarSetupSpeakersDefault = [];
 
 export const CreateActivityBody = zod.object({
   "name": zod.string(),
@@ -475,11 +570,29 @@ export const CreateActivityBody = zod.object({
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
+}),
+  "webinarSetup": zod.object({
+  "eventDate": zod.coerce.date(),
+  "eventTime": zod.string().regex(createActivityBodyWebinarSetupEventTimeRegExp),
+  "durationMinutes": zod.number().int().min(1).max(createActivityBodyWebinarSetupDurationMinutesMax),
+  "timezone": zod.string().describe('IANA timezone'),
+  "platform": zod.string().min(1),
+  "speakers": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "role": zod.string().optional(),
+  "organization": zod.string().optional()
+})).default(createActivityBodyWebinarSetupSpeakersDefault),
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
+}).optional().describe('Required only when creating or converting a Webinar activity.')
 })
-})
+
+
+export const createActivityResponseWebinarSetupEventTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const createActivityResponseWebinarSetupDurationMinutesMax = 1440;
 
 
 
+export const createActivityResponseWebinarSetupSpeakersDefault = [];
 
 export const CreateActivityResponse = zod.object({
   "id": zod.string().uuid(),
@@ -496,7 +609,20 @@ export const CreateActivityResponse = zod.object({
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
-})
+}),
+  "webinarSetup": zod.object({
+  "eventDate": zod.coerce.date(),
+  "eventTime": zod.string().regex(createActivityResponseWebinarSetupEventTimeRegExp),
+  "durationMinutes": zod.number().int().min(1).max(createActivityResponseWebinarSetupDurationMinutesMax),
+  "timezone": zod.string().describe('IANA timezone'),
+  "platform": zod.string().min(1),
+  "speakers": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "role": zod.string().optional(),
+  "organization": zod.string().optional()
+})).default(createActivityResponseWebinarSetupSpeakersDefault),
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
+}).optional().describe('Required only when creating or converting a Webinar activity.')
 })
 
 
@@ -666,6 +792,14 @@ export const UpdateCommunicationResponse = zod.object({
   "blockingDependencyTaskIds": zod.array(zod.string().uuid()),
   "blockingDependencyIds": zod.array(zod.string().uuid())
 })
+
+
+export const DeleteCommunicationParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "itemId": zod.coerce.string().uuid()
+})
+
+export const DeleteCommunicationResponse = zod.void()
 
 
 export const CreateActivityTaskParams = zod.object({
@@ -1049,6 +1183,7 @@ export const ListWebinarsResponseItem = zod.object({
   "attendedBranch": zod.string().default(listWebinarsResponseRegistrationRuleAttendedBranchDefault),
   "noShowBranch": zod.string().default(listWebinarsResponseRegistrationRuleNoShowBranchDefault)
 }),
+  "recruitmentLaunchAt": zod.coerce.date().nullish().describe('Webinar campaign launch instant'),
   "createdAt": zod.coerce.date().optional(),
   "updatedAt": zod.coerce.date().optional()
 })
@@ -1087,7 +1222,8 @@ export const CreateWebinarBody = zod.object({
   "registeredBranch": zod.string().default(createWebinarBodyRegistrationRuleRegisteredBranchDefault),
   "attendedBranch": zod.string().default(createWebinarBodyRegistrationRuleAttendedBranchDefault),
   "noShowBranch": zod.string().default(createWebinarBodyRegistrationRuleNoShowBranchDefault)
-}).optional()
+}).optional(),
+  "recruitmentLaunchAt": zod.coerce.date()
 })
 
 
@@ -1121,6 +1257,7 @@ export const CreateWebinarResponse = zod.object({
   "attendedBranch": zod.string().default(createWebinarResponseRegistrationRuleAttendedBranchDefault),
   "noShowBranch": zod.string().default(createWebinarResponseRegistrationRuleNoShowBranchDefault)
 }),
+  "recruitmentLaunchAt": zod.coerce.date().nullish().describe('Webinar campaign launch instant'),
   "createdAt": zod.coerce.date().optional(),
   "updatedAt": zod.coerce.date().optional()
 })
@@ -1162,6 +1299,7 @@ export const GetWebinarResponse = zod.object({
   "attendedBranch": zod.string().default(getWebinarResponseRegistrationRuleAttendedBranchDefault),
   "noShowBranch": zod.string().default(getWebinarResponseRegistrationRuleNoShowBranchDefault)
 }),
+  "recruitmentLaunchAt": zod.coerce.date().nullish().describe('Webinar campaign launch instant'),
   "createdAt": zod.coerce.date().optional(),
   "updatedAt": zod.coerce.date().optional()
 })
@@ -1200,7 +1338,8 @@ export const UpdateWebinarBody = zod.object({
   "registeredBranch": zod.string().default(updateWebinarBodyRegistrationRuleRegisteredBranchDefault),
   "attendedBranch": zod.string().default(updateWebinarBodyRegistrationRuleAttendedBranchDefault),
   "noShowBranch": zod.string().default(updateWebinarBodyRegistrationRuleNoShowBranchDefault)
-}).optional()
+}).optional(),
+  "recruitmentLaunchAt": zod.coerce.date().optional()
 }).describe('Partial update; every property is optional.')
 
 
@@ -1234,6 +1373,7 @@ export const UpdateWebinarResponse = zod.object({
   "attendedBranch": zod.string().default(updateWebinarResponseRegistrationRuleAttendedBranchDefault),
   "noShowBranch": zod.string().default(updateWebinarResponseRegistrationRuleNoShowBranchDefault)
 }),
+  "recruitmentLaunchAt": zod.coerce.date().nullish().describe('Webinar campaign launch instant'),
   "createdAt": zod.coerce.date().optional(),
   "updatedAt": zod.coerce.date().optional()
 })
@@ -1384,6 +1524,349 @@ export const EvaluateWebinarPersonResponse = zod.object({
 })
 
 
+export const GetWebinarStandardParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const getWebinarStandardResponseTemplateConfigPilotLimitsSubjectDefault = 50;
+
+export const getWebinarStandardResponseTemplateConfigPilotLimitsPreheaderDefault = 90;
+
+export const getWebinarStandardResponseTemplateConfigPilotLimitsHeroDefault = 60;
+
+export const getWebinarStandardResponseTemplateConfigPilotLimitsBodyDefault = 1200;
+
+export const getWebinarStandardResponseTemplateConfigPilotLimitsCtaLabelDefault = 25;
+
+export const getWebinarStandardResponseTemplateConfigPilotLimitsCtaUrlDefault = 2000;
+
+export const getWebinarStandardResponseTemplateConfigPilotLimitsInternalAssetNameDefault = 120;
+
+export const getWebinarStandardResponseTemplateConfigVariantsItemSlotMax = 4;
+
+export const getWebinarStandardResponseTemplateConfigVariantsMax = 4;
+
+export const getWebinarStandardResponseCommunicationsItemVariantsItemSlotMax = 4;
+
+export const getWebinarStandardResponseCommunicationsMin = 9;
+export const getWebinarStandardResponseCommunicationsMax = 9;
+
+
+
+export const GetWebinarStandardResponse = zod.object({
+  "campaignId": zod.string().uuid(),
+  "sessionId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "launchAt": zod.coerce.date().nullable(),
+  "templateConfig": zod.object({
+  "pilotLimits": zod.object({
+  "subject": zod.number().int().min(1).default(getWebinarStandardResponseTemplateConfigPilotLimitsSubjectDefault),
+  "preheader": zod.number().int().min(1).default(getWebinarStandardResponseTemplateConfigPilotLimitsPreheaderDefault),
+  "hero": zod.number().int().min(1).default(getWebinarStandardResponseTemplateConfigPilotLimitsHeroDefault),
+  "body": zod.number().int().min(1).default(getWebinarStandardResponseTemplateConfigPilotLimitsBodyDefault),
+  "ctaLabel": zod.number().int().min(1).default(getWebinarStandardResponseTemplateConfigPilotLimitsCtaLabelDefault),
+  "ctaUrl": zod.number().int().min(1).default(getWebinarStandardResponseTemplateConfigPilotLimitsCtaUrlDefault),
+  "internalAssetName": zod.number().int().min(1).default(getWebinarStandardResponseTemplateConfigPilotLimitsInternalAssetNameDefault)
+}),
+  "variants": zod.array(zod.object({
+  "slot": zod.number().int().min(1).max(getWebinarStandardResponseTemplateConfigVariantsItemSlotMax),
+  "name": zod.string(),
+  "inUse": zod.boolean(),
+  "audienceDefinition": zod.string(),
+  "messageAngle": zod.string(),
+  "valueProposition": zod.string()
+})).min(1).max(getWebinarStandardResponseTemplateConfigVariantsMax)
+}),
+  "communications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "key": zod.enum(['registration_confirmation', 'recruitment_1', 'recruitment_2', 'recruitment_3', 'final_recruitment', 'registered_reminder', 'final_reminder', 'attendee_followup', 'no_show_followup']),
+  "name": zod.string(),
+  "sortOrder": zod.number().int(),
+  "status": zod.string(),
+  "timing": zod.object({
+  "kind": zod.enum(['trigger', 'calendar', 'elapsed']),
+  "offset": zod.number().int(),
+  "unit": zod.enum(['instant', 'days', 'hours']),
+  "direction": zod.enum(['trigger', 'before', 'after']),
+  "weekendAdjustment": zod.string(),
+  "locked": zod.literal(true)
+}),
+  "scheduled": zod.object({
+  "status": zod.string(),
+  "originalAt": zod.coerce.date().nullable(),
+  "currentAt": zod.coerce.date().nullable(),
+  "effectiveAt": zod.coerce.date().nullable(),
+  "skipReason": zod.string().nullable()
+}),
+  "audienceRule": zod.string(),
+  "originalDate": zod.coerce.date().nullish(),
+  "currentDate": zod.coerce.date().nullish(),
+  "effectiveDate": zod.coerce.date().nullish(),
+  "variants": zod.array(zod.object({
+  "slot": zod.number().int().min(1).max(getWebinarStandardResponseCommunicationsItemVariantsItemSlotMax),
+  "content": zod.object({
+  "subject": zod.string(),
+  "preheader": zod.string(),
+  "hero": zod.string(),
+  "body": zod.string(),
+  "ctaLabel": zod.string(),
+  "ctaUrl": zod.string(),
+  "internalAssetName": zod.string()
+}),
+  "validation": zod.object({
+  "valid": zod.boolean(),
+  "errors": zod.array(zod.object({
+  "field": zod.string(),
+  "message": zod.string()
+}))
+})
+}))
+})).min(getWebinarStandardResponseCommunicationsMin).max(getWebinarStandardResponseCommunicationsMax)
+})
+
+
+export const UpdateWebinarStandardParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const updateWebinarStandardBodyTemplateConfigPilotLimitsSubjectDefault = 50;
+
+export const updateWebinarStandardBodyTemplateConfigPilotLimitsPreheaderDefault = 90;
+
+export const updateWebinarStandardBodyTemplateConfigPilotLimitsHeroDefault = 60;
+
+export const updateWebinarStandardBodyTemplateConfigPilotLimitsBodyDefault = 1200;
+
+export const updateWebinarStandardBodyTemplateConfigPilotLimitsCtaLabelDefault = 25;
+
+export const updateWebinarStandardBodyTemplateConfigPilotLimitsCtaUrlDefault = 2000;
+
+export const updateWebinarStandardBodyTemplateConfigPilotLimitsInternalAssetNameDefault = 120;
+
+export const updateWebinarStandardBodyTemplateConfigVariantsItemSlotMax = 4;
+
+export const updateWebinarStandardBodyTemplateConfigVariantsMax = 4;
+
+export const updateWebinarStandardBodyCommunicationsItemVariantsItemSlotMax = 4;
+
+
+
+export const UpdateWebinarStandardBody = zod.object({
+  "launchAt": zod.coerce.date().optional(),
+  "templateConfig": zod.object({
+  "pilotLimits": zod.object({
+  "subject": zod.number().int().min(1).default(updateWebinarStandardBodyTemplateConfigPilotLimitsSubjectDefault),
+  "preheader": zod.number().int().min(1).default(updateWebinarStandardBodyTemplateConfigPilotLimitsPreheaderDefault),
+  "hero": zod.number().int().min(1).default(updateWebinarStandardBodyTemplateConfigPilotLimitsHeroDefault),
+  "body": zod.number().int().min(1).default(updateWebinarStandardBodyTemplateConfigPilotLimitsBodyDefault),
+  "ctaLabel": zod.number().int().min(1).default(updateWebinarStandardBodyTemplateConfigPilotLimitsCtaLabelDefault),
+  "ctaUrl": zod.number().int().min(1).default(updateWebinarStandardBodyTemplateConfigPilotLimitsCtaUrlDefault),
+  "internalAssetName": zod.number().int().min(1).default(updateWebinarStandardBodyTemplateConfigPilotLimitsInternalAssetNameDefault)
+}).optional(),
+  "variants": zod.array(zod.object({
+  "slot": zod.number().int().min(1).max(updateWebinarStandardBodyTemplateConfigVariantsItemSlotMax),
+  "name": zod.string(),
+  "inUse": zod.boolean(),
+  "audienceDefinition": zod.string(),
+  "messageAngle": zod.string(),
+  "valueProposition": zod.string()
+})).min(1).max(updateWebinarStandardBodyTemplateConfigVariantsMax).optional()
+}).optional(),
+  "communications": zod.array(zod.object({
+  "key": zod.string(),
+  "status": zod.string().optional(),
+  "timing": zod.object({
+
+}).passthrough().optional().describe('Rejected; standard timing is locked'),
+  "variants": zod.array(zod.object({
+  "slot": zod.number().int().min(1).max(updateWebinarStandardBodyCommunicationsItemVariantsItemSlotMax),
+  "content": zod.object({
+  "subject": zod.string().optional(),
+  "preheader": zod.string().optional(),
+  "hero": zod.string().optional(),
+  "body": zod.string().optional(),
+  "ctaLabel": zod.string().optional(),
+  "ctaUrl": zod.string().optional(),
+  "internalAssetName": zod.string().optional()
+})
+})).optional()
+})).optional()
+})
+
+export const updateWebinarStandardResponseTemplateConfigPilotLimitsSubjectDefault = 50;
+
+export const updateWebinarStandardResponseTemplateConfigPilotLimitsPreheaderDefault = 90;
+
+export const updateWebinarStandardResponseTemplateConfigPilotLimitsHeroDefault = 60;
+
+export const updateWebinarStandardResponseTemplateConfigPilotLimitsBodyDefault = 1200;
+
+export const updateWebinarStandardResponseTemplateConfigPilotLimitsCtaLabelDefault = 25;
+
+export const updateWebinarStandardResponseTemplateConfigPilotLimitsCtaUrlDefault = 2000;
+
+export const updateWebinarStandardResponseTemplateConfigPilotLimitsInternalAssetNameDefault = 120;
+
+export const updateWebinarStandardResponseTemplateConfigVariantsItemSlotMax = 4;
+
+export const updateWebinarStandardResponseTemplateConfigVariantsMax = 4;
+
+export const updateWebinarStandardResponseCommunicationsItemVariantsItemSlotMax = 4;
+
+export const updateWebinarStandardResponseCommunicationsMin = 9;
+export const updateWebinarStandardResponseCommunicationsMax = 9;
+
+
+
+export const UpdateWebinarStandardResponse = zod.object({
+  "campaignId": zod.string().uuid(),
+  "sessionId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "launchAt": zod.coerce.date().nullable(),
+  "templateConfig": zod.object({
+  "pilotLimits": zod.object({
+  "subject": zod.number().int().min(1).default(updateWebinarStandardResponseTemplateConfigPilotLimitsSubjectDefault),
+  "preheader": zod.number().int().min(1).default(updateWebinarStandardResponseTemplateConfigPilotLimitsPreheaderDefault),
+  "hero": zod.number().int().min(1).default(updateWebinarStandardResponseTemplateConfigPilotLimitsHeroDefault),
+  "body": zod.number().int().min(1).default(updateWebinarStandardResponseTemplateConfigPilotLimitsBodyDefault),
+  "ctaLabel": zod.number().int().min(1).default(updateWebinarStandardResponseTemplateConfigPilotLimitsCtaLabelDefault),
+  "ctaUrl": zod.number().int().min(1).default(updateWebinarStandardResponseTemplateConfigPilotLimitsCtaUrlDefault),
+  "internalAssetName": zod.number().int().min(1).default(updateWebinarStandardResponseTemplateConfigPilotLimitsInternalAssetNameDefault)
+}),
+  "variants": zod.array(zod.object({
+  "slot": zod.number().int().min(1).max(updateWebinarStandardResponseTemplateConfigVariantsItemSlotMax),
+  "name": zod.string(),
+  "inUse": zod.boolean(),
+  "audienceDefinition": zod.string(),
+  "messageAngle": zod.string(),
+  "valueProposition": zod.string()
+})).min(1).max(updateWebinarStandardResponseTemplateConfigVariantsMax)
+}),
+  "communications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "key": zod.enum(['registration_confirmation', 'recruitment_1', 'recruitment_2', 'recruitment_3', 'final_recruitment', 'registered_reminder', 'final_reminder', 'attendee_followup', 'no_show_followup']),
+  "name": zod.string(),
+  "sortOrder": zod.number().int(),
+  "status": zod.string(),
+  "timing": zod.object({
+  "kind": zod.enum(['trigger', 'calendar', 'elapsed']),
+  "offset": zod.number().int(),
+  "unit": zod.enum(['instant', 'days', 'hours']),
+  "direction": zod.enum(['trigger', 'before', 'after']),
+  "weekendAdjustment": zod.string(),
+  "locked": zod.literal(true)
+}),
+  "scheduled": zod.object({
+  "status": zod.string(),
+  "originalAt": zod.coerce.date().nullable(),
+  "currentAt": zod.coerce.date().nullable(),
+  "effectiveAt": zod.coerce.date().nullable(),
+  "skipReason": zod.string().nullable()
+}),
+  "audienceRule": zod.string(),
+  "originalDate": zod.coerce.date().nullish(),
+  "currentDate": zod.coerce.date().nullish(),
+  "effectiveDate": zod.coerce.date().nullish(),
+  "variants": zod.array(zod.object({
+  "slot": zod.number().int().min(1).max(updateWebinarStandardResponseCommunicationsItemVariantsItemSlotMax),
+  "content": zod.object({
+  "subject": zod.string(),
+  "preheader": zod.string(),
+  "hero": zod.string(),
+  "body": zod.string(),
+  "ctaLabel": zod.string(),
+  "ctaUrl": zod.string(),
+  "internalAssetName": zod.string()
+}),
+  "validation": zod.object({
+  "valid": zod.boolean(),
+  "errors": zod.array(zod.object({
+  "field": zod.string(),
+  "message": zod.string()
+}))
+})
+}))
+})).min(updateWebinarStandardResponseCommunicationsMin).max(updateWebinarStandardResponseCommunicationsMax)
+})
+
+
+export const GetWebinarStandardEligibilityParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const GetWebinarStandardEligibilityResponse = zod.object({
+  "sessionId": zod.string().uuid(),
+  "people": zod.array(zod.object({
+  "personId": zod.string().uuid(),
+  "communicationKey": zod.string(),
+  "eligible": zod.boolean(),
+  "status": zod.string(),
+  "reason": zod.string(),
+  "eligibleAt": zod.coerce.date().nullish(),
+  "registrationRecordedAt": zod.coerce.date().nullish(),
+  "attendanceResult": zod.union([zod.literal('attended'),zod.literal('no_show'),zod.literal(null)]).nullable()
+})),
+  "externalSending": zod.literal(false)
+})
+
+
+export const ExportWebinarStandardParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const exportWebinarStandardResponseCommunicationsItemVariantOneSlotMax = 4;
+
+
+
+export const ExportWebinarStandardResponse = zod.object({
+  "campaignId": zod.string().uuid(),
+  "sessionId": zod.string().uuid(),
+  "launchAt": zod.coerce.date().nullable(),
+  "communications": zod.array(zod.object({
+  "key": zod.string(),
+  "sortOrder": zod.number().int(),
+  "timing": zod.object({
+  "kind": zod.enum(['trigger', 'calendar', 'elapsed']),
+  "offset": zod.number().int(),
+  "unit": zod.enum(['instant', 'days', 'hours']),
+  "direction": zod.enum(['trigger', 'before', 'after']),
+  "weekendAdjustment": zod.string(),
+  "locked": zod.literal(true)
+}),
+  "audienceRule": zod.string(),
+  "scheduled": zod.object({
+  "status": zod.string(),
+  "originalAt": zod.coerce.date().nullable(),
+  "currentAt": zod.coerce.date().nullable(),
+  "effectiveAt": zod.coerce.date().nullable(),
+  "skipReason": zod.string().nullable()
+}).optional(),
+  "variant": zod.object({
+  "slot": zod.number().int().min(1).max(exportWebinarStandardResponseCommunicationsItemVariantOneSlotMax),
+  "name": zod.string(),
+  "inUse": zod.boolean(),
+  "audienceDefinition": zod.string(),
+  "messageAngle": zod.string(),
+  "valueProposition": zod.string()
+}).and(zod.object({
+  "content": zod.object({
+  "subject": zod.string(),
+  "preheader": zod.string(),
+  "hero": zod.string(),
+  "body": zod.string(),
+  "ctaLabel": zod.string(),
+  "ctaUrl": zod.string(),
+  "internalAssetName": zod.string()
+})
+}))
+}))
+})
+
+
 export const GenerateUtmLinkParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
@@ -1520,6 +2003,8 @@ export const ListGovernanceTermsResponse = zod.object({
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
+  "source": zod.string().nullish(),
+  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -1557,6 +2042,8 @@ export const CreateGovernanceTermResponse = zod.object({
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
+  "source": zod.string().nullish(),
+  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -1583,6 +2070,8 @@ export const ResolveGovernanceTermResponse = zod.object({
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
+  "source": zod.string().nullish(),
+  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -1598,6 +2087,8 @@ export const ResolveGovernanceTermResponse = zod.object({
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
+  "source": zod.string().nullish(),
+  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -1627,6 +2118,8 @@ export const ResolveGovernanceTermPostResponse = zod.object({
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
+  "source": zod.string().nullish(),
+  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -1642,6 +2135,8 @@ export const ResolveGovernanceTermPostResponse = zod.object({
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
+  "source": zod.string().nullish(),
+  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -1683,6 +2178,8 @@ export const UpdateGovernanceTermResponse = zod.object({
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
+  "source": zod.string().nullish(),
+  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -1713,6 +2210,8 @@ export const DeprecateGovernanceTermResponse = zod.object({
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
+  "source": zod.string().nullish(),
+  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -1753,6 +2252,8 @@ export const RenameGovernanceTermResponse = zod.object({
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
+  "source": zod.string().nullish(),
+  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),

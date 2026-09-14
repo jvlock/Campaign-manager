@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Position } from './position';
+import type { WebinarSetup } from './webinarSetup';
 
 export interface Activity {
   id: string;
@@ -21,4 +22,5 @@ export interface Activity {
   /** @minimum 1 */
   rowVersion?: number;
   position: Position;
+  webinarSetup?: WebinarSetup;
 }

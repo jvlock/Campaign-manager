@@ -24,10 +24,15 @@ import {
   useSaveCampaignMap,
   useGetGovernance,
   useGetCampaignDelivery,
-  getGetCampaignDeliveryQueryKey
+  getGetCampaignQueryKey,
+  getGetCampaignDeliveryQueryKey,
+  getListWebinarsQueryKey,
 } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
 import ActivityNode from './ActivityNode';
 import ActivityConfigDrawer from './ActivityConfigDrawer';
+import WebinarSetupDialog from './WebinarSetupDialog';
+import type { WebinarSetup } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { Save, CheckCircle2, Loader2, AlertCircle, Plus, LayoutGrid, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -46,6 +51,9 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
   const [edges, setEdges] = useState<Edge[]>([]);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | 'idle'>('saved');
   const [selectedElement, setSelectedElement] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
+  const [webinarSetupDrop, setWebinarSetupDrop] = useState<{ position: any, type: string } | null>(null);
+  const [webinarSetupError, setWebinarSetupError] = useState('');
+  const [webinarSetupSaving, setWebinarSetupSaving] = useState(false);
   
   const { toast } = useToast();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -55,9 +63,14 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
   const latestMap = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
   const saveGeneration = useRef(0);
   const saveBlocked = useRef(false);
+  const saveCompletion = useRef<{
+    onSuccess?: () => void;
+    onError?: (error: unknown) => void;
+  } | null>(null);
   const [conflictFrozen, setConflictFrozen] = useState(false);
   const campaignVersion = useRef<number>((campaign as any).rowVersion ?? 1);
   const { screenToFlowPosition, fitView } = useReactFlow();
+  const queryClient = useQueryClient();
   
   const { data: governance } = useGetGovernance();
   const { mutate: saveMap } = useSaveCampaignMap();
@@ -93,6 +106,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
       saveGeneration.current += 1;
       saveBlocked.current = false;
       latestMap.current = null;
+      saveCompletion.current = null;
       saveQueue.current = Promise.resolve();
       setConflictFrozen(false);
       setSaveStatus('saved');
@@ -114,8 +128,12 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
     }
   }, [delivery]);
 
-  const enqueueSave = useCallback((newNodes: Node[], newEdges: Edge[]) => {
+  const enqueueSave = useCallback((newNodes: Node[], newEdges: Edge[], completion?: {
+    onSuccess?: () => void;
+    onError?: (error: unknown) => void;
+  }) => {
     if (saveBlocked.current) return;
+    if (completion) saveCompletion.current = completion;
     latestMap.current = { nodes: newNodes, edges: newEdges };
     const generation = saveGeneration.current;
     saveQueue.current = saveQueue.current.then(() => new Promise<void>((resolve) => {
@@ -124,7 +142,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
         return;
       }
       const currentMap = latestMap.current ?? { nodes: newNodes, edges: newEdges };
-       const mapData: MapInput = {
+      const mapData: MapInput = {
         rowVersion: campaignVersion.current,
         activities: currentMap.nodes.map(n => {
           const { communications, tasks, ...restData } = n.data as any;
@@ -137,7 +155,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
           id: e.id,
         }))
       };
-       saveMap({ id: campaign.id, data: mapData }, {
+      saveMap({ id: campaign.id, data: mapData }, {
         onSuccess: (saved: any) => {
           if (generation !== saveGeneration.current) {
             resolve();
@@ -161,6 +179,12 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
             };
           }
           setSaveStatus('saved');
+          queryClient.invalidateQueries({ queryKey: getGetCampaignDeliveryQueryKey(campaign.id) });
+          queryClient.invalidateQueries({ queryKey: getGetCampaignQueryKey(campaign.id) });
+          queryClient.invalidateQueries({ queryKey: getListWebinarsQueryKey(campaign.id) });
+          const completed = saveCompletion.current;
+          saveCompletion.current = null;
+          completed?.onSuccess?.();
           resolve();
         },
         onError: (error: any) => {
@@ -169,6 +193,9 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
             return;
           }
           setSaveStatus('error');
+          const completed = saveCompletion.current;
+          saveCompletion.current = null;
+          completed?.onError?.(error);
           const status = error?.response?.status ?? error?.status;
           if (status === 409 || status === 428) {
             // Invalidate every queued snapshot. The local graph remains visible
@@ -191,18 +218,22 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
         }
       });
     }));
-  }, [campaign.id, saveMap, toast]);
+  }, [campaign.id, queryClient, saveMap, toast]);
 
-  const triggerSave = useCallback((newNodes: Node[], newEdges: Edge[]) => {
+  const triggerSave = useCallback((newNodes: Node[], newEdges: Edge[], completion?: {
+    onSuccess?: () => void;
+    onError?: (error: unknown) => void;
+  }) => {
     if (saveBlocked.current) return;
     setSaveStatus('saving');
+    if (completion) saveCompletion.current = completion;
 
     if (saveTimeout.current) {
       clearTimeout(saveTimeout.current);
     }
 
     saveTimeout.current = setTimeout(() => {
-      enqueueSave(newNodes, newEdges);
+      enqueueSave(newNodes, newEdges, completion);
     }, 1000);
   }, [enqueueSave]);
 
@@ -211,6 +242,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
     saveGeneration.current += 1;
     saveBlocked.current = false;
     latestMap.current = null;
+    saveCompletion.current = null;
     saveQueue.current = Promise.resolve();
     setConflictFrozen(false);
     setSaveStatus('saved');
@@ -293,6 +325,11 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
         x: event.clientX,
         y: event.clientY,
       });
+
+      if (type === 'Webinar') {
+        setWebinarSetupDrop({ position, type });
+        return;
+      }
 
        const newNode: Node = {
          id: uuidv4(),
@@ -434,6 +471,57 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
             </div>
           </Panel>
         </ReactFlow>
+
+        <WebinarSetupDialog
+          open={!!webinarSetupDrop}
+          onOpenChange={(open) => {
+            if (!open) {
+              setWebinarSetupDrop(null);
+              setWebinarSetupError('');
+              setWebinarSetupSaving(false);
+            }
+          }}
+          submitting={webinarSetupSaving}
+          error={webinarSetupError}
+          onSubmit={(setup: WebinarSetup) => {
+            if (!webinarSetupDrop) return;
+            setWebinarSetupError('');
+            setWebinarSetupSaving(true);
+            const newNode: Node = {
+              id: uuidv4(),
+              type: 'activity',
+              position: webinarSetupDrop.position,
+              data: {
+                name: `New Webinar`,
+                type: 'Webinar',
+                audience: campaign.audience,
+                region: campaign.region,
+                timing: 'TBD',
+                status: 'Estimated',
+                owner: 'Unassigned',
+                conflict: false,
+                position: webinarSetupDrop.position,
+                webinarSetup: setup
+              } as unknown as Record<string, unknown>,
+            };
+            setNodes((nds) => {
+              const nodeWithMatchingId = { ...newNode, data: { ...newNode.data, id: newNode.id } as unknown as Record<string, unknown> };
+              const next = nds.concat(nodeWithMatchingId);
+              triggerSave(next, edges, {
+                onSuccess: () => {
+                  setWebinarSetupSaving(false);
+                  setWebinarSetupDrop(null);
+                },
+                onError: (error) => {
+                  setNodes((current) => current.filter((node) => node.id !== newNode.id));
+                  setWebinarSetupSaving(false);
+                  setWebinarSetupError(error instanceof Error ? error.message : 'Failed to save webinar setup. Correct the setup and try again.');
+                },
+              });
+              return next;
+            });
+          }}
+        />
 
         {/* Config Drawer */}
         {selectedElement && selectedElement.type === 'node' && selectedNode && (
