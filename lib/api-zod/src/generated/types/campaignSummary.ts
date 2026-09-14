@@ -19,5 +19,7 @@ export interface CampaignSummary {
   readiness: number;
   timing: string;
   owner: string;
+  /** @minimum 1 */
+  rowVersion?: number;
   updatedAt: string;
 }

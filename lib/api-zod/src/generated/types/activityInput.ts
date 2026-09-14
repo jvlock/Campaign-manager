@@ -15,5 +15,7 @@ export interface ActivityInput {
   timing: string;
   status: string;
   owner: string;
+  /** @minimum 1 */
+  rowVersion?: number;
   position: Position;
 }

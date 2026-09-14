@@ -1,12 +1,15 @@
 import { Handle, Position } from '@xyflow/react';
 import { Activity } from '@workspace/api-client-react';
-import { AlertTriangle, Clock, User } from 'lucide-react';
+import { AlertTriangle, Clock, User, Mail, CheckSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export default function ActivityNode({ data }: { data: Activity }) {
+export default function ActivityNode({ data }: { data: Activity & { communications?: any[], tasks?: any[] } }) {
+  const commsCount = data.communications?.length || 0;
+  const openTasks = data.tasks?.filter(t => t.status !== 'Confirmed' && t.status !== 'Not applicable')?.length || 0;
+
   return (
     <div className={cn(
-      "w-64 bg-card rounded-md border-2 shadow-sm transition-all relative",
+      "w-72 bg-card rounded-md border-2 shadow-sm transition-all relative",
       data.conflict ? "border-destructive/80 shadow-destructive/20" : "border-border hover:border-primary/50",
       data.status === 'Decision needed' ? "border-dashed" : "border-solid"
     )}>
@@ -41,6 +44,19 @@ export default function ActivityNode({ data }: { data: Activity }) {
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Clock className="h-3 w-3 shrink-0" />
             <span className="truncate">{data.timing}</span>
+          </div>
+        </div>
+
+        <div className="pt-2 mt-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <Mail className="h-3.5 w-3.5" />
+            <span>{commsCount} {commsCount === 1 ? 'communication' : 'communications'}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <CheckSquare className="h-3.5 w-3.5" />
+            <span className={cn(openTasks > 0 ? "font-medium text-foreground" : "")}>
+              {openTasks} open {openTasks === 1 ? 'task' : 'tasks'}
+            </span>
           </div>
         </div>
       </div>

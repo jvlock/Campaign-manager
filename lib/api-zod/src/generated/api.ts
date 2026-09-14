@@ -13,6 +13,9 @@ export const HealthCheckResponse = zod.object({
 })
 
 
+
+
+
 export const ListCampaignsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "parentId": zod.string().uuid().nullish(),
@@ -25,6 +28,7 @@ export const ListCampaignsResponseItem = zod.object({
   "readiness": zod.number().int(),
   "timing": zod.string(),
   "owner": zod.string(),
+  "rowVersion": zod.number().int().min(1).optional(),
   "updatedAt": zod.string()
 })
 export const ListCampaignsResponse = zod.array(ListCampaignsResponseItem)
@@ -40,6 +44,17 @@ export const CreateCampaignBody = zod.object({
   "outcome": zod.string()
 })
 
+
+
+
+export const createCampaignResponseTwoCommunicationsItemTypeDefault = `Other`;
+export const createCampaignResponseTwoCommunicationsItemTimingDefault = `TBD`;
+export const createCampaignResponseTwoCommunicationsItemSortOrderDefault = 0;
+export const createCampaignResponseTwoCommunicationsItemOwnerDefault = `Campaign team`;
+export const createCampaignResponseTwoTasksItemTimingDefault = `TBD`;
+export const createCampaignResponseTwoTasksItemSortOrderDefault = 0;
+export const createCampaignResponseTwoTasksItemOwnerDefault = `Campaign team`;
+
 export const CreateCampaignResponse = zod.object({
   "id": zod.string().uuid(),
   "parentId": zod.string().uuid().nullish(),
@@ -52,6 +67,7 @@ export const CreateCampaignResponse = zod.object({
   "readiness": zod.number().int(),
   "timing": zod.string(),
   "owner": zod.string(),
+  "rowVersion": zod.number().int().min(1).optional(),
   "updatedAt": zod.string()
 }).and(zod.object({
   "strategy": zod.record(zod.string(), zod.unknown()),
@@ -67,6 +83,7 @@ export const CreateCampaignResponse = zod.object({
   "owner": zod.string(),
   "conflict": zod.boolean(),
   "decisionStatus": zod.string().optional(),
+  "rowVersion": zod.number().int().min(1).optional(),
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
@@ -79,8 +96,12 @@ export const CreateCampaignResponse = zod.object({
   "trigger": zod.string(),
   "timing": zod.string(),
   "exclusions": zod.array(zod.string()),
-  "sentence": zod.string()
-}))
+  "sentence": zod.string(),
+  "parentBranchId": zod.string().uuid().nullish(),
+  "entryCondition": zod.record(zod.string(), zod.unknown()).optional(),
+  "suppressionRule": zod.record(zod.string(), zod.unknown()).optional()
+})),
+  "rowVersion": zod.number().int().min(1).optional()
 }),
   "utmLinks": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -90,13 +111,57 @@ export const CreateCampaignResponse = zod.object({
   "validation": zod.string(),
   "status": zod.string()
 })),
-  "inheritance": zod.record(zod.string(), zod.string())
+  "inheritance": zod.record(zod.string(), zod.string()),
+  "communications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string(),
+  "type": zod.string().default(createCampaignResponseTwoCommunicationsItemTypeDefault),
+  "timing": zod.string().default(createCampaignResponseTwoCommunicationsItemTimingDefault),
+  "sortOrder": zod.number().int().default(createCampaignResponseTwoCommunicationsItemSortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
+  "owner": zod.string().default(createCampaignResponseTwoCommunicationsItemOwnerDefault),
+  "audienceBranchId": zod.string().uuid(),
+  "communicationType": zod.string(),
+  "channel": zod.string(),
+  "approvalStatus": zod.string(),
+  "qaAudienceConfirmed": zod.boolean(),
+  "qaContentApproved": zod.boolean(),
+  "qaLinksVerified": zod.boolean(),
+  "qaTimingVerified": zod.boolean(),
+  "qaOwnerConfirmed": zod.boolean(),
+  "blockingDependencyTaskIds": zod.array(zod.string().uuid()),
+  "blockingDependencyIds": zod.array(zod.string().uuid())
+})),
+  "tasks": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string(),
+  "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
+  "timing": zod.string().default(createCampaignResponseTwoTasksItemTimingDefault),
+  "sortOrder": zod.number().int().default(createCampaignResponseTwoTasksItemSortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
+  "owner": zod.string().default(createCampaignResponseTwoTasksItemOwnerDefault)
+}))
 }))
 
 
 export const GetCampaignParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
+
+
+
+
+export const getCampaignResponseTwoCommunicationsItemTypeDefault = `Other`;
+export const getCampaignResponseTwoCommunicationsItemTimingDefault = `TBD`;
+export const getCampaignResponseTwoCommunicationsItemSortOrderDefault = 0;
+export const getCampaignResponseTwoCommunicationsItemOwnerDefault = `Campaign team`;
+export const getCampaignResponseTwoTasksItemTimingDefault = `TBD`;
+export const getCampaignResponseTwoTasksItemSortOrderDefault = 0;
+export const getCampaignResponseTwoTasksItemOwnerDefault = `Campaign team`;
 
 export const GetCampaignResponse = zod.object({
   "id": zod.string().uuid(),
@@ -110,6 +175,7 @@ export const GetCampaignResponse = zod.object({
   "readiness": zod.number().int(),
   "timing": zod.string(),
   "owner": zod.string(),
+  "rowVersion": zod.number().int().min(1).optional(),
   "updatedAt": zod.string()
 }).and(zod.object({
   "strategy": zod.record(zod.string(), zod.unknown()),
@@ -125,6 +191,7 @@ export const GetCampaignResponse = zod.object({
   "owner": zod.string(),
   "conflict": zod.boolean(),
   "decisionStatus": zod.string().optional(),
+  "rowVersion": zod.number().int().min(1).optional(),
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
@@ -137,8 +204,12 @@ export const GetCampaignResponse = zod.object({
   "trigger": zod.string(),
   "timing": zod.string(),
   "exclusions": zod.array(zod.string()),
-  "sentence": zod.string()
-}))
+  "sentence": zod.string(),
+  "parentBranchId": zod.string().uuid().nullish(),
+  "entryCondition": zod.record(zod.string(), zod.unknown()).optional(),
+  "suppressionRule": zod.record(zod.string(), zod.unknown()).optional()
+})),
+  "rowVersion": zod.number().int().min(1).optional()
 }),
   "utmLinks": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -148,7 +219,40 @@ export const GetCampaignResponse = zod.object({
   "validation": zod.string(),
   "status": zod.string()
 })),
-  "inheritance": zod.record(zod.string(), zod.string())
+  "inheritance": zod.record(zod.string(), zod.string()),
+  "communications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string(),
+  "type": zod.string().default(getCampaignResponseTwoCommunicationsItemTypeDefault),
+  "timing": zod.string().default(getCampaignResponseTwoCommunicationsItemTimingDefault),
+  "sortOrder": zod.number().int().default(getCampaignResponseTwoCommunicationsItemSortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
+  "owner": zod.string().default(getCampaignResponseTwoCommunicationsItemOwnerDefault),
+  "audienceBranchId": zod.string().uuid(),
+  "communicationType": zod.string(),
+  "channel": zod.string(),
+  "approvalStatus": zod.string(),
+  "qaAudienceConfirmed": zod.boolean(),
+  "qaContentApproved": zod.boolean(),
+  "qaLinksVerified": zod.boolean(),
+  "qaTimingVerified": zod.boolean(),
+  "qaOwnerConfirmed": zod.boolean(),
+  "blockingDependencyTaskIds": zod.array(zod.string().uuid()),
+  "blockingDependencyIds": zod.array(zod.string().uuid())
+})),
+  "tasks": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string(),
+  "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
+  "timing": zod.string().default(getCampaignResponseTwoTasksItemTimingDefault),
+  "sortOrder": zod.number().int().default(getCampaignResponseTwoTasksItemSortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
+  "owner": zod.string().default(getCampaignResponseTwoTasksItemOwnerDefault)
+}))
 }))
 
 
@@ -156,11 +260,26 @@ export const UpdateCampaignParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+
+
+
 export const UpdateCampaignBody = zod.object({
   "name": zod.string().optional(),
   "lifecycle": zod.string().optional(),
-  "strategy": zod.record(zod.string(), zod.unknown()).optional()
+  "strategy": zod.record(zod.string(), zod.unknown()).optional(),
+  "rowVersion": zod.number().int().min(1)
 })
+
+
+
+
+export const updateCampaignResponseTwoCommunicationsItemTypeDefault = `Other`;
+export const updateCampaignResponseTwoCommunicationsItemTimingDefault = `TBD`;
+export const updateCampaignResponseTwoCommunicationsItemSortOrderDefault = 0;
+export const updateCampaignResponseTwoCommunicationsItemOwnerDefault = `Campaign team`;
+export const updateCampaignResponseTwoTasksItemTimingDefault = `TBD`;
+export const updateCampaignResponseTwoTasksItemSortOrderDefault = 0;
+export const updateCampaignResponseTwoTasksItemOwnerDefault = `Campaign team`;
 
 export const UpdateCampaignResponse = zod.object({
   "id": zod.string().uuid(),
@@ -174,6 +293,7 @@ export const UpdateCampaignResponse = zod.object({
   "readiness": zod.number().int(),
   "timing": zod.string(),
   "owner": zod.string(),
+  "rowVersion": zod.number().int().min(1).optional(),
   "updatedAt": zod.string()
 }).and(zod.object({
   "strategy": zod.record(zod.string(), zod.unknown()),
@@ -189,6 +309,7 @@ export const UpdateCampaignResponse = zod.object({
   "owner": zod.string(),
   "conflict": zod.boolean(),
   "decisionStatus": zod.string().optional(),
+  "rowVersion": zod.number().int().min(1).optional(),
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
@@ -201,8 +322,12 @@ export const UpdateCampaignResponse = zod.object({
   "trigger": zod.string(),
   "timing": zod.string(),
   "exclusions": zod.array(zod.string()),
-  "sentence": zod.string()
-}))
+  "sentence": zod.string(),
+  "parentBranchId": zod.string().uuid().nullish(),
+  "entryCondition": zod.record(zod.string(), zod.unknown()).optional(),
+  "suppressionRule": zod.record(zod.string(), zod.unknown()).optional()
+})),
+  "rowVersion": zod.number().int().min(1).optional()
 }),
   "utmLinks": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -212,13 +337,51 @@ export const UpdateCampaignResponse = zod.object({
   "validation": zod.string(),
   "status": zod.string()
 })),
-  "inheritance": zod.record(zod.string(), zod.string())
+  "inheritance": zod.record(zod.string(), zod.string()),
+  "communications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string(),
+  "type": zod.string().default(updateCampaignResponseTwoCommunicationsItemTypeDefault),
+  "timing": zod.string().default(updateCampaignResponseTwoCommunicationsItemTimingDefault),
+  "sortOrder": zod.number().int().default(updateCampaignResponseTwoCommunicationsItemSortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
+  "owner": zod.string().default(updateCampaignResponseTwoCommunicationsItemOwnerDefault),
+  "audienceBranchId": zod.string().uuid(),
+  "communicationType": zod.string(),
+  "channel": zod.string(),
+  "approvalStatus": zod.string(),
+  "qaAudienceConfirmed": zod.boolean(),
+  "qaContentApproved": zod.boolean(),
+  "qaLinksVerified": zod.boolean(),
+  "qaTimingVerified": zod.boolean(),
+  "qaOwnerConfirmed": zod.boolean(),
+  "blockingDependencyTaskIds": zod.array(zod.string().uuid()),
+  "blockingDependencyIds": zod.array(zod.string().uuid())
+})),
+  "tasks": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string(),
+  "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
+  "timing": zod.string().default(updateCampaignResponseTwoTasksItemTimingDefault),
+  "sortOrder": zod.number().int().default(updateCampaignResponseTwoTasksItemSortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
+  "owner": zod.string().default(updateCampaignResponseTwoTasksItemOwnerDefault)
+}))
 }))
 
 
 export const SaveCampaignMapParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
+
+
+
+
+
 
 export const SaveCampaignMapBody = zod.object({
   "activities": zod.array(zod.object({
@@ -232,6 +395,7 @@ export const SaveCampaignMapBody = zod.object({
   "owner": zod.string(),
   "conflict": zod.boolean(),
   "decisionStatus": zod.string().optional(),
+  "rowVersion": zod.number().int().min(1).optional(),
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
@@ -244,9 +408,19 @@ export const SaveCampaignMapBody = zod.object({
   "trigger": zod.string(),
   "timing": zod.string(),
   "exclusions": zod.array(zod.string()),
-  "sentence": zod.string()
+  "sentence": zod.string(),
+  "parentBranchId": zod.string().uuid().nullish(),
+  "entryCondition": zod.record(zod.string(), zod.unknown()).optional(),
+  "suppressionRule": zod.record(zod.string(), zod.unknown()).optional()
+})),
+  "rowVersion": zod.number().int().min(1)
+}).and(zod.object({
+  "rowVersion": zod.number().int().min(1)
 }))
-})
+
+
+
+
 
 export const SaveCampaignMapResponse = zod.object({
   "activities": zod.array(zod.object({
@@ -260,6 +434,7 @@ export const SaveCampaignMapResponse = zod.object({
   "owner": zod.string(),
   "conflict": zod.boolean(),
   "decisionStatus": zod.string().optional(),
+  "rowVersion": zod.number().int().min(1).optional(),
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
@@ -272,14 +447,21 @@ export const SaveCampaignMapResponse = zod.object({
   "trigger": zod.string(),
   "timing": zod.string(),
   "exclusions": zod.array(zod.string()),
-  "sentence": zod.string()
-}))
+  "sentence": zod.string(),
+  "parentBranchId": zod.string().uuid().nullish(),
+  "entryCondition": zod.record(zod.string(), zod.unknown()).optional(),
+  "suppressionRule": zod.record(zod.string(), zod.unknown()).optional()
+})),
+  "rowVersion": zod.number().int().min(1).optional()
 })
 
 
 export const CreateActivityParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
+
+
+
 
 export const CreateActivityBody = zod.object({
   "name": zod.string(),
@@ -289,11 +471,15 @@ export const CreateActivityBody = zod.object({
   "timing": zod.string(),
   "status": zod.string(),
   "owner": zod.string(),
+  "rowVersion": zod.number().int().min(1).optional(),
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
 })
 })
+
+
+
 
 export const CreateActivityResponse = zod.object({
   "id": zod.string().uuid(),
@@ -306,10 +492,895 @@ export const CreateActivityResponse = zod.object({
   "owner": zod.string(),
   "conflict": zod.boolean(),
   "decisionStatus": zod.string().optional(),
+  "rowVersion": zod.number().int().min(1).optional(),
   "position": zod.object({
   "x": zod.number(),
   "y": zod.number()
 })
+})
+
+
+export const GetCampaignDeliveryParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const getCampaignDeliveryResponseCommunicationsItemTypeDefault = `Other`;
+export const getCampaignDeliveryResponseCommunicationsItemTimingDefault = `TBD`;
+export const getCampaignDeliveryResponseCommunicationsItemSortOrderDefault = 0;
+export const getCampaignDeliveryResponseCommunicationsItemOwnerDefault = `Campaign team`;
+export const getCampaignDeliveryResponseTasksItemTimingDefault = `TBD`;
+export const getCampaignDeliveryResponseTasksItemSortOrderDefault = 0;
+export const getCampaignDeliveryResponseTasksItemOwnerDefault = `Campaign team`;
+
+export const GetCampaignDeliveryResponse = zod.object({
+  "communications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string(),
+  "type": zod.string().default(getCampaignDeliveryResponseCommunicationsItemTypeDefault),
+  "timing": zod.string().default(getCampaignDeliveryResponseCommunicationsItemTimingDefault),
+  "sortOrder": zod.number().int().default(getCampaignDeliveryResponseCommunicationsItemSortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
+  "owner": zod.string().default(getCampaignDeliveryResponseCommunicationsItemOwnerDefault),
+  "audienceBranchId": zod.string().uuid(),
+  "communicationType": zod.string(),
+  "channel": zod.string(),
+  "approvalStatus": zod.string(),
+  "qaAudienceConfirmed": zod.boolean(),
+  "qaContentApproved": zod.boolean(),
+  "qaLinksVerified": zod.boolean(),
+  "qaTimingVerified": zod.boolean(),
+  "qaOwnerConfirmed": zod.boolean(),
+  "blockingDependencyTaskIds": zod.array(zod.string().uuid()),
+  "blockingDependencyIds": zod.array(zod.string().uuid())
+})),
+  "tasks": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string(),
+  "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
+  "timing": zod.string().default(getCampaignDeliveryResponseTasksItemTimingDefault),
+  "sortOrder": zod.number().int().default(getCampaignDeliveryResponseTasksItemSortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
+  "owner": zod.string().default(getCampaignDeliveryResponseTasksItemOwnerDefault)
+}))
+})
+
+
+export const CreateCommunicationParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+export const createCommunicationBodyTypeDefault = `Other`;
+export const createCommunicationBodyTimingDefault = `TBD`;
+export const createCommunicationBodySortOrderDefault = 0;
+export const createCommunicationBodyStatusDefault = `Estimated`;
+export const createCommunicationBodyOwnerDefault = `Campaign team`;
+
+export const CreateCommunicationBody = zod.object({
+  "activityId": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "type": zod.string().default(createCommunicationBodyTypeDefault),
+  "timing": zod.string().default(createCommunicationBodyTimingDefault),
+  "sortOrder": zod.number().int().default(createCommunicationBodySortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']).default(createCommunicationBodyStatusDefault),
+  "owner": zod.string().default(createCommunicationBodyOwnerDefault),
+  "audienceBranchId": zod.string().uuid().optional(),
+  "communicationType": zod.string().optional(),
+  "channel": zod.string().optional(),
+  "approvalStatus": zod.string().optional(),
+  "qaAudienceConfirmed": zod.boolean().optional(),
+  "qaContentApproved": zod.boolean().optional(),
+  "qaLinksVerified": zod.boolean().optional(),
+  "qaTimingVerified": zod.boolean().optional(),
+  "qaOwnerConfirmed": zod.boolean().optional(),
+  "blockingDependencyTaskIds": zod.array(zod.string().uuid()).optional(),
+  "blockingDependencyIds": zod.array(zod.string().uuid()).optional()
+})
+
+export const createCommunicationResponseTypeDefault = `Other`;
+export const createCommunicationResponseTimingDefault = `TBD`;
+export const createCommunicationResponseSortOrderDefault = 0;
+export const createCommunicationResponseOwnerDefault = `Campaign team`;
+
+export const CreateCommunicationResponse = zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string(),
+  "type": zod.string().default(createCommunicationResponseTypeDefault),
+  "timing": zod.string().default(createCommunicationResponseTimingDefault),
+  "sortOrder": zod.number().int().default(createCommunicationResponseSortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
+  "owner": zod.string().default(createCommunicationResponseOwnerDefault),
+  "audienceBranchId": zod.string().uuid(),
+  "communicationType": zod.string(),
+  "channel": zod.string(),
+  "approvalStatus": zod.string(),
+  "qaAudienceConfirmed": zod.boolean(),
+  "qaContentApproved": zod.boolean(),
+  "qaLinksVerified": zod.boolean(),
+  "qaTimingVerified": zod.boolean(),
+  "qaOwnerConfirmed": zod.boolean(),
+  "blockingDependencyTaskIds": zod.array(zod.string().uuid()),
+  "blockingDependencyIds": zod.array(zod.string().uuid())
+})
+
+
+export const UpdateCommunicationParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "itemId": zod.coerce.string().uuid()
+})
+
+
+
+
+export const UpdateCommunicationBody = zod.object({
+  "activityId": zod.string().uuid().optional(),
+  "name": zod.string().min(1).optional(),
+  "type": zod.string().optional(),
+  "timing": zod.string().optional(),
+  "sortOrder": zod.number().int().optional(),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']).optional(),
+  "owner": zod.string().optional(),
+  "audienceBranchId": zod.string().uuid().optional(),
+  "communicationType": zod.string().optional(),
+  "channel": zod.string().optional(),
+  "approvalStatus": zod.string().optional(),
+  "qaAudienceConfirmed": zod.boolean().optional(),
+  "qaContentApproved": zod.boolean().optional(),
+  "qaLinksVerified": zod.boolean().optional(),
+  "qaTimingVerified": zod.boolean().optional(),
+  "qaOwnerConfirmed": zod.boolean().optional(),
+  "blockingDependencyTaskIds": zod.array(zod.string().uuid()).optional(),
+  "blockingDependencyIds": zod.array(zod.string().uuid()).optional()
+})
+
+export const updateCommunicationResponseTypeDefault = `Other`;
+export const updateCommunicationResponseTimingDefault = `TBD`;
+export const updateCommunicationResponseSortOrderDefault = 0;
+export const updateCommunicationResponseOwnerDefault = `Campaign team`;
+
+export const UpdateCommunicationResponse = zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string(),
+  "type": zod.string().default(updateCommunicationResponseTypeDefault),
+  "timing": zod.string().default(updateCommunicationResponseTimingDefault),
+  "sortOrder": zod.number().int().default(updateCommunicationResponseSortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
+  "owner": zod.string().default(updateCommunicationResponseOwnerDefault),
+  "audienceBranchId": zod.string().uuid(),
+  "communicationType": zod.string(),
+  "channel": zod.string(),
+  "approvalStatus": zod.string(),
+  "qaAudienceConfirmed": zod.boolean(),
+  "qaContentApproved": zod.boolean(),
+  "qaLinksVerified": zod.boolean(),
+  "qaTimingVerified": zod.boolean(),
+  "qaOwnerConfirmed": zod.boolean(),
+  "blockingDependencyTaskIds": zod.array(zod.string().uuid()),
+  "blockingDependencyIds": zod.array(zod.string().uuid())
+})
+
+
+export const CreateActivityTaskParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+export const createActivityTaskBodyTypeDefault = `Other`;
+export const createActivityTaskBodyTimingDefault = `TBD`;
+export const createActivityTaskBodySortOrderDefault = 0;
+export const createActivityTaskBodyStatusDefault = `Estimated`;
+export const createActivityTaskBodyOwnerDefault = `Campaign team`;
+
+export const CreateActivityTaskBody = zod.object({
+  "activityId": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']).default(createActivityTaskBodyTypeDefault),
+  "timing": zod.string().default(createActivityTaskBodyTimingDefault),
+  "sortOrder": zod.number().int().default(createActivityTaskBodySortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']).default(createActivityTaskBodyStatusDefault),
+  "owner": zod.string().default(createActivityTaskBodyOwnerDefault)
+})
+
+export const createActivityTaskResponseTimingDefault = `TBD`;
+export const createActivityTaskResponseSortOrderDefault = 0;
+export const createActivityTaskResponseOwnerDefault = `Campaign team`;
+
+export const CreateActivityTaskResponse = zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string(),
+  "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
+  "timing": zod.string().default(createActivityTaskResponseTimingDefault),
+  "sortOrder": zod.number().int().default(createActivityTaskResponseSortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
+  "owner": zod.string().default(createActivityTaskResponseOwnerDefault)
+})
+
+
+export const UpdateActivityTaskParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "itemId": zod.coerce.string().uuid()
+})
+
+
+
+
+export const UpdateActivityTaskBody = zod.object({
+  "activityId": zod.string().uuid().optional(),
+  "name": zod.string().min(1).optional(),
+  "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']).optional(),
+  "timing": zod.string().optional(),
+  "sortOrder": zod.number().int().optional(),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']).optional(),
+  "owner": zod.string().optional()
+})
+
+export const updateActivityTaskResponseTimingDefault = `TBD`;
+export const updateActivityTaskResponseSortOrderDefault = 0;
+export const updateActivityTaskResponseOwnerDefault = `Campaign team`;
+
+export const UpdateActivityTaskResponse = zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string(),
+  "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
+  "timing": zod.string().default(updateActivityTaskResponseTimingDefault),
+  "sortOrder": zod.number().int().default(updateActivityTaskResponseSortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
+  "owner": zod.string().default(updateActivityTaskResponseOwnerDefault)
+})
+
+
+export const ListScheduleRulesParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const listScheduleRulesResponseOneOffsetDaysDefault = 0;
+export const listScheduleRulesResponseOneOffsetDaysMin = 0;
+
+export const listScheduleRulesResponseOneOffsetMinutesDefault = 0;
+export const listScheduleRulesResponseOneOffsetMinutesMin = 0;
+
+export const listScheduleRulesResponseOneDirectionDefault = `after`;
+export const listScheduleRulesResponseOneBusinessDayStrategyDefault = `calendar`;
+export const listScheduleRulesResponseOneAudienceLocalTimezoneDefault = false;
+export const listScheduleRulesResponseOneTargetSendTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const listScheduleRulesResponseOneEnabledDefault = true;
+
+export const ListScheduleRulesResponseItem = zod.object({
+  "activityId": zod.string().uuid().nullish(),
+  "communicationId": zod.string().uuid().nullish(),
+  "anchorActivityId": zod.string().uuid().nullish(),
+  "offsetDays": zod.number().int().min(listScheduleRulesResponseOneOffsetDaysMin).default(listScheduleRulesResponseOneOffsetDaysDefault),
+  "offsetMinutes": zod.number().int().min(listScheduleRulesResponseOneOffsetMinutesMin).default(listScheduleRulesResponseOneOffsetMinutesDefault),
+  "direction": zod.enum(['before', 'after']).default(listScheduleRulesResponseOneDirectionDefault),
+  "businessDayStrategy": zod.enum(['calendar', 'skip_weekends', 'next_business_day', 'previous_business_day']).default(listScheduleRulesResponseOneBusinessDayStrategyDefault),
+  "audienceLocalTimezone": zod.boolean().default(listScheduleRulesResponseOneAudienceLocalTimezoneDefault),
+  "timezone": zod.string().describe('IANA timezone'),
+  "targetSendTime": zod.string().regex(listScheduleRulesResponseOneTargetSendTimeRegExp).nullish(),
+  "enabled": zod.boolean().default(listScheduleRulesResponseOneEnabledDefault)
+}).and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "rowVersion": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+export const ListScheduleRulesResponse = zod.array(ListScheduleRulesResponseItem)
+
+
+export const CreateScheduleRuleParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const createScheduleRuleBodyOffsetDaysDefault = 0;
+export const createScheduleRuleBodyOffsetDaysMin = 0;
+
+export const createScheduleRuleBodyOffsetMinutesDefault = 0;
+export const createScheduleRuleBodyOffsetMinutesMin = 0;
+
+export const createScheduleRuleBodyDirectionDefault = `after`;
+export const createScheduleRuleBodyBusinessDayStrategyDefault = `calendar`;
+export const createScheduleRuleBodyAudienceLocalTimezoneDefault = false;
+export const createScheduleRuleBodyTargetSendTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const createScheduleRuleBodyEnabledDefault = true;
+
+export const CreateScheduleRuleBody = zod.object({
+  "activityId": zod.string().uuid().nullish(),
+  "communicationId": zod.string().uuid().nullish(),
+  "anchorActivityId": zod.string().uuid().nullish(),
+  "offsetDays": zod.number().int().min(createScheduleRuleBodyOffsetDaysMin).default(createScheduleRuleBodyOffsetDaysDefault),
+  "offsetMinutes": zod.number().int().min(createScheduleRuleBodyOffsetMinutesMin).default(createScheduleRuleBodyOffsetMinutesDefault),
+  "direction": zod.enum(['before', 'after']).default(createScheduleRuleBodyDirectionDefault),
+  "businessDayStrategy": zod.enum(['calendar', 'skip_weekends', 'next_business_day', 'previous_business_day']).default(createScheduleRuleBodyBusinessDayStrategyDefault),
+  "audienceLocalTimezone": zod.boolean().default(createScheduleRuleBodyAudienceLocalTimezoneDefault),
+  "timezone": zod.string().describe('IANA timezone'),
+  "targetSendTime": zod.string().regex(createScheduleRuleBodyTargetSendTimeRegExp).nullish(),
+  "enabled": zod.boolean().default(createScheduleRuleBodyEnabledDefault)
+})
+
+export const createScheduleRuleResponseRuleOneOffsetDaysDefault = 0;
+export const createScheduleRuleResponseRuleOneOffsetDaysMin = 0;
+
+export const createScheduleRuleResponseRuleOneOffsetMinutesDefault = 0;
+export const createScheduleRuleResponseRuleOneOffsetMinutesMin = 0;
+
+export const createScheduleRuleResponseRuleOneDirectionDefault = `after`;
+export const createScheduleRuleResponseRuleOneBusinessDayStrategyDefault = `calendar`;
+export const createScheduleRuleResponseRuleOneAudienceLocalTimezoneDefault = false;
+export const createScheduleRuleResponseRuleOneTargetSendTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const createScheduleRuleResponseRuleOneEnabledDefault = true;
+
+export const CreateScheduleRuleResponse = zod.object({
+  "rule": zod.object({
+  "activityId": zod.string().uuid().nullish(),
+  "communicationId": zod.string().uuid().nullish(),
+  "anchorActivityId": zod.string().uuid().nullish(),
+  "offsetDays": zod.number().int().min(createScheduleRuleResponseRuleOneOffsetDaysMin).default(createScheduleRuleResponseRuleOneOffsetDaysDefault),
+  "offsetMinutes": zod.number().int().min(createScheduleRuleResponseRuleOneOffsetMinutesMin).default(createScheduleRuleResponseRuleOneOffsetMinutesDefault),
+  "direction": zod.enum(['before', 'after']).default(createScheduleRuleResponseRuleOneDirectionDefault),
+  "businessDayStrategy": zod.enum(['calendar', 'skip_weekends', 'next_business_day', 'previous_business_day']).default(createScheduleRuleResponseRuleOneBusinessDayStrategyDefault),
+  "audienceLocalTimezone": zod.boolean().default(createScheduleRuleResponseRuleOneAudienceLocalTimezoneDefault),
+  "timezone": zod.string().describe('IANA timezone'),
+  "targetSendTime": zod.string().regex(createScheduleRuleResponseRuleOneTargetSendTimeRegExp).nullish(),
+  "enabled": zod.boolean().default(createScheduleRuleResponseRuleOneEnabledDefault)
+}).and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "rowVersion": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "instance": zod.union([zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "ruleId": zod.string().uuid(),
+  "activityId": zod.string().uuid().nullish(),
+  "communicationId": zod.string().uuid().nullish(),
+  "originalCalculatedAt": zod.coerce.date(),
+  "calculatedAt": zod.coerce.date(),
+  "adjustedAt": zod.coerce.date().nullish(),
+  "adjustmentReason": zod.string().nullish(),
+  "timezone": zod.string(),
+  "status": zod.string(),
+  "rowVersion": zod.number().int()
+}),zod.null()]).optional()
+})
+
+
+export const UpdateScheduleRuleParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "ruleId": zod.coerce.string().uuid()
+})
+
+export const updateScheduleRuleBodyOneOffsetDaysDefault = 0;
+export const updateScheduleRuleBodyOneOffsetDaysMin = 0;
+
+export const updateScheduleRuleBodyOneOffsetMinutesDefault = 0;
+export const updateScheduleRuleBodyOneOffsetMinutesMin = 0;
+
+export const updateScheduleRuleBodyOneDirectionDefault = `after`;
+export const updateScheduleRuleBodyOneBusinessDayStrategyDefault = `calendar`;
+export const updateScheduleRuleBodyOneAudienceLocalTimezoneDefault = false;
+export const updateScheduleRuleBodyOneTargetSendTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateScheduleRuleBodyOneEnabledDefault = true;
+
+
+export const UpdateScheduleRuleBody = zod.object({
+  "activityId": zod.string().uuid().nullish(),
+  "communicationId": zod.string().uuid().nullish(),
+  "anchorActivityId": zod.string().uuid().nullish(),
+  "offsetDays": zod.number().int().min(updateScheduleRuleBodyOneOffsetDaysMin).default(updateScheduleRuleBodyOneOffsetDaysDefault),
+  "offsetMinutes": zod.number().int().min(updateScheduleRuleBodyOneOffsetMinutesMin).default(updateScheduleRuleBodyOneOffsetMinutesDefault),
+  "direction": zod.enum(['before', 'after']).default(updateScheduleRuleBodyOneDirectionDefault),
+  "businessDayStrategy": zod.enum(['calendar', 'skip_weekends', 'next_business_day', 'previous_business_day']).default(updateScheduleRuleBodyOneBusinessDayStrategyDefault),
+  "audienceLocalTimezone": zod.boolean().default(updateScheduleRuleBodyOneAudienceLocalTimezoneDefault),
+  "timezone": zod.string().describe('IANA timezone'),
+  "targetSendTime": zod.string().regex(updateScheduleRuleBodyOneTargetSendTimeRegExp).nullish(),
+  "enabled": zod.boolean().default(updateScheduleRuleBodyOneEnabledDefault)
+}).and(zod.object({
+  "rowVersion": zod.number().int().min(1).optional()
+}))
+
+export const updateScheduleRuleResponseOneOffsetDaysDefault = 0;
+export const updateScheduleRuleResponseOneOffsetDaysMin = 0;
+
+export const updateScheduleRuleResponseOneOffsetMinutesDefault = 0;
+export const updateScheduleRuleResponseOneOffsetMinutesMin = 0;
+
+export const updateScheduleRuleResponseOneDirectionDefault = `after`;
+export const updateScheduleRuleResponseOneBusinessDayStrategyDefault = `calendar`;
+export const updateScheduleRuleResponseOneAudienceLocalTimezoneDefault = false;
+export const updateScheduleRuleResponseOneTargetSendTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateScheduleRuleResponseOneEnabledDefault = true;
+
+export const UpdateScheduleRuleResponse = zod.object({
+  "activityId": zod.string().uuid().nullish(),
+  "communicationId": zod.string().uuid().nullish(),
+  "anchorActivityId": zod.string().uuid().nullish(),
+  "offsetDays": zod.number().int().min(updateScheduleRuleResponseOneOffsetDaysMin).default(updateScheduleRuleResponseOneOffsetDaysDefault),
+  "offsetMinutes": zod.number().int().min(updateScheduleRuleResponseOneOffsetMinutesMin).default(updateScheduleRuleResponseOneOffsetMinutesDefault),
+  "direction": zod.enum(['before', 'after']).default(updateScheduleRuleResponseOneDirectionDefault),
+  "businessDayStrategy": zod.enum(['calendar', 'skip_weekends', 'next_business_day', 'previous_business_day']).default(updateScheduleRuleResponseOneBusinessDayStrategyDefault),
+  "audienceLocalTimezone": zod.boolean().default(updateScheduleRuleResponseOneAudienceLocalTimezoneDefault),
+  "timezone": zod.string().describe('IANA timezone'),
+  "targetSendTime": zod.string().regex(updateScheduleRuleResponseOneTargetSendTimeRegExp).nullish(),
+  "enabled": zod.boolean().default(updateScheduleRuleResponseOneEnabledDefault)
+}).and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "rowVersion": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+export const DeleteScheduleRuleParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "ruleId": zod.coerce.string().uuid()
+})
+
+export const DeleteScheduleRuleResponse = zod.void()
+
+
+export const ListScheduledInstancesParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ListScheduledInstancesResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "ruleId": zod.string().uuid(),
+  "activityId": zod.string().uuid().nullish(),
+  "communicationId": zod.string().uuid().nullish(),
+  "originalCalculatedAt": zod.coerce.date(),
+  "calculatedAt": zod.coerce.date(),
+  "adjustedAt": zod.coerce.date().nullish(),
+  "adjustmentReason": zod.string().nullish(),
+  "timezone": zod.string(),
+  "status": zod.string(),
+  "rowVersion": zod.number().int()
+})
+export const ListScheduledInstancesResponse = zod.array(ListScheduledInstancesResponseItem)
+
+
+export const RecomputeScheduleParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const RecomputeScheduleBody = zod.object({
+  "ruleId": zod.string().uuid().optional(),
+  "activityId": zod.string().uuid().optional(),
+  "anchorAt": zod.coerce.date(),
+  "timezone": zod.string().describe('IANA timezone'),
+  "reason": zod.string().optional()
+})
+
+export const RecomputeScheduleResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "ruleId": zod.string().uuid(),
+  "activityId": zod.string().uuid().nullish(),
+  "communicationId": zod.string().uuid().nullish(),
+  "originalCalculatedAt": zod.coerce.date(),
+  "calculatedAt": zod.coerce.date(),
+  "adjustedAt": zod.coerce.date().nullish(),
+  "adjustmentReason": zod.string().nullish(),
+  "timezone": zod.string(),
+  "status": zod.string(),
+  "rowVersion": zod.number().int()
+})
+export const RecomputeScheduleResponse = zod.array(RecomputeScheduleResponseItem)
+
+
+export const AdjustScheduledInstanceParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "instanceId": zod.coerce.string().uuid()
+})
+
+
+
+
+
+export const AdjustScheduledInstanceBody = zod.object({
+  "calculatedAt": zod.coerce.date(),
+  "reason": zod.string().min(1),
+  "rowVersion": zod.number().int().min(1).optional()
+})
+
+export const AdjustScheduledInstanceResponse = zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "ruleId": zod.string().uuid(),
+  "activityId": zod.string().uuid().nullish(),
+  "communicationId": zod.string().uuid().nullish(),
+  "originalCalculatedAt": zod.coerce.date(),
+  "calculatedAt": zod.coerce.date(),
+  "adjustedAt": zod.coerce.date().nullish(),
+  "adjustmentReason": zod.string().nullish(),
+  "timezone": zod.string(),
+  "status": zod.string(),
+  "rowVersion": zod.number().int()
+})
+
+
+export const ListWebinarsParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+export const listWebinarsResponseStartTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const listWebinarsResponseDurationMinutesMax = 1440;
+
+
+export const listWebinarsResponseRegistrationRuleSuppressRecruitmentAfterRegistrationDefault = true;
+export const listWebinarsResponseRegistrationRuleRegisteredBranchDefault = `registered`;
+export const listWebinarsResponseRegistrationRuleAttendedBranchDefault = `attended`;
+export const listWebinarsResponseRegistrationRuleNoShowBranchDefault = `no_show`;
+
+export const ListWebinarsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "sessionDate": zod.coerce.date(),
+  "startTime": zod.string().regex(listWebinarsResponseStartTimeRegExp),
+  "durationMinutes": zod.number().int().min(1).max(listWebinarsResponseDurationMinutesMax),
+  "timezone": zod.string(),
+  "platform": zod.string(),
+  "speakers": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "role": zod.string().optional(),
+  "organization": zod.string().optional()
+})),
+  "registrationRule": zod.object({
+  "suppressRecruitmentAfterRegistration": zod.boolean().default(listWebinarsResponseRegistrationRuleSuppressRecruitmentAfterRegistrationDefault),
+  "registeredBranch": zod.string().default(listWebinarsResponseRegistrationRuleRegisteredBranchDefault),
+  "attendedBranch": zod.string().default(listWebinarsResponseRegistrationRuleAttendedBranchDefault),
+  "noShowBranch": zod.string().default(listWebinarsResponseRegistrationRuleNoShowBranchDefault)
+}),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})
+export const ListWebinarsResponse = zod.array(ListWebinarsResponseItem)
+
+
+export const CreateWebinarParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+export const createWebinarBodyDurationMinutesMax = 1440;
+
+
+export const createWebinarBodySpeakersDefault = [];
+export const createWebinarBodyRegistrationRuleSuppressRecruitmentAfterRegistrationDefault = true;
+export const createWebinarBodyRegistrationRuleRegisteredBranchDefault = `registered`;
+export const createWebinarBodyRegistrationRuleAttendedBranchDefault = `attended`;
+export const createWebinarBodyRegistrationRuleNoShowBranchDefault = `no_show`;
+
+export const CreateWebinarBody = zod.object({
+  "activityId": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "sessionDate": zod.coerce.date(),
+  "startTime": zod.string(),
+  "durationMinutes": zod.number().int().min(1).max(createWebinarBodyDurationMinutesMax),
+  "timezone": zod.string(),
+  "platform": zod.string(),
+  "speakers": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "role": zod.string().optional(),
+  "organization": zod.string().optional()
+})).default(createWebinarBodySpeakersDefault),
+  "registrationRule": zod.object({
+  "suppressRecruitmentAfterRegistration": zod.boolean().default(createWebinarBodyRegistrationRuleSuppressRecruitmentAfterRegistrationDefault),
+  "registeredBranch": zod.string().default(createWebinarBodyRegistrationRuleRegisteredBranchDefault),
+  "attendedBranch": zod.string().default(createWebinarBodyRegistrationRuleAttendedBranchDefault),
+  "noShowBranch": zod.string().default(createWebinarBodyRegistrationRuleNoShowBranchDefault)
+}).optional()
+})
+
+
+export const createWebinarResponseStartTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const createWebinarResponseDurationMinutesMax = 1440;
+
+
+export const createWebinarResponseRegistrationRuleSuppressRecruitmentAfterRegistrationDefault = true;
+export const createWebinarResponseRegistrationRuleRegisteredBranchDefault = `registered`;
+export const createWebinarResponseRegistrationRuleAttendedBranchDefault = `attended`;
+export const createWebinarResponseRegistrationRuleNoShowBranchDefault = `no_show`;
+
+export const CreateWebinarResponse = zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "sessionDate": zod.coerce.date(),
+  "startTime": zod.string().regex(createWebinarResponseStartTimeRegExp),
+  "durationMinutes": zod.number().int().min(1).max(createWebinarResponseDurationMinutesMax),
+  "timezone": zod.string(),
+  "platform": zod.string(),
+  "speakers": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "role": zod.string().optional(),
+  "organization": zod.string().optional()
+})),
+  "registrationRule": zod.object({
+  "suppressRecruitmentAfterRegistration": zod.boolean().default(createWebinarResponseRegistrationRuleSuppressRecruitmentAfterRegistrationDefault),
+  "registeredBranch": zod.string().default(createWebinarResponseRegistrationRuleRegisteredBranchDefault),
+  "attendedBranch": zod.string().default(createWebinarResponseRegistrationRuleAttendedBranchDefault),
+  "noShowBranch": zod.string().default(createWebinarResponseRegistrationRuleNoShowBranchDefault)
+}),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+export const GetWebinarParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+
+export const getWebinarResponseStartTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const getWebinarResponseDurationMinutesMax = 1440;
+
+
+export const getWebinarResponseRegistrationRuleSuppressRecruitmentAfterRegistrationDefault = true;
+export const getWebinarResponseRegistrationRuleRegisteredBranchDefault = `registered`;
+export const getWebinarResponseRegistrationRuleAttendedBranchDefault = `attended`;
+export const getWebinarResponseRegistrationRuleNoShowBranchDefault = `no_show`;
+
+export const GetWebinarResponse = zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "sessionDate": zod.coerce.date(),
+  "startTime": zod.string().regex(getWebinarResponseStartTimeRegExp),
+  "durationMinutes": zod.number().int().min(1).max(getWebinarResponseDurationMinutesMax),
+  "timezone": zod.string(),
+  "platform": zod.string(),
+  "speakers": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "role": zod.string().optional(),
+  "organization": zod.string().optional()
+})),
+  "registrationRule": zod.object({
+  "suppressRecruitmentAfterRegistration": zod.boolean().default(getWebinarResponseRegistrationRuleSuppressRecruitmentAfterRegistrationDefault),
+  "registeredBranch": zod.string().default(getWebinarResponseRegistrationRuleRegisteredBranchDefault),
+  "attendedBranch": zod.string().default(getWebinarResponseRegistrationRuleAttendedBranchDefault),
+  "noShowBranch": zod.string().default(getWebinarResponseRegistrationRuleNoShowBranchDefault)
+}),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+export const UpdateWebinarParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+
+export const updateWebinarBodyStartTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateWebinarBodyDurationMinutesMax = 1440;
+
+
+export const updateWebinarBodyRegistrationRuleSuppressRecruitmentAfterRegistrationDefault = true;
+export const updateWebinarBodyRegistrationRuleRegisteredBranchDefault = `registered`;
+export const updateWebinarBodyRegistrationRuleAttendedBranchDefault = `attended`;
+export const updateWebinarBodyRegistrationRuleNoShowBranchDefault = `no_show`;
+
+export const UpdateWebinarBody = zod.object({
+  "activityId": zod.string().uuid().optional(),
+  "name": zod.string().min(1).optional(),
+  "sessionDate": zod.coerce.date().optional(),
+  "startTime": zod.string().regex(updateWebinarBodyStartTimeRegExp).optional(),
+  "durationMinutes": zod.number().int().min(1).max(updateWebinarBodyDurationMinutesMax).optional(),
+  "timezone": zod.string().optional(),
+  "platform": zod.string().optional(),
+  "speakers": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "role": zod.string().optional(),
+  "organization": zod.string().optional()
+})).optional(),
+  "registrationRule": zod.object({
+  "suppressRecruitmentAfterRegistration": zod.boolean().default(updateWebinarBodyRegistrationRuleSuppressRecruitmentAfterRegistrationDefault),
+  "registeredBranch": zod.string().default(updateWebinarBodyRegistrationRuleRegisteredBranchDefault),
+  "attendedBranch": zod.string().default(updateWebinarBodyRegistrationRuleAttendedBranchDefault),
+  "noShowBranch": zod.string().default(updateWebinarBodyRegistrationRuleNoShowBranchDefault)
+}).optional()
+}).describe('Partial update; every property is optional.')
+
+
+export const updateWebinarResponseStartTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateWebinarResponseDurationMinutesMax = 1440;
+
+
+export const updateWebinarResponseRegistrationRuleSuppressRecruitmentAfterRegistrationDefault = true;
+export const updateWebinarResponseRegistrationRuleRegisteredBranchDefault = `registered`;
+export const updateWebinarResponseRegistrationRuleAttendedBranchDefault = `attended`;
+export const updateWebinarResponseRegistrationRuleNoShowBranchDefault = `no_show`;
+
+export const UpdateWebinarResponse = zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "sessionDate": zod.coerce.date(),
+  "startTime": zod.string().regex(updateWebinarResponseStartTimeRegExp),
+  "durationMinutes": zod.number().int().min(1).max(updateWebinarResponseDurationMinutesMax),
+  "timezone": zod.string(),
+  "platform": zod.string(),
+  "speakers": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "role": zod.string().optional(),
+  "organization": zod.string().optional()
+})),
+  "registrationRule": zod.object({
+  "suppressRecruitmentAfterRegistration": zod.boolean().default(updateWebinarResponseRegistrationRuleSuppressRecruitmentAfterRegistrationDefault),
+  "registeredBranch": zod.string().default(updateWebinarResponseRegistrationRuleRegisteredBranchDefault),
+  "attendedBranch": zod.string().default(updateWebinarResponseRegistrationRuleAttendedBranchDefault),
+  "noShowBranch": zod.string().default(updateWebinarResponseRegistrationRuleNoShowBranchDefault)
+}),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+export const ListWebinarPeopleParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const ListWebinarPeopleResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "audienceBranchId": zod.string().uuid(),
+  "name": zod.string(),
+  "isSynthetic": zod.literal(true)
+})
+export const ListWebinarPeopleResponse = zod.array(ListWebinarPeopleResponseItem)
+
+
+export const CreateWebinarPersonParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+
+export const createWebinarPersonBodyIsSyntheticDefault = true;
+
+export const CreateWebinarPersonBody = zod.object({
+  "name": zod.string().min(1),
+  "audienceBranchId": zod.string().uuid().optional(),
+  "isSynthetic": zod.literal(true).default(createWebinarPersonBodyIsSyntheticDefault)
+})
+
+export const CreateWebinarPersonResponse = zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "audienceBranchId": zod.string().uuid(),
+  "name": zod.string(),
+  "isSynthetic": zod.literal(true)
+})
+
+
+export const RecordWebinarRegistrationParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid(),
+  "personId": zod.coerce.string().uuid()
+})
+
+export const RecordWebinarRegistrationBody = zod.object({
+  "result": zod.enum(['registered', 'not_registered'])
+})
+
+export const RecordWebinarRegistrationResponse = zod.object({
+  "person": zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "audienceBranchId": zod.string().uuid(),
+  "name": zod.string(),
+  "isSynthetic": zod.literal(true)
+}),
+  "sessionId": zod.string().uuid(),
+  "registrationResult": zod.enum(['registered', 'not_registered']),
+  "attendanceResult": zod.union([zod.literal('attended'),zod.literal('no_show'),zod.literal(null)]).nullable(),
+  "branch": zod.enum(['not_registered', 'registered', 'attended', 'no_show']),
+  "recruitmentSuppressed": zod.boolean(),
+  "plannedAction": zod.string(),
+  "externalSending": zod.literal(false)
+})
+
+
+export const RecordWebinarAttendanceParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid(),
+  "personId": zod.coerce.string().uuid()
+})
+
+export const RecordWebinarAttendanceBody = zod.object({
+  "result": zod.enum(['attended', 'no_show'])
+})
+
+export const RecordWebinarAttendanceResponse = zod.object({
+  "person": zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "audienceBranchId": zod.string().uuid(),
+  "name": zod.string(),
+  "isSynthetic": zod.literal(true)
+}),
+  "sessionId": zod.string().uuid(),
+  "registrationResult": zod.enum(['registered', 'not_registered']),
+  "attendanceResult": zod.union([zod.literal('attended'),zod.literal('no_show'),zod.literal(null)]).nullable(),
+  "branch": zod.enum(['not_registered', 'registered', 'attended', 'no_show']),
+  "recruitmentSuppressed": zod.boolean(),
+  "plannedAction": zod.string(),
+  "externalSending": zod.literal(false)
+})
+
+
+export const EvaluateWebinarParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const EvaluateWebinarResponseItem = zod.object({
+  "person": zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "audienceBranchId": zod.string().uuid(),
+  "name": zod.string(),
+  "isSynthetic": zod.literal(true)
+}),
+  "sessionId": zod.string().uuid(),
+  "registrationResult": zod.enum(['registered', 'not_registered']),
+  "attendanceResult": zod.union([zod.literal('attended'),zod.literal('no_show'),zod.literal(null)]).nullable(),
+  "branch": zod.enum(['not_registered', 'registered', 'attended', 'no_show']),
+  "recruitmentSuppressed": zod.boolean(),
+  "plannedAction": zod.string(),
+  "externalSending": zod.literal(false)
+})
+export const EvaluateWebinarResponse = zod.array(EvaluateWebinarResponseItem)
+
+
+export const EvaluateWebinarPersonParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const EvaluateWebinarPersonBody = zod.object({
+  "personId": zod.string().uuid()
+})
+
+export const EvaluateWebinarPersonResponse = zod.object({
+  "person": zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "audienceBranchId": zod.string().uuid(),
+  "name": zod.string(),
+  "isSynthetic": zod.literal(true)
+}),
+  "sessionId": zod.string().uuid(),
+  "registrationResult": zod.enum(['registered', 'not_registered']),
+  "attendanceResult": zod.union([zod.literal('attended'),zod.literal('no_show'),zod.literal(null)]).nullable(),
+  "branch": zod.enum(['not_registered', 'registered', 'attended', 'no_show']),
+  "recruitmentSuppressed": zod.boolean(),
+  "plannedAction": zod.string(),
+  "externalSending": zod.literal(false)
 })
 
 
@@ -344,6 +1415,9 @@ export const ExportCampaignParams = zod.object({
 export const ExportCampaignResponse = zod.string()
 
 
+
+
+
 export const GetPortfolioResponse = zod.object({
   "campaigns": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -357,6 +1431,7 @@ export const GetPortfolioResponse = zod.object({
   "readiness": zod.number().int(),
   "timing": zod.string(),
   "owner": zod.string(),
+  "rowVersion": zod.number().int().min(1).optional(),
   "updatedAt": zod.string()
 })),
   "conflicts": zod.array(zod.object({
@@ -396,6 +1471,459 @@ export const GetGovernanceResponse = zod.object({
   "taxonomyTerms": zod.array(zod.record(zod.string(), zod.string())),
   "namingExamples": zod.array(zod.string())
 })
+
+
+export const listGovernanceAuditQueryLimitMax = 500;
+
+
+
+export const ListGovernanceAuditQueryParams = zod.object({
+  "entityType": zod.coerce.string().optional(),
+  "entityId": zod.coerce.string().uuid().optional(),
+  "limit": zod.coerce.number().int().min(1).max(listGovernanceAuditQueryLimitMax).optional()
+})
+
+export const ListGovernanceAuditResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "entityType": zod.string(),
+  "entityId": zod.string().uuid(),
+  "action": zod.string(),
+  "actor": zod.string(),
+  "reason": zod.string(),
+  "before": zod.object({
+
+}).passthrough().nullish(),
+  "after": zod.object({
+
+}).passthrough().nullish(),
+  "metadata": zod.object({
+
+}).passthrough().optional(),
+  "createdAt": zod.coerce.date()
+})
+export const ListGovernanceAuditResponse = zod.array(ListGovernanceAuditResponseItem)
+
+
+export const ListGovernanceTermsQueryParams = zod.object({
+  "versionId": zod.coerce.string().uuid().optional()
+})
+
+export const ListGovernanceTermsResponse = zod.object({
+  "version": zod.string(),
+  "versionId": zod.string().uuid(),
+  "terms": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "versionId": zod.string().uuid(),
+  "category": zod.string(),
+  "label": zod.string(),
+  "shortcode": zod.string(),
+  "parentId": zod.string().uuid().nullish(),
+  "supersededBy": zod.string().uuid().nullish(),
+  "legacyCodes": zod.array(zod.string()),
+  "isDeprecated": zod.boolean(),
+  "deprecatedAt": zod.coerce.date().nullish(),
+  "deprecationReason": zod.string().nullish(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+}))
+})
+
+
+
+
+
+
+export const CreateGovernanceTermBody = zod.object({
+  "actor": zod.string().min(1),
+  "reason": zod.string().min(1)
+}).and(zod.object({
+  "versionId": zod.string().uuid().optional(),
+  "version": zod.string().optional(),
+  "category": zod.string().optional(),
+  "label": zod.string().optional(),
+  "shortcode": zod.string().optional(),
+  "parentId": zod.string().uuid().nullish(),
+  "supersededBy": zod.string().uuid().nullish(),
+  "legacyCodes": zod.array(zod.string()).optional(),
+  "action": zod.enum(['update', 'rename', 'deprecate', 'restore']).optional()
+}))
+
+export const CreateGovernanceTermResponse = zod.object({
+  "id": zod.string().uuid(),
+  "versionId": zod.string().uuid(),
+  "category": zod.string(),
+  "label": zod.string(),
+  "shortcode": zod.string(),
+  "parentId": zod.string().uuid().nullish(),
+  "supersededBy": zod.string().uuid().nullish(),
+  "legacyCodes": zod.array(zod.string()),
+  "isDeprecated": zod.boolean(),
+  "deprecatedAt": zod.coerce.date().nullish(),
+  "deprecationReason": zod.string().nullish(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+export const ResolveGovernanceTermQueryParams = zod.object({
+  "versionId": zod.coerce.string().uuid().optional(),
+  "code": zod.coerce.string()
+})
+
+export const ResolveGovernanceTermResponse = zod.object({
+  "input": zod.string(),
+  "version": zod.string(),
+  "versionId": zod.string().uuid(),
+  "resolved": zod.object({
+  "id": zod.string().uuid(),
+  "versionId": zod.string().uuid(),
+  "category": zod.string(),
+  "label": zod.string(),
+  "shortcode": zod.string(),
+  "parentId": zod.string().uuid().nullish(),
+  "supersededBy": zod.string().uuid().nullish(),
+  "legacyCodes": zod.array(zod.string()),
+  "isDeprecated": zod.boolean(),
+  "deprecatedAt": zod.coerce.date().nullish(),
+  "deprecationReason": zod.string().nullish(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+}),
+  "chain": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "versionId": zod.string().uuid(),
+  "category": zod.string(),
+  "label": zod.string(),
+  "shortcode": zod.string(),
+  "parentId": zod.string().uuid().nullish(),
+  "supersededBy": zod.string().uuid().nullish(),
+  "legacyCodes": zod.array(zod.string()),
+  "isDeprecated": zod.boolean(),
+  "deprecatedAt": zod.coerce.date().nullish(),
+  "deprecationReason": zod.string().nullish(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+}))
+})
+
+
+export const ResolveGovernanceTermPostBody = zod.object({
+  "versionId": zod.string().uuid().optional(),
+  "version": zod.string().optional()
+}).and(zod.object({
+  "code": zod.string()
+}))
+
+export const ResolveGovernanceTermPostResponse = zod.object({
+  "input": zod.string(),
+  "version": zod.string(),
+  "versionId": zod.string().uuid(),
+  "resolved": zod.object({
+  "id": zod.string().uuid(),
+  "versionId": zod.string().uuid(),
+  "category": zod.string(),
+  "label": zod.string(),
+  "shortcode": zod.string(),
+  "parentId": zod.string().uuid().nullish(),
+  "supersededBy": zod.string().uuid().nullish(),
+  "legacyCodes": zod.array(zod.string()),
+  "isDeprecated": zod.boolean(),
+  "deprecatedAt": zod.coerce.date().nullish(),
+  "deprecationReason": zod.string().nullish(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+}),
+  "chain": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "versionId": zod.string().uuid(),
+  "category": zod.string(),
+  "label": zod.string(),
+  "shortcode": zod.string(),
+  "parentId": zod.string().uuid().nullish(),
+  "supersededBy": zod.string().uuid().nullish(),
+  "legacyCodes": zod.array(zod.string()),
+  "isDeprecated": zod.boolean(),
+  "deprecatedAt": zod.coerce.date().nullish(),
+  "deprecationReason": zod.string().nullish(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+}))
+})
+
+
+export const UpdateGovernanceTermParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+
+export const UpdateGovernanceTermBody = zod.object({
+  "actor": zod.string().min(1),
+  "reason": zod.string().min(1)
+}).and(zod.object({
+  "versionId": zod.string().uuid().optional(),
+  "version": zod.string().optional(),
+  "category": zod.string().optional(),
+  "label": zod.string().optional(),
+  "shortcode": zod.string().optional(),
+  "parentId": zod.string().uuid().nullish(),
+  "supersededBy": zod.string().uuid().nullish(),
+  "legacyCodes": zod.array(zod.string()).optional(),
+  "action": zod.enum(['update', 'rename', 'deprecate', 'restore']).optional()
+}))
+
+export const UpdateGovernanceTermResponse = zod.object({
+  "id": zod.string().uuid(),
+  "versionId": zod.string().uuid(),
+  "category": zod.string(),
+  "label": zod.string(),
+  "shortcode": zod.string(),
+  "parentId": zod.string().uuid().nullish(),
+  "supersededBy": zod.string().uuid().nullish(),
+  "legacyCodes": zod.array(zod.string()),
+  "isDeprecated": zod.boolean(),
+  "deprecatedAt": zod.coerce.date().nullish(),
+  "deprecationReason": zod.string().nullish(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+export const DeprecateGovernanceTermParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+
+export const DeprecateGovernanceTermBody = zod.object({
+  "actor": zod.string().min(1),
+  "reason": zod.string().min(1)
+})
+
+export const DeprecateGovernanceTermResponse = zod.object({
+  "id": zod.string().uuid(),
+  "versionId": zod.string().uuid(),
+  "category": zod.string(),
+  "label": zod.string(),
+  "shortcode": zod.string(),
+  "parentId": zod.string().uuid().nullish(),
+  "supersededBy": zod.string().uuid().nullish(),
+  "legacyCodes": zod.array(zod.string()),
+  "isDeprecated": zod.boolean(),
+  "deprecatedAt": zod.coerce.date().nullish(),
+  "deprecationReason": zod.string().nullish(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+export const RenameGovernanceTermParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+
+export const RenameGovernanceTermBody = zod.object({
+  "actor": zod.string().min(1),
+  "reason": zod.string().min(1)
+}).and(zod.object({
+  "versionId": zod.string().uuid().optional(),
+  "version": zod.string().optional(),
+  "category": zod.string().optional(),
+  "label": zod.string().optional(),
+  "shortcode": zod.string().optional(),
+  "parentId": zod.string().uuid().nullish(),
+  "supersededBy": zod.string().uuid().nullish(),
+  "legacyCodes": zod.array(zod.string()).optional(),
+  "action": zod.enum(['update', 'rename', 'deprecate', 'restore']).optional()
+}))
+
+export const RenameGovernanceTermResponse = zod.object({
+  "id": zod.string().uuid(),
+  "versionId": zod.string().uuid(),
+  "category": zod.string(),
+  "label": zod.string(),
+  "shortcode": zod.string(),
+  "parentId": zod.string().uuid().nullish(),
+  "supersededBy": zod.string().uuid().nullish(),
+  "legacyCodes": zod.array(zod.string()),
+  "isDeprecated": zod.boolean(),
+  "deprecatedAt": zod.coerce.date().nullish(),
+  "deprecationReason": zod.string().nullish(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+
+
+
+
+export const StageTaxonomyImportBody = zod.object({
+  "actor": zod.string().min(1),
+  "reason": zod.string().min(1)
+}).and(zod.object({
+  "versionId": zod.string().uuid().optional(),
+  "version": zod.string().optional(),
+  "sourceName": zod.string(),
+  "idempotencyKey": zod.string().optional(),
+  "candidates": zod.array(zod.record(zod.string(), zod.unknown()))
+}))
+
+export const StageTaxonomyImportResponse = zod.object({
+  "batch": zod.record(zod.string(), zod.unknown()),
+  "candidates": zod.array(zod.record(zod.string(), zod.unknown())),
+  "idempotent": zod.boolean().optional()
+})
+
+
+export const GetTaxonomyImportParams = zod.object({
+  "batchId": zod.coerce.string().uuid()
+})
+
+export const GetTaxonomyImportResponse = zod.object({
+  "batch": zod.record(zod.string(), zod.unknown()),
+  "candidates": zod.array(zod.record(zod.string(), zod.unknown())),
+  "idempotent": zod.boolean().optional()
+})
+
+
+export const ReviewTaxonomyImportCandidateParams = zod.object({
+  "batchId": zod.coerce.string().uuid(),
+  "candidateId": zod.coerce.string().uuid()
+})
+
+
+
+
+
+export const ReviewTaxonomyImportCandidateBody = zod.object({
+  "actor": zod.string().min(1),
+  "reason": zod.string().min(1)
+}).and(zod.object({
+  "status": zod.enum(['approved', 'rejected', 'staged', 'conflict']),
+  "note": zod.string().optional(),
+  "resolveConflict": zod.boolean().optional(),
+  "payload": zod.record(zod.string(), zod.unknown()).optional()
+}))
+
+export const ReviewTaxonomyImportCandidateResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const CommitTaxonomyImportParams = zod.object({
+  "batchId": zod.coerce.string().uuid()
+})
+
+
+
+
+
+export const CommitTaxonomyImportBody = zod.object({
+  "actor": zod.string().min(1),
+  "reason": zod.string().min(1)
+})
+
+export const CommitTaxonomyImportResponse = zod.object({
+  "batch": zod.record(zod.string(), zod.unknown()),
+  "candidates": zod.array(zod.record(zod.string(), zod.unknown())),
+  "idempotent": zod.boolean().optional()
+})
+
+
+export const ListGovernanceApprovalsQueryParams = zod.object({
+  "recordType": zod.coerce.string().optional(),
+  "recordId": zod.coerce.string().uuid().optional()
+})
+
+export const ListGovernanceApprovalsResponseItem = zod.record(zod.string(), zod.unknown())
+export const ListGovernanceApprovalsResponse = zod.array(ListGovernanceApprovalsResponseItem)
+
+
+
+
+
+
+export const CreateGovernanceApprovalBody = zod.object({
+  "actor": zod.string().min(1),
+  "reason": zod.string().min(1)
+}).and(zod.object({
+  "recordType": zod.enum(['campaign', 'activity', 'communication', 'asset', 'landingPage', 'kpi', 'budget', 'conflict', 'taxonomyTerm', 'taxonomyVersion', 'importBatch', 'importCandidate']),
+  "recordId": zod.string().uuid(),
+  "stage": zod.string(),
+  "status": zod.string(),
+  "approver": zod.string()
+}))
+
+export const CreateGovernanceApprovalResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const UpdateGovernanceApprovalParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+
+export const UpdateGovernanceApprovalBody = zod.object({
+  "actor": zod.string().min(1),
+  "reason": zod.string().min(1)
+}).and(zod.object({
+  "stage": zod.string().optional(),
+  "status": zod.string().optional(),
+  "approver": zod.string().optional()
+}))
+
+export const UpdateGovernanceApprovalResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const ListGovernanceCommentsQueryParams = zod.object({
+  "recordType": zod.coerce.string(),
+  "recordId": zod.coerce.string().uuid()
+})
+
+export const ListGovernanceCommentsResponseItem = zod.record(zod.string(), zod.unknown())
+export const ListGovernanceCommentsResponse = zod.array(ListGovernanceCommentsResponseItem)
+
+
+
+
+
+
+export const CreateGovernanceCommentBody = zod.object({
+  "actor": zod.string().min(1),
+  "reason": zod.string().min(1)
+}).and(zod.object({
+  "recordType": zod.enum(['campaign', 'activity', 'communication', 'asset', 'landingPage', 'kpi', 'budget', 'conflict', 'taxonomyTerm', 'taxonomyVersion', 'importBatch', 'importCandidate']),
+  "recordId": zod.string().uuid(),
+  "body": zod.string()
+}))
+
+export const CreateGovernanceCommentResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const UpdateGovernanceCommentParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+
+export const UpdateGovernanceCommentBody = zod.object({
+  "actor": zod.string().min(1),
+  "reason": zod.string().min(1)
+}).and(zod.object({
+  "body": zod.string()
+}))
+
+export const UpdateGovernanceCommentResponse = zod.record(zod.string(), zod.unknown())
 
 
 export const GetAdapterStatusResponse = zod.object({

@@ -5,6 +5,8 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { ConnectionEntryCondition } from './connectionEntryCondition';
+import type { ConnectionSuppressionRule } from './connectionSuppressionRule';
 
 export interface Connection {
   id: string;
@@ -14,4 +16,8 @@ export interface Connection {
   timing: string;
   exclusions: string[];
   sentence: string;
+  /** @nullable */
+  parentBranchId?: string | null;
+  entryCondition?: ConnectionEntryCondition;
+  suppressionRule?: ConnectionSuppressionRule;
 }

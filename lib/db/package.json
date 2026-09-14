@@ -5,11 +5,17 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts"
+    "./schema": "./src/schema/index.ts",
+    "./schema/*": "./src/schema/*.ts"
   },
   "scripts": {
     "push": "drizzle-kit push --config ./drizzle.config.ts",
-    "push-force": "drizzle-kit push --force --config ./drizzle.config.ts"
+    "push-force": "drizzle-kit push --force --config ./drizzle.config.ts",
+    "migrate:dev": "node ./scripts/migrate-dev.mjs",
+    "seed:delivery": "node ./scripts/seed-delivery.mjs",
+    "seed:webinar": "node ./scripts/seed-delivery.mjs",
+    "seed:webinar-planning": "node ./scripts/seed-webinar-planning.mjs",
+    "seed:governance": "node ./scripts/seed-governance.mjs"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",

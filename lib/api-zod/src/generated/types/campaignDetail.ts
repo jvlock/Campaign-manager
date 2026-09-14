@@ -5,9 +5,11 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { ActivityTask } from './activityTask';
 import type { CampaignDetailInheritance } from './campaignDetailInheritance';
 import type { CampaignDetailStrategy } from './campaignDetailStrategy';
 import type { CampaignSummary } from './campaignSummary';
+import type { Communication } from './communication';
 import type { MapData } from './mapData';
 import type { UtmLink } from './utmLink';
 
@@ -16,4 +18,6 @@ export type CampaignDetail = CampaignSummary & {
   map: MapData;
   utmLinks: UtmLink[];
   inheritance: CampaignDetailInheritance;
+  communications: Communication[];
+  tasks: ActivityTask[];
 };

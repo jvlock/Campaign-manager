@@ -11,4 +11,6 @@ import type { Connection } from './connection';
 export interface MapData {
   activities: Activity[];
   connections: Connection[];
+  /** @minimum 1 */
+  rowVersion?: number;
 }

@@ -11,4 +11,6 @@ export interface CampaignUpdate {
   name?: string;
   lifecycle?: string;
   strategy?: CampaignUpdateStrategy;
+  /** @minimum 1 */
+  rowVersion: number;
 }

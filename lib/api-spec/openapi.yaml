@@ -8,6 +8,9 @@ servers:
 tags:
   - name: health
   - name: campaigns
+  - name: delivery
+  - name: planning
+  - name: webinars
   - name: portfolio
   - name: governance
 paths:
@@ -109,6 +112,370 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Activity"}
+  /campaigns/{id}/delivery:
+    get:
+      operationId: getCampaignDelivery
+      tags: [delivery]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      responses:
+        "200":
+          description: Campaign delivery children
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CampaignDelivery"}
+  /campaigns/{id}/communications:
+    post:
+      operationId: createCommunication
+      tags: [delivery]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CommunicationInput"}
+      responses:
+        "201":
+          description: Created communication
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Communication"}
+  /campaigns/{id}/communications/{itemId}:
+    patch:
+      operationId: updateCommunication
+      tags: [delivery]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/ItemId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CommunicationUpdate"}
+      responses:
+        "200":
+          description: Updated communication
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Communication"}
+  /campaigns/{id}/tasks:
+    post:
+      operationId: createActivityTask
+      tags: [delivery]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ActivityTaskInput"}
+      responses:
+        "201":
+          description: Created activity task
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ActivityTask"}
+  /campaigns/{id}/tasks/{itemId}:
+    patch:
+      operationId: updateActivityTask
+      tags: [delivery]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/ItemId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ActivityTaskUpdate"}
+      responses:
+        "200":
+          description: Updated activity task
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ActivityTask"}
+  /campaigns/{id}/schedule-rules:
+    get:
+      operationId: listScheduleRules
+      tags: [planning]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      responses:
+        "200":
+          description: Schedule rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/ScheduleRule"}
+        "404": {$ref: "#/components/responses/NotFound"}
+    post:
+      operationId: createScheduleRule
+      tags: [planning]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ScheduleRuleInput"}
+      responses:
+        "201":
+          description: Created rule
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ScheduleRuleCreateResponse"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /campaigns/{id}/schedule-rules/{ruleId}:
+    patch:
+      operationId: updateScheduleRule
+      tags: [planning]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/RuleId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ScheduleRuleUpdate"}
+      responses:
+        "200":
+          description: Updated rule
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ScheduleRule"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+    delete:
+      operationId: deleteScheduleRule
+      tags: [planning]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/RuleId"}
+      responses:
+        "204": {description: Deleted}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /campaigns/{id}/scheduled-instances:
+    get:
+      operationId: listScheduledInstances
+      tags: [planning]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      responses:
+        "200":
+          description: Scheduled instances
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/ScheduledInstance"}
+  /campaigns/{id}/schedule-rules/recompute:
+    post:
+      operationId: recomputeSchedule
+      tags: [planning]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ScheduleRecomputeInput"}
+      responses:
+        "200":
+          description: Recomputed instances
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/ScheduledInstance"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /campaigns/{id}/scheduled-instances/{instanceId}/adjust:
+    patch:
+      operationId: adjustScheduledInstance
+      tags: [planning]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/InstanceId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ScheduledInstanceAdjustment"}
+      responses:
+        "200":
+          description: Adjusted instance
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ScheduledInstance"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /campaigns/{id}/webinars:
+    get:
+      operationId: listWebinars
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      responses:
+        "200":
+          description: Webinar sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/WebinarSession"}
+    post:
+      operationId: createWebinar
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/WebinarInput"}
+      responses:
+        "201":
+          description: Created webinar session
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarSession"}
+  /campaigns/{id}/webinars/{sessionId}:
+    get:
+      operationId: getWebinar
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/SessionId"}
+      responses:
+        "200":
+          description: Webinar session
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarSession"}
+    patch:
+      operationId: updateWebinar
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/SessionId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/WebinarUpdate"}
+      responses:
+        "200":
+          description: Updated webinar session
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarSession"}
+  /campaigns/{id}/webinars/{sessionId}/people:
+    get:
+      operationId: listWebinarPeople
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/SessionId"}
+      responses:
+        "200":
+          description: Synthetic planning people
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/WebinarPerson"}
+    post:
+      operationId: createWebinarPerson
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/SessionId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/SyntheticPersonInput"}
+      responses:
+        "201":
+          description: Synthetic planning person
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarPerson"}
+  /campaigns/{id}/webinars/{sessionId}/people/{personId}/registration:
+    post:
+      operationId: recordWebinarRegistration
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/SessionId"}
+        - {$ref: "#/components/parameters/PersonId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/RegistrationResultInput"}
+      responses:
+        "200":
+          description: Evaluated planning branch
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarEvaluation"}
+  /campaigns/{id}/webinars/{sessionId}/people/{personId}/attendance:
+    post:
+      operationId: recordWebinarAttendance
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/SessionId"}
+        - {$ref: "#/components/parameters/PersonId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AttendanceResultInput"}
+      responses:
+        "200":
+          description: Evaluated planning branch
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarEvaluation"}
+  /campaigns/{id}/webinars/{sessionId}/evaluation:
+    get:
+      operationId: evaluateWebinar
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/SessionId"}
+      responses:
+        "200":
+          description: Planning-only branch evaluation
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/WebinarEvaluation"}
+  /campaigns/{id}/webinars/{sessionId}/evaluate:
+    post:
+      operationId: evaluateWebinarPerson
+      tags: [webinars]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/SessionId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebinarPersonEvaluationInput"
+      responses:
+        "200":
+          description: Planning-only branch evaluation
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarEvaluation"}
   /campaigns/{id}/utm-links:
     post:
       operationId: generateUtmLink
@@ -176,6 +543,289 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Governance"}
+  /governance/audit:
+    get:
+      operationId: listGovernanceAudit
+      tags: [governance]
+      parameters:
+        - name: entityType
+          in: query
+          schema: {type: string}
+        - name: entityId
+          in: query
+          schema: {type: string, format: uuid}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 500}
+      responses:
+        "200":
+          description: Governance audit events
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/GovernanceAuditEvent"}
+  /governance/terms:
+    get:
+      operationId: listGovernanceTerms
+      tags: [governance]
+      parameters:
+        - {$ref: "#/components/parameters/TaxonomyVersion"}
+      responses:
+        "200":
+          description: Taxonomy terms
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TaxonomyTermsResponse"}
+    post:
+      operationId: createGovernanceTerm
+      tags: [governance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/TaxonomyTermMutation"}
+      responses:
+        "201":
+          description: Created taxonomy term
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TaxonomyTerm"}
+  /governance/terms/resolve:
+    get:
+      operationId: resolveGovernanceTerm
+      tags: [governance]
+      parameters:
+        - {$ref: "#/components/parameters/TaxonomyVersion"}
+        - name: code
+          in: query
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Resolved taxonomy code
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TaxonomyResolution"}
+    post:
+      operationId: resolveGovernanceTermPost
+      tags: [governance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/TaxonomyResolveInput"}
+      responses:
+        "200":
+          description: Resolved taxonomy code
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TaxonomyResolution"}
+  /governance/terms/{id}:
+    patch:
+      operationId: updateGovernanceTerm
+      tags: [governance]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/TaxonomyTermMutation"}
+      responses:
+        "200":
+          description: Updated taxonomy term
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TaxonomyTerm"}
+  /governance/terms/{id}/deprecate:
+    post:
+      operationId: deprecateGovernanceTerm
+      tags: [governance]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/GovernanceActorReason"}
+      responses:
+        "200":
+          description: Deprecated taxonomy term
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TaxonomyTerm"}
+  /governance/terms/{id}/rename:
+    post:
+      operationId: renameGovernanceTerm
+      tags: [governance]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/TaxonomyTermMutation"}
+      responses:
+        "200":
+          description: Renamed taxonomy term
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TaxonomyTerm"}
+  /governance/imports:
+    post:
+      operationId: stageTaxonomyImport
+      tags: [governance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/TaxonomyImportInput"}
+      responses:
+        "201":
+          description: Staged taxonomy import
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TaxonomyImportBatchResponse"}
+  /governance/imports/{batchId}:
+    get:
+      operationId: getTaxonomyImport
+      tags: [governance]
+      parameters:
+        - {$ref: "#/components/parameters/BatchId"}
+      responses:
+        "200":
+          description: Import batch and candidates
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TaxonomyImportBatchResponse"}
+  /governance/imports/{batchId}/candidates/{candidateId}:
+    patch:
+      operationId: reviewTaxonomyImportCandidate
+      tags: [governance]
+      parameters:
+        - {$ref: "#/components/parameters/BatchId"}
+        - {$ref: "#/components/parameters/CandidateId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/TaxonomyImportReview"}
+      responses:
+        "200":
+          description: Reviewed import candidate
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TaxonomyImportCandidate"}
+  /governance/imports/{batchId}/commit:
+    post:
+      operationId: commitTaxonomyImport
+      tags: [governance]
+      parameters:
+        - {$ref: "#/components/parameters/BatchId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/GovernanceActorReason"}
+      responses:
+        "200":
+          description: Committed approved candidates
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TaxonomyImportBatchResponse"}
+  /governance/approvals:
+    get:
+      operationId: listGovernanceApprovals
+      tags: [governance]
+      parameters:
+        - {$ref: "#/components/parameters/RecordType"}
+        - {$ref: "#/components/parameters/RecordId"}
+      responses:
+        "200":
+          description: Polymorphic approvals
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/GovernanceApproval"}
+    post:
+      operationId: createGovernanceApproval
+      tags: [governance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/GovernanceApprovalInput"}
+      responses:
+        "201":
+          description: Created approval
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GovernanceApproval"}
+  /governance/approvals/{id}:
+    patch:
+      operationId: updateGovernanceApproval
+      tags: [governance]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/GovernanceApprovalUpdate"}
+      responses:
+        "200":
+          description: Updated approval
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GovernanceApproval"}
+  /governance/comments:
+    get:
+      operationId: listGovernanceComments
+      tags: [governance]
+      parameters:
+        - {$ref: "#/components/parameters/RequiredRecordType"}
+        - {$ref: "#/components/parameters/RequiredRecordId"}
+      responses:
+        "200":
+          description: Polymorphic comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/GovernanceComment"}
+    post:
+      operationId: createGovernanceComment
+      tags: [governance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/GovernanceCommentInput"}
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GovernanceComment"}
+  /governance/comments/{id}:
+    patch:
+      operationId: updateGovernanceComment
+      tags: [governance]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/GovernanceCommentUpdate"}
+      responses:
+        "200":
+          description: Updated comment
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GovernanceComment"}
   /adapters/status:
     get:
       operationId: getAdapterStatus
@@ -193,6 +843,79 @@ components:
       in: path
       required: true
       schema: {type: string, format: uuid}
+    ItemId:
+      name: itemId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    RuleId:
+      name: ruleId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    InstanceId:
+      name: instanceId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    PersonId:
+      name: personId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    BatchId:
+      name: batchId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    CandidateId:
+      name: candidateId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    TaxonomyVersion:
+      name: versionId
+      in: query
+      schema: {type: string, format: uuid}
+    RecordType:
+      name: recordType
+      in: query
+      schema: {type: string}
+    RecordId:
+      name: recordId
+      in: query
+      schema: {type: string, format: uuid}
+    RequiredRecordType:
+      name: recordType
+      in: query
+      required: true
+      schema: {type: string}
+    RequiredRecordId:
+      name: recordId
+      in: query
+      required: true
+      schema: {type: string, format: uuid}
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    Conflict:
+      description: Concurrent update or duplicate
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
   schemas:
     HealthStatus:
       type: object
@@ -214,6 +937,7 @@ components:
         readiness: {type: integer}
         timing: {type: string}
         owner: {type: string}
+        rowVersion: {type: integer, minimum: 1}
         updatedAt: {type: string}
     CampaignInput:
       type: object
@@ -225,15 +949,17 @@ components:
         outcome: {type: string}
     CampaignUpdate:
       type: object
+      required: [rowVersion]
       properties:
         name: {type: string}
         lifecycle: {type: string}
         strategy: {type: object, additionalProperties: true}
+        rowVersion: {type: integer, minimum: 1}
     CampaignDetail:
       allOf:
         - {$ref: "#/components/schemas/CampaignSummary"}
         - type: object
-          required: [strategy, map, utmLinks, inheritance]
+          required: [strategy, map, utmLinks, inheritance, communications, tasks]
           properties:
             strategy: {type: object, additionalProperties: true}
             map: {$ref: "#/components/schemas/MapData"}
@@ -241,6 +967,12 @@ components:
               type: array
               items: {$ref: "#/components/schemas/UtmLink"}
             inheritance: {type: object, additionalProperties: {type: string}}
+            communications:
+              type: array
+              items: {$ref: "#/components/schemas/Communication"}
+            tasks:
+              type: array
+              items: {$ref: "#/components/schemas/ActivityTask"}
     Position:
       type: object
       required: [x, y]
@@ -261,6 +993,7 @@ components:
         owner: {type: string}
         conflict: {type: boolean}
         decisionStatus: {type: string}
+        rowVersion: {type: integer, minimum: 1}
         position: {$ref: "#/components/schemas/Position"}
     ActivityInput:
       type: object
@@ -273,7 +1006,179 @@ components:
         timing: {type: string}
         status: {type: string}
         owner: {type: string}
+        rowVersion: {type: integer, minimum: 1}
         position: {$ref: "#/components/schemas/Position"}
+    DeliveryStatus:
+      type: string
+      enum: [Known, Estimated, Decision needed, Not applicable, Confirmed]
+    TaskType:
+      type: string
+      enum: [Asset, Landing page, Approval, Tracking, Other]
+    Communication:
+      type: object
+      required: [id, campaignId, activityId, name, type, timing, sortOrder, status, owner, audienceBranchId, communicationType, channel, approvalStatus, qaAudienceConfirmed, qaContentApproved, qaLinksVerified, qaTimingVerified, qaOwnerConfirmed, blockingDependencyTaskIds, blockingDependencyIds]
+      properties:
+        id: {type: string, format: uuid}
+        campaignId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        name: {type: string}
+        type: {type: string, default: Other}
+        timing: {type: string, default: TBD}
+        sortOrder: {type: integer, default: 0}
+        status: {$ref: "#/components/schemas/DeliveryStatus"}
+        owner: {type: string, default: Campaign team}
+        audienceBranchId: {type: string, format: uuid}
+        communicationType: {type: string}
+        channel: {type: string}
+        approvalStatus: {type: string}
+        qaAudienceConfirmed: {type: boolean}
+        qaContentApproved: {type: boolean}
+        qaLinksVerified: {type: boolean}
+        qaTimingVerified: {type: boolean}
+        qaOwnerConfirmed: {type: boolean}
+        blockingDependencyTaskIds:
+          type: array
+          items: {type: string, format: uuid}
+        blockingDependencyIds:
+          type: array
+          items: {type: string, format: uuid}
+    ActivityTask:
+      type: object
+      required: [id, campaignId, activityId, name, type, timing, sortOrder, status, owner]
+      properties:
+        id: {type: string, format: uuid}
+        campaignId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        name: {type: string}
+        type: {$ref: "#/components/schemas/TaskType"}
+        timing: {type: string, default: TBD}
+        sortOrder: {type: integer, default: 0}
+        status: {$ref: "#/components/schemas/DeliveryStatus"}
+        owner: {type: string, default: Campaign team}
+    CommunicationInput:
+      type: object
+      required: [activityId, name]
+      properties:
+        activityId: {type: string, format: uuid}
+        name: {type: string, minLength: 1}
+        type: {type: string, default: Other}
+        timing: {type: string, default: TBD}
+        sortOrder: {type: integer, default: 0}
+        status: {$ref: "#/components/schemas/DeliveryStatus", default: Estimated}
+        owner: {type: string, default: Campaign team}
+        audienceBranchId: {type: string, format: uuid}
+        communicationType: {type: string}
+        channel: {type: string}
+        approvalStatus: {type: string}
+        qaAudienceConfirmed: {type: boolean}
+        qaContentApproved: {type: boolean}
+        qaLinksVerified: {type: boolean}
+        qaTimingVerified: {type: boolean}
+        qaOwnerConfirmed: {type: boolean}
+        blockingDependencyTaskIds:
+          type: array
+          items: {type: string, format: uuid}
+        blockingDependencyIds:
+          type: array
+          items: {type: string, format: uuid}
+    CommunicationUpdate:
+      type: object
+      properties:
+        activityId: {type: string, format: uuid}
+        name: {type: string, minLength: 1}
+        type: {type: string}
+        timing: {type: string}
+        sortOrder: {type: integer}
+        status: {$ref: "#/components/schemas/DeliveryStatus"}
+        owner: {type: string}
+        audienceBranchId: {type: string, format: uuid}
+        communicationType: {type: string}
+        channel: {type: string}
+        approvalStatus: {type: string}
+        qaAudienceConfirmed: {type: boolean}
+        qaContentApproved: {type: boolean}
+        qaLinksVerified: {type: boolean}
+        qaTimingVerified: {type: boolean}
+        qaOwnerConfirmed: {type: boolean}
+        blockingDependencyTaskIds:
+          type: array
+          items: {type: string, format: uuid}
+        blockingDependencyIds:
+          type: array
+          items: {type: string, format: uuid}
+    ActivityTaskInput:
+      type: object
+      required: [activityId, name]
+      properties:
+        activityId: {type: string, format: uuid}
+        name: {type: string, minLength: 1}
+        type: {$ref: "#/components/schemas/TaskType", default: Other}
+        timing: {type: string, default: TBD}
+        sortOrder: {type: integer, default: 0}
+        status: {$ref: "#/components/schemas/DeliveryStatus", default: Estimated}
+        owner: {type: string, default: Campaign team}
+    ActivityTaskUpdate:
+      type: object
+      properties:
+        activityId: {type: string, format: uuid}
+        name: {type: string, minLength: 1}
+        type: {$ref: "#/components/schemas/TaskType"}
+        timing: {type: string}
+        sortOrder: {type: integer}
+        status: {$ref: "#/components/schemas/DeliveryStatus"}
+        owner: {type: string}
+    CommunicationDetails:
+      type: object
+      required: [audienceBranchId, communicationType, channel, approvalStatus, qaAudienceConfirmed, qaContentApproved, qaLinksVerified, qaTimingVerified, qaOwnerConfirmed, blockingDependencyTaskIds, blockingDependencyIds]
+      properties:
+        audienceBranchId: {type: string, format: uuid}
+        communicationType: {type: string}
+        channel: {type: string}
+        approvalStatus: {type: string}
+        qaAudienceConfirmed: {type: boolean}
+        qaContentApproved: {type: boolean}
+        qaLinksVerified: {type: boolean}
+        qaTimingVerified: {type: boolean}
+        qaOwnerConfirmed: {type: boolean}
+        blockingDependencyTaskIds:
+          type: array
+          items: {type: string, format: uuid}
+        blockingDependencyIds:
+          type: array
+          items: {type: string, format: uuid}
+    CommunicationInputExtension:
+      type: object
+      description: Every dependency ID must reference an activity task in the same campaign.
+      properties:
+        audienceBranchId: {type: string, format: uuid}
+        communicationType: {type: string}
+        channel: {type: string}
+        approvalStatus: {type: string}
+        qaAudienceConfirmed: {type: boolean}
+        qaContentApproved: {type: boolean}
+        qaLinksVerified: {type: boolean}
+        qaTimingVerified: {type: boolean}
+        qaOwnerConfirmed: {type: boolean}
+        blockingDependencyTaskIds:
+          type: array
+          items: {type: string, format: uuid}
+        blockingDependencyIds:
+          type: array
+          items: {type: string, format: uuid}
+    CommunicationUpdateExtension:
+      allOf:
+        - {$ref: "#/components/schemas/CommunicationInputExtension"}
+      description: All properties optional for PATCH.
+    CampaignDelivery:
+      type: object
+      required: [communications, tasks]
+      properties:
+        communications:
+          type: array
+          items: {$ref: "#/components/schemas/Communication"}
+        tasks:
+          type: array
+          items: {$ref: "#/components/schemas/ActivityTask"}
     Connection:
       type: object
       required: [id, source, target, trigger, timing, exclusions, sentence]
@@ -287,6 +1192,15 @@ components:
           type: array
           items: {type: string}
         sentence: {type: string}
+        parentBranchId: {type: [string, "null"], format: uuid}
+        entryCondition: {type: object, additionalProperties: true}
+        suppressionRule: {type: object, additionalProperties: true}
+    BranchConnectionFields:
+      type: object
+      properties:
+        parentBranchId: {type: [string, "null"], format: uuid}
+        entryCondition: {type: object, additionalProperties: true}
+        suppressionRule: {type: object, additionalProperties: true}
     MapData:
       type: object
       required: [activities, connections]
@@ -297,9 +1211,14 @@ components:
         connections:
           type: array
           items: {$ref: "#/components/schemas/Connection"}
+        rowVersion: {type: integer, minimum: 1}
     MapInput:
       allOf:
         - {$ref: "#/components/schemas/MapData"}
+        - type: object
+          required: [rowVersion]
+          properties:
+            rowVersion: {type: integer, minimum: 1}
     UtmInput:
       type: object
       required: [destinationUrl, source, medium, content, term, salesforceCampaignId]
@@ -367,3 +1286,388 @@ components:
       properties:
         airtable: {type: object, additionalProperties: true}
         ai: {type: object, additionalProperties: true}
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: {type: string}
+        rowVersion: {type: integer}
+    ScheduleRuleInput:
+      type: object
+      required: [offsetDays, offsetMinutes, direction, businessDayStrategy, timezone]
+      properties:
+        activityId: {type: [string, "null"], format: uuid}
+        communicationId: {type: [string, "null"], format: uuid}
+        anchorActivityId: {type: [string, "null"], format: uuid}
+        offsetDays: {type: integer, minimum: 0, default: 0}
+        offsetMinutes: {type: integer, minimum: 0, default: 0}
+        direction: {type: string, enum: [before, after], default: after}
+        businessDayStrategy:
+          type: string
+          enum: [calendar, skip_weekends, next_business_day, previous_business_day]
+          default: calendar
+        audienceLocalTimezone: {type: boolean, default: false}
+        timezone: {type: string, description: IANA timezone}
+        targetSendTime:
+          type: [string, "null"]
+          pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"
+        enabled: {type: boolean, default: true}
+    ScheduleRuleUpdate:
+      allOf:
+        - {$ref: "#/components/schemas/ScheduleRuleInput"}
+        - type: object
+          properties:
+            rowVersion: {type: integer, minimum: 1}
+    ScheduleRule:
+      allOf:
+        - {$ref: "#/components/schemas/ScheduleRuleInput"}
+        - type: object
+          required: [id, campaignId, rowVersion, createdAt, updatedAt]
+          properties:
+            id: {type: string, format: uuid}
+            campaignId: {type: string, format: uuid}
+            rowVersion: {type: integer}
+            createdAt: {type: string, format: date-time}
+            updatedAt: {type: string, format: date-time}
+    ScheduleRuleCreateResponse:
+      type: object
+      required: [rule]
+      properties:
+        rule: {$ref: "#/components/schemas/ScheduleRule"}
+        instance:
+          anyOf:
+            - {$ref: "#/components/schemas/ScheduledInstance"}
+            - {type: "null"}
+    ScheduleRecomputeInput:
+      type: object
+      required: [anchorAt, timezone]
+      properties:
+        ruleId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        anchorAt: {type: string, format: date-time}
+        timezone: {type: string, description: IANA timezone}
+        reason: {type: string}
+    ScheduledInstance:
+      type: object
+      required: [id, campaignId, ruleId, originalCalculatedAt, calculatedAt, timezone, status, rowVersion]
+      properties:
+        id: {type: string, format: uuid}
+        campaignId: {type: string, format: uuid}
+        ruleId: {type: string, format: uuid}
+        activityId: {type: [string, "null"], format: uuid}
+        communicationId: {type: [string, "null"], format: uuid}
+        originalCalculatedAt: {type: string, format: date-time, readOnly: true}
+        calculatedAt: {type: string, format: date-time}
+        adjustedAt: {type: [string, "null"], format: date-time}
+        adjustmentReason: {type: [string, "null"]}
+        timezone: {type: string}
+        status: {type: string}
+        rowVersion: {type: integer}
+    ScheduledInstanceAdjustment:
+      type: object
+      required: [calculatedAt, reason]
+      properties:
+        calculatedAt: {type: string, format: date-time}
+        reason: {type: string, minLength: 1}
+        rowVersion: {type: integer, minimum: 1}
+    ScheduledInstanceHistory:
+      type: object
+      required: [id, scheduledInstanceId, ruleId, anchorAt, calculatedAt, reason, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        scheduledInstanceId: {type: string, format: uuid}
+        ruleId: {type: string, format: uuid}
+        anchorAt: {type: string, format: date-time}
+        previousCalculatedAt: {type: [string, "null"], format: date-time}
+        calculatedAt: {type: string, format: date-time}
+        reason: {type: string}
+        createdAt: {type: string, format: date-time}
+    VersionedCampaignUpdate:
+      type: object
+      properties:
+        name: {type: string}
+        lifecycle: {type: string}
+        strategy: {type: object, additionalProperties: true}
+        rowVersion: {type: integer, minimum: 1}
+    VersionedActivity:
+      type: object
+      properties:
+        rowVersion: {type: integer, minimum: 1}
+    Speaker:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string, minLength: 1}
+        role: {type: string}
+        organization: {type: string}
+    RegistrationRule:
+      type: object
+      required: [suppressRecruitmentAfterRegistration]
+      properties:
+        suppressRecruitmentAfterRegistration: {type: boolean, default: true}
+        registeredBranch: {type: string, default: registered}
+        attendedBranch: {type: string, default: attended}
+        noShowBranch: {type: string, default: no_show}
+    WebinarSession:
+      type: object
+      required: [id, campaignId, activityId, name, sessionDate, startTime, durationMinutes, timezone, platform, speakers, registrationRule]
+      properties:
+        id: {type: string, format: uuid}
+        campaignId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        name: {type: string, minLength: 1}
+        sessionDate: {type: string, format: date}
+        startTime: {type: string, pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"}
+        durationMinutes: {type: integer, minimum: 1, maximum: 1440}
+        timezone: {type: string}
+        platform: {type: string}
+        speakers:
+          type: array
+          items: {$ref: "#/components/schemas/Speaker"}
+        registrationRule: {$ref: "#/components/schemas/RegistrationRule"}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    WebinarInput:
+      type: object
+      required: [activityId, name, sessionDate, startTime, durationMinutes, timezone, platform]
+      properties:
+        activityId: {type: string, format: uuid}
+        name: {type: string, minLength: 1}
+        sessionDate: {type: string, format: date}
+        startTime: {type: string}
+        durationMinutes: {type: integer, minimum: 1, maximum: 1440}
+        timezone: {type: string}
+        platform: {type: string}
+        speakers:
+          type: array
+          items: {$ref: "#/components/schemas/Speaker"}
+          default: []
+        registrationRule: {$ref: "#/components/schemas/RegistrationRule"}
+    WebinarUpdate:
+      type: object
+      description: Partial update; every property is optional.
+      properties:
+        activityId: {type: string, format: uuid}
+        name: {type: string, minLength: 1}
+        sessionDate: {type: string, format: date}
+        startTime: {type: string, pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"}
+        durationMinutes: {type: integer, minimum: 1, maximum: 1440}
+        timezone: {type: string}
+        platform: {type: string}
+        speakers:
+          type: array
+          items: {$ref: "#/components/schemas/Speaker"}
+        registrationRule: {$ref: "#/components/schemas/RegistrationRule"}
+    WebinarPerson:
+      type: object
+      required: [id, campaignId, audienceBranchId, name, isSynthetic]
+      properties:
+        id: {type: string, format: uuid}
+        campaignId: {type: string, format: uuid}
+        audienceBranchId: {type: string, format: uuid}
+        name: {type: string}
+        isSynthetic: {type: boolean, const: true}
+    SyntheticPersonInput:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string, minLength: 1}
+        audienceBranchId: {type: string, format: uuid}
+        isSynthetic: {type: boolean, const: true, default: true}
+    RegistrationResultInput:
+      type: object
+      required: [result]
+      properties:
+        result: {type: string, enum: [registered, not_registered]}
+    AttendanceResultInput:
+      type: object
+      required: [result]
+      properties:
+        result: {type: string, enum: [attended, no_show]}
+    WebinarPersonEvaluationInput:
+      type: object
+      required: [personId]
+      properties:
+        personId: {type: string, format: uuid}
+    WebinarEvaluation:
+      type: object
+      required: [person, sessionId, registrationResult, attendanceResult, branch, recruitmentSuppressed, plannedAction, externalSending]
+      properties:
+        person: {$ref: "#/components/schemas/WebinarPerson"}
+        sessionId: {type: string, format: uuid}
+        registrationResult: {type: string, enum: [registered, not_registered]}
+        attendanceResult:
+          type: [string, "null"]
+          enum: [attended, no_show, null]
+        branch: {type: string, enum: [not_registered, registered, attended, no_show]}
+        recruitmentSuppressed: {type: boolean}
+        plannedAction: {type: string}
+        externalSending: {type: boolean, const: false}
+    GovernanceActorReason:
+      type: object
+      required: [actor, reason]
+      properties:
+        actor: {type: string, minLength: 1}
+        reason: {type: string, minLength: 1}
+    TaxonomyTerm:
+      type: object
+      required: [id, versionId, category, label, shortcode, legacyCodes, isDeprecated]
+      properties:
+        id: {type: string, format: uuid}
+        versionId: {type: string, format: uuid}
+        category: {type: string}
+        label: {type: string}
+        shortcode: {type: string}
+        parentId: {type: string, format: uuid, nullable: true}
+        supersededBy: {type: string, format: uuid, nullable: true}
+        legacyCodes:
+          type: array
+          items: {type: string}
+        isDeprecated: {type: boolean}
+        deprecatedAt: {type: string, format: date-time, nullable: true}
+        deprecationReason: {type: string, nullable: true}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    TaxonomyTermsResponse:
+      type: object
+      required: [version, versionId, terms]
+      properties:
+        version: {type: string}
+        versionId: {type: string, format: uuid}
+        terms:
+          type: array
+          items: {$ref: "#/components/schemas/TaxonomyTerm"}
+    TaxonomyTermMutation:
+      allOf:
+        - {$ref: "#/components/schemas/GovernanceActorReason"}
+        - type: object
+          properties:
+            versionId: {type: string, format: uuid}
+            version: {type: string}
+            category: {type: string}
+            label: {type: string}
+            shortcode: {type: string}
+            parentId: {type: string, format: uuid, nullable: true}
+            supersededBy: {type: string, format: uuid, nullable: true}
+            legacyCodes:
+              type: array
+              items: {type: string}
+            action: {type: string, enum: [update, rename, deprecate, restore]}
+    TaxonomyVersionInput:
+      type: object
+      properties:
+        versionId: {type: string, format: uuid}
+        version: {type: string}
+    TaxonomyResolveInput:
+      allOf:
+        - {$ref: "#/components/schemas/TaxonomyVersionInput"}
+        - type: object
+          required: [code]
+          properties:
+            code: {type: string}
+    TaxonomyResolution:
+      type: object
+      required: [input, version, versionId, resolved, chain]
+      properties:
+        input: {type: string}
+        version: {type: string}
+        versionId: {type: string, format: uuid}
+        resolved: {$ref: "#/components/schemas/TaxonomyTerm"}
+        chain:
+          type: array
+          items: {$ref: "#/components/schemas/TaxonomyTerm"}
+    TaxonomyImportInput:
+      allOf:
+        - {$ref: "#/components/schemas/GovernanceActorReason"}
+        - type: object
+          required: [sourceName, candidates]
+          properties:
+            versionId: {type: string, format: uuid}
+            version: {type: string}
+            sourceName: {type: string}
+            idempotencyKey: {type: string}
+            candidates:
+              type: array
+              items: {type: object, additionalProperties: true}
+    TaxonomyImportBatchResponse:
+      type: object
+      required: [batch, candidates]
+      properties:
+        batch: {type: object, additionalProperties: true}
+        candidates:
+          type: array
+          items: {$ref: "#/components/schemas/TaxonomyImportCandidate"}
+        idempotent: {type: boolean}
+    TaxonomyImportCandidate:
+      type: object
+      additionalProperties: true
+    TaxonomyImportReview:
+      allOf:
+        - {$ref: "#/components/schemas/GovernanceActorReason"}
+        - type: object
+          required: [status]
+          properties:
+            status: {type: string, enum: [approved, rejected, staged, conflict]}
+            note: {type: string}
+            resolveConflict: {type: boolean}
+            payload: {type: object, additionalProperties: true}
+    RecordType:
+      type: string
+      enum: [campaign, activity, communication, asset, landingPage, kpi, budget, conflict, taxonomyTerm, taxonomyVersion, importBatch, importCandidate]
+    GovernanceApproval:
+      type: object
+      additionalProperties: true
+      required: [id, recordType, recordId, stage, status, approver]
+    GovernanceApprovalInput:
+      allOf:
+        - {$ref: "#/components/schemas/GovernanceActorReason"}
+        - type: object
+          required: [recordType, recordId, stage, status, approver]
+          properties:
+            recordType: {$ref: "#/components/schemas/RecordType"}
+            recordId: {type: string, format: uuid}
+            stage: {type: string}
+            status: {type: string}
+            approver: {type: string}
+    GovernanceApprovalUpdate:
+      allOf:
+        - {$ref: "#/components/schemas/GovernanceActorReason"}
+        - type: object
+          properties:
+            stage: {type: string}
+            status: {type: string}
+            approver: {type: string}
+    GovernanceComment:
+      type: object
+      additionalProperties: true
+      required: [id, recordType, recordId, body, actor]
+    GovernanceCommentInput:
+      allOf:
+        - {$ref: "#/components/schemas/GovernanceActorReason"}
+        - type: object
+          required: [recordType, recordId, body]
+          properties:
+            recordType: {$ref: "#/components/schemas/RecordType"}
+            recordId: {type: string, format: uuid}
+            body: {type: string}
+    GovernanceCommentUpdate:
+      allOf:
+        - {$ref: "#/components/schemas/GovernanceActorReason"}
+        - type: object
+          required: [body]
+          properties:
+            body: {type: string}
+    GovernanceAuditEvent:
+      type: object
+      required: [id, entityType, entityId, action, actor, reason, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        entityType: {type: string}
+        entityId: {type: string, format: uuid}
+        action: {type: string}
+        actor: {type: string}
+        reason: {type: string}
+        before: {type: object, nullable: true}
+        after: {type: object, nullable: true}
+        metadata: {type: object}
+        createdAt: {type: string, format: date-time}

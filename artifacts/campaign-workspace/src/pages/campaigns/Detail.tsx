@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, Share, Download, Settings, Play } from 'lucide-react';
 import { Link } from 'wouter';
 import EngagementMap from '@/components/map/EngagementMap';
+import CampaignDeliveryTab from './CampaignDeliveryTab';
 import { format } from 'date-fns';
 
 export default function CampaignDetail() {
@@ -23,6 +24,8 @@ export default function CampaignDetail() {
   if (!campaign) {
     return <div className="flex-1 flex items-center justify-center text-muted-foreground">Campaign not found.</div>;
   }
+
+  const rowVersion = Number((campaign as any).rowVersion ?? 1);
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -45,7 +48,10 @@ export default function CampaignDetail() {
               </span>
               <span>{campaign.scope}</span>
               <span>&middot;</span>
-              <span>{campaign.audience}</span>
+               <span>{campaign.audience}</span>
+               <span className="text-[11px] text-muted-foreground/70" title="Concurrency version">
+                 v{rowVersion}
+               </span>
             </div>
           </div>
           
@@ -125,36 +131,8 @@ export default function CampaignDetail() {
             Calendar View (Stub)
           </TabsContent>
 
-          <TabsContent value="delivery" className="m-0 h-full p-6 max-w-5xl mx-auto">
-            <h2 className="text-xl font-semibold mb-6">UTM Links & Tracking</h2>
-            <div className="rounded-md border border-border bg-card overflow-hidden">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-muted/50 text-muted-foreground font-medium border-b border-border">
-                  <tr>
-                    <th className="px-4 py-3">Destination</th>
-                    <th className="px-4 py-3">Generated URL</th>
-                    <th className="px-4 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {campaign.utmLinks.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">No UTM links generated yet.</td>
-                    </tr>
-                  ) : (
-                    campaign.utmLinks.map(link => (
-                      <tr key={link.id} className="hover:bg-muted/30">
-                        <td className="px-4 py-3 truncate max-w-[200px]" title={link.destinationUrl}>{link.destinationUrl}</td>
-                        <td className="px-4 py-3 font-mono text-xs truncate max-w-[300px] text-muted-foreground" title={link.fullUrl}>{link.fullUrl}</td>
-                        <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">{link.status}</span>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+          <TabsContent value="delivery" className="m-0 h-full p-6 max-w-7xl mx-auto overflow-y-auto">
+            <CampaignDeliveryTab campaign={campaign} />
           </TabsContent>
 
           <TabsContent value="presentation" className="m-0 h-full p-6 flex items-center justify-center text-muted-foreground">

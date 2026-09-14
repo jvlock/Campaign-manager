@@ -18,8 +18,16 @@ import {
   EdgeMouseHandler
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { CampaignDetail, MapData, useSaveCampaignMap, useGetGovernance } from '@workspace/api-client-react';
+import {
+  CampaignDetail,
+  MapInput,
+  useSaveCampaignMap,
+  useGetGovernance,
+  useGetCampaignDelivery,
+  getGetCampaignDeliveryQueryKey
+} from '@workspace/api-client-react';
 import ActivityNode from './ActivityNode';
+import ActivityConfigDrawer from './ActivityConfigDrawer';
 import { Button } from '@/components/ui/button';
 import { Save, CheckCircle2, Loader2, AlertCircle, Plus, LayoutGrid, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +35,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const nodeTypes = {
   activity: ActivityNode,
@@ -42,69 +51,175 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const initializedId = useRef<string | null>(null);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
+  const latestMap = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
+  const saveGeneration = useRef(0);
+  const saveBlocked = useRef(false);
+  const [conflictFrozen, setConflictFrozen] = useState(false);
+  const campaignVersion = useRef<number>((campaign as any).rowVersion ?? 1);
   const { screenToFlowPosition, fitView } = useReactFlow();
   
   const { data: governance } = useGetGovernance();
   const { mutate: saveMap } = useSaveCampaignMap();
+  const { data: delivery } = useGetCampaignDelivery(campaign.id, {
+    query: { enabled: !!campaign.id, queryKey: getGetCampaignDeliveryQueryKey(campaign.id) }
+  });
+
+  const hydrateFromCampaign = useCallback(() => {
+    const initialNodes: Node[] = campaign.map.activities.map(act => ({
+      id: act.id,
+      type: 'activity',
+      position: act.position,
+      data: act as unknown as Record<string, unknown>,
+    }));
+    const initialEdges: Edge[] = campaign.map.connections.map(conn => ({
+      id: conn.id,
+      source: conn.source,
+      target: conn.target,
+      label: conn.trigger || undefined,
+      data: conn as unknown as Record<string, unknown>,
+      animated: true,
+      style: { strokeWidth: 2, stroke: 'hsl(var(--primary))' },
+    }));
+    setNodes(initialNodes);
+    setEdges(initialEdges);
+    campaignVersion.current = (campaign as any).rowVersion ?? 1;
+    setTimeout(() => fitView({ padding: 0.2 }), 100);
+  }, [campaign, fitView]);
 
   useEffect(() => {
     if (campaign && initializedId.current !== campaign.id) {
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
+      saveGeneration.current += 1;
+      saveBlocked.current = false;
+      latestMap.current = null;
+      saveQueue.current = Promise.resolve();
+      setConflictFrozen(false);
+      setSaveStatus('saved');
       initializedId.current = campaign.id;
-      
-      const initialNodes: Node[] = campaign.map.activities.map(act => ({
-        id: act.id,
-        type: 'activity',
-        position: act.position,
-        data: act as unknown as Record<string, unknown>,
-      }));
-
-      const initialEdges: Edge[] = campaign.map.connections.map(conn => ({
-        id: conn.id,
-        source: conn.source,
-        target: conn.target,
-        label: conn.trigger || undefined,
-        data: conn as unknown as Record<string, unknown>,
-        animated: true,
-        style: { strokeWidth: 2, stroke: 'hsl(var(--primary))' },
-      }));
-
-      setNodes(initialNodes);
-      setEdges(initialEdges);
-      
-      setTimeout(() => fitView({ padding: 0.2 }), 100);
+      hydrateFromCampaign();
     }
-  }, [campaign, fitView]);
+  }, [campaign, hydrateFromCampaign]);
 
-  const triggerSave = useCallback((newNodes: Node[], newEdges: Edge[]) => {
-    setSaveStatus('saving');
-    
-    if (saveTimeout.current) {
-      clearTimeout(saveTimeout.current);
+  useEffect(() => {
+    if (delivery) {
+      setNodes(nds => nds.map(n => ({
+        ...n,
+        data: {
+          ...n.data,
+          communications: delivery.communications.filter(c => c.activityId === n.id),
+          tasks: delivery.tasks.filter(t => t.activityId === n.id)
+        }
+      })));
     }
+  }, [delivery]);
 
-    saveTimeout.current = setTimeout(() => {
-      const mapData: MapData = {
-        activities: newNodes.map(n => ({
-          ...n.data as any,
-          position: n.position
-        })),
-        connections: newEdges.map(e => ({
+  const enqueueSave = useCallback((newNodes: Node[], newEdges: Edge[]) => {
+    if (saveBlocked.current) return;
+    latestMap.current = { nodes: newNodes, edges: newEdges };
+    const generation = saveGeneration.current;
+    saveQueue.current = saveQueue.current.then(() => new Promise<void>((resolve) => {
+      if (saveBlocked.current || generation !== saveGeneration.current) {
+        resolve();
+        return;
+      }
+      const currentMap = latestMap.current ?? { nodes: newNodes, edges: newEdges };
+       const mapData: MapInput = {
+        rowVersion: campaignVersion.current,
+        activities: currentMap.nodes.map(n => {
+          const { communications, tasks, ...restData } = n.data as any;
+          return { ...restData, id: n.id, position: n.position };
+        }),
+        connections: currentMap.edges.map(e => ({
           ...e.data as any,
           source: e.source,
           target: e.target,
           id: e.id,
         }))
       };
-
-      saveMap({ id: campaign.id, data: mapData }, {
-        onSuccess: () => setSaveStatus('saved'),
-        onError: () => {
+       saveMap({ id: campaign.id, data: mapData }, {
+        onSuccess: (saved: any) => {
+          if (generation !== saveGeneration.current) {
+            resolve();
+            return;
+          }
+          campaignVersion.current = Number(saved?.rowVersion ?? campaignVersion.current + 1);
+          const savedVersions = new Map<string, number>(
+            (saved?.activities ?? []).map((activity: any) => [activity.id, activity.rowVersion]),
+          );
+          setNodes((current) => current.map((node) => {
+            const rowVersion = savedVersions.get(node.id);
+            return rowVersion ? { ...node, data: { ...node.data, rowVersion } } : node;
+          }));
+          if (latestMap.current) {
+            latestMap.current = {
+              ...latestMap.current,
+              nodes: latestMap.current.nodes.map((node) => {
+                const rowVersion = savedVersions.get(node.id);
+                return rowVersion ? { ...node, data: { ...node.data, rowVersion } } : node;
+              }),
+            };
+          }
+          setSaveStatus('saved');
+          resolve();
+        },
+        onError: (error: any) => {
+          if (generation !== saveGeneration.current) {
+            resolve();
+            return;
+          }
           setSaveStatus('error');
-          toast({ title: 'Failed to save map', variant: 'destructive' });
+          const status = error?.response?.status ?? error?.status;
+          if (status === 409 || status === 428) {
+            // Invalidate every queued snapshot. The local graph remains visible
+            // for an explicit discard/reload decision, but no stale payload
+            // may be sent again automatically.
+            if (saveTimeout.current) clearTimeout(saveTimeout.current);
+            saveBlocked.current = true;
+            saveGeneration.current += 1;
+            latestMap.current = null;
+            setConflictFrozen(true);
+          }
+          toast({
+            title: status === 409 || status === 428 ? 'Map changed elsewhere' : 'Failed to save map',
+            description: status === 409 || status === 428
+              ? 'Reload this campaign before making another change.'
+              : undefined,
+            variant: 'destructive'
+          });
+          resolve();
         }
       });
-    }, 1000);
+    }));
   }, [campaign.id, saveMap, toast]);
+
+  const triggerSave = useCallback((newNodes: Node[], newEdges: Edge[]) => {
+    if (saveBlocked.current) return;
+    setSaveStatus('saving');
+
+    if (saveTimeout.current) {
+      clearTimeout(saveTimeout.current);
+    }
+
+    saveTimeout.current = setTimeout(() => {
+      enqueueSave(newNodes, newEdges);
+    }, 1000);
+  }, [enqueueSave]);
+
+  const discardLocalChanges = useCallback(() => {
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveGeneration.current += 1;
+    saveBlocked.current = false;
+    latestMap.current = null;
+    saveQueue.current = Promise.resolve();
+    setConflictFrozen(false);
+    setSaveStatus('saved');
+    hydrateFromCampaign();
+  }, [hydrateFromCampaign]);
+
+  const reloadCampaign = useCallback(() => {
+    window.location.reload();
+  }, []);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -135,19 +250,23 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
   const onConnect = useCallback(
     (params: FlowConnection) => {
       setEdges((eds) => {
+        const id = uuidv4();
         const newEdge: Edge = { 
           ...params, 
-          id: `e-${params.source}-${params.target}-${Date.now()}`,
+          id,
           animated: true,
           style: { strokeWidth: 2, stroke: 'hsl(var(--primary))' },
           data: {
-            id: `e-${params.source}-${params.target}-${Date.now()}`,
+            id,
             source: params.source,
             target: params.target,
             trigger: 'Response',
             timing: 'Immediate',
             exclusions: [],
-            sentence: 'On Response, Immediate'
+            sentence: 'On Response, Immediate',
+            parentBranchId: null,
+            entryCondition: { event: 'Response' },
+            suppressionRule: {}
           } as unknown as Record<string, unknown>
         } as Edge;
         const nextEdges = addEdge(newEdge, eds);
@@ -175,12 +294,11 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
         y: event.clientY,
       });
 
-      const newNode: Node = {
-        id: uuidv4(),
+       const newNode: Node = {
+         id: uuidv4(),
         type: 'activity',
         position,
-        data: {
-          id: uuidv4(),
+         data: {
           name: `New ${type}`,
           type: type,
           audience: campaign.audience,
@@ -193,8 +311,9 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
         } as unknown as Record<string, unknown>,
       };
 
-      setNodes((nds) => {
-        const next = nds.concat(newNode);
+       setNodes((nds) => {
+         const nodeWithMatchingId = { ...newNode, data: { ...newNode.data, id: newNode.id } as unknown as Record<string, unknown> };
+         const next = nds.concat(nodeWithMatchingId);
         triggerSave(next, edges);
         return next;
       });
@@ -221,6 +340,17 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
         return n;
       });
       triggerSave(next, edges);
+      return next;
+    });
+  };
+
+  const updateSelectedEdgeData = (updates: Record<string, unknown>) => {
+    if (selectedElement?.type !== 'edge') return;
+    setEdges(eds => {
+      const next = eds.map(edge => edge.id === selectedElement.id
+        ? { ...edge, data: { ...edge.data as any, ...updates } as unknown as Record<string, unknown> }
+        : edge);
+      triggerSave(nodes, next);
       return next;
     });
   };
@@ -286,68 +416,47 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
 
           <Panel position="top-right" className="m-4">
             <div className="bg-card border border-border shadow-sm rounded-md px-3 py-1.5 flex items-center gap-2 text-sm">
-              {saveStatus === 'saving' && <><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> <span className="text-muted-foreground">Saving...</span></>}
-              {saveStatus === 'saved' && <><CheckCircle2 className="h-4 w-4 text-green-500" /> <span className="text-muted-foreground">Saved</span></>}
-              {saveStatus === 'error' && <><AlertCircle className="h-4 w-4 text-destructive" /> <span className="text-destructive font-medium">Failed</span></>}
-              {saveStatus === 'idle' && <><Save className="h-4 w-4 text-muted-foreground" /> <span className="text-muted-foreground">Idle</span></>}
+              {conflictFrozen ? (
+                <>
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                  <span className="text-destructive font-medium">Reload or discard local changes</span>
+                  <Button size="sm" variant="outline" onClick={discardLocalChanges}>Discard</Button>
+                  <Button size="sm" onClick={reloadCampaign}>Reload</Button>
+                </>
+              ) : (
+                <>
+                  {saveStatus === 'saving' && <><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> <span className="text-muted-foreground">Saving...</span></>}
+                  {saveStatus === 'saved' && <><CheckCircle2 className="h-4 w-4 text-green-500" /> <span className="text-muted-foreground">Saved</span></>}
+                  {saveStatus === 'error' && <><AlertCircle className="h-4 w-4 text-destructive" /> <span className="text-destructive font-medium">Failed</span></>}
+                  {saveStatus === 'idle' && <><Save className="h-4 w-4 text-muted-foreground" /> <span className="text-muted-foreground">Idle</span></>}
+                </>
+              )}
             </div>
           </Panel>
         </ReactFlow>
 
         {/* Config Drawer */}
-        {selectedElement && (
+        {selectedElement && selectedElement.type === 'node' && selectedNode && (
+          <ActivityConfigDrawer
+            campaignId={campaign.id}
+            node={selectedNode}
+            updateNodeData={updateSelectedNodeData}
+            onClose={() => setSelectedElement(null)}
+            communications={delivery?.communications.filter(c => c.activityId === selectedNode.id) || []}
+            tasks={delivery?.tasks.filter(t => t.activityId === selectedNode.id) || []}
+          />
+        )}
+
+        {selectedElement && selectedElement.type === 'edge' && (
           <div className="w-80 bg-card border-l border-border h-full flex flex-col absolute right-0 top-0 shadow-xl animate-in slide-in-from-right-8 z-20">
-            <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20">
-              <h3 className="font-semibold text-sm">
-                {selectedElement.type === 'node' ? 'Activity Configuration' : 'Rule Builder'}
-              </h3>
+            <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20 shrink-0">
+              <h3 className="font-semibold text-sm">Rule Builder</h3>
               <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setSelectedElement(null)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
             <ScrollArea className="flex-1 p-4">
-              {selectedElement.type === 'node' && selectedNode && (
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Activity Name</Label>
-                    <Input 
-                      value={String(selectedNode.data.name || '')}
-                      onChange={(e) => updateSelectedNodeData('name', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Audience</Label>
-                    <Input 
-                      value={String(selectedNode.data.audience || '')}
-                      onChange={(e) => updateSelectedNodeData('audience', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Status</Label>
-                    <select 
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                      value={String(selectedNode.data.status || 'Estimated')}
-                      onChange={(e) => updateSelectedNodeData('status', e.target.value)}
-                    >
-                      <option value="Decision needed">Decision needed</option>
-                      <option value="Estimated">Estimated</option>
-                      <option value="Known">Known</option>
-                      <option value="Confirmed">Confirmed</option>
-                    </select>
-                  </div>
-                  {Boolean(selectedNode.data.conflict) && (
-                    <div className="p-3 bg-destructive/10 rounded-md border border-destructive/20 text-sm">
-                      <div className="font-semibold text-destructive flex items-center gap-1.5 mb-1">
-                        <AlertCircle className="h-4 w-4" /> Conflict Flagged
-                      </div>
-                      <div className="text-destructive/80 text-xs">
-                        This activity overlaps with a portfolio-wide restriction. Check Portfolio tab for details.
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              {selectedElement.type === 'edge' && selectedEdge && (
+              {selectedEdge && (
                 <div className="space-y-4">
                   <div className="p-3 bg-muted rounded-md text-sm border border-border">
                     <span className="font-medium text-muted-foreground block mb-1">Logic Sentence</span>
@@ -386,6 +495,49 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
                       <option value="Time Based">Time Based</option>
                     </select>
                   </div>
+                   <div className="space-y-1.5">
+                     <Label className="text-xs text-muted-foreground">Parent branch</Label>
+                     <select
+                       className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                       value={(selectedEdge.data as any)?.parentBranchId || 'none'}
+                       onChange={(e) => updateSelectedEdgeData({ parentBranchId: e.target.value === 'none' ? null : e.target.value })}
+                     >
+                       <option value="none">Root branch</option>
+                       {edges.filter(edge => edge.id !== selectedEdge.id).map(edge => (
+                         <option key={edge.id} value={edge.id}>
+                           {(edge.data as any)?.trigger || edge.id.slice(0, 8)} → {edge.target.slice(0, 8)}
+                         </option>
+                       ))}
+                     </select>
+                   </div>
+                   <div className="space-y-1.5">
+                     <Label className="text-xs text-muted-foreground">Entry condition (JSON)</Label>
+                     <Textarea
+                       className="min-h-16 text-xs font-mono"
+                       defaultValue={JSON.stringify((selectedEdge.data as any)?.entryCondition || {}, null, 2)}
+                       onBlur={(e) => {
+                         try {
+                           updateSelectedEdgeData({ entryCondition: JSON.parse(e.target.value || '{}') });
+                         } catch {
+                           toast({ title: 'Entry condition must be valid JSON', variant: 'destructive' });
+                         }
+                       }}
+                     />
+                   </div>
+                   <div className="space-y-1.5">
+                     <Label className="text-xs text-muted-foreground">Suppression rule (JSON)</Label>
+                     <Textarea
+                       className="min-h-16 text-xs font-mono"
+                       defaultValue={JSON.stringify((selectedEdge.data as any)?.suppressionRule || {}, null, 2)}
+                       onBlur={(e) => {
+                         try {
+                           updateSelectedEdgeData({ suppressionRule: JSON.parse(e.target.value || '{}') });
+                         } catch {
+                           toast({ title: 'Suppression rule must be valid JSON', variant: 'destructive' });
+                         }
+                       }}
+                     />
+                   </div>
                 </div>
               )}
             </ScrollArea>

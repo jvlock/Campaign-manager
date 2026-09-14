@@ -22,6 +22,8 @@ export interface CampaignSummary {
   readiness: number;
   timing: string;
   owner: string;
+  /** @minimum 1 */
+  rowVersion?: number;
   updatedAt: string;
 }
 
@@ -49,6 +51,8 @@ export interface CampaignUpdate {
   name?: string;
   lifecycle?: string;
   strategy?: CampaignUpdateStrategy;
+  /** @minimum 1 */
+  rowVersion: number;
 }
 
 export type CampaignDetailStrategy = { [key: string]: unknown };
@@ -71,8 +75,14 @@ export interface Activity {
   owner: string;
   conflict: boolean;
   decisionStatus?: string;
+  /** @minimum 1 */
+  rowVersion?: number;
   position: Position;
 }
+
+export type ConnectionEntryCondition = { [key: string]: unknown };
+
+export type ConnectionSuppressionRule = { [key: string]: unknown };
 
 export interface Connection {
   id: string;
@@ -82,11 +92,17 @@ export interface Connection {
   timing: string;
   exclusions: string[];
   sentence: string;
+  /** @nullable */
+  parentBranchId?: string | null;
+  entryCondition?: ConnectionEntryCondition;
+  suppressionRule?: ConnectionSuppressionRule;
 }
 
 export interface MapData {
   activities: Activity[];
   connections: Connection[];
+  /** @minimum 1 */
+  rowVersion?: number;
 }
 
 export interface UtmLink {
@@ -98,11 +114,70 @@ export interface UtmLink {
   status: string;
 }
 
+export type DeliveryStatus = typeof DeliveryStatus[keyof typeof DeliveryStatus];
+
+
+export const DeliveryStatus = {
+  Known: 'Known',
+  Estimated: 'Estimated',
+  Decision_needed: 'Decision needed',
+  Not_applicable: 'Not applicable',
+  Confirmed: 'Confirmed',
+} as const;
+
+export interface Communication {
+  id: string;
+  campaignId: string;
+  activityId: string;
+  name: string;
+  type: string;
+  timing: string;
+  sortOrder: number;
+  status: DeliveryStatus;
+  owner: string;
+  audienceBranchId: string;
+  communicationType: string;
+  channel: string;
+  approvalStatus: string;
+  qaAudienceConfirmed: boolean;
+  qaContentApproved: boolean;
+  qaLinksVerified: boolean;
+  qaTimingVerified: boolean;
+  qaOwnerConfirmed: boolean;
+  blockingDependencyTaskIds: string[];
+  blockingDependencyIds: string[];
+}
+
+export type TaskType = typeof TaskType[keyof typeof TaskType];
+
+
+export const TaskType = {
+  Asset: 'Asset',
+  Landing_page: 'Landing page',
+  Approval: 'Approval',
+  Tracking: 'Tracking',
+  Other: 'Other',
+} as const;
+
+export interface ActivityTask {
+  id: string;
+  campaignId: string;
+  activityId: string;
+  name: string;
+  type: TaskType;
+  timing: string;
+  sortOrder: number;
+  status: DeliveryStatus;
+  owner: string;
+}
+
 export type CampaignDetail = CampaignSummary & {
   strategy: CampaignDetailStrategy;
   map: MapData;
   utmLinks: UtmLink[];
   inheritance: CampaignDetailInheritance;
+  communications: Communication[];
+  tasks: ActivityTask[];
 };
 
 export interface ActivityInput {
@@ -113,10 +188,133 @@ export interface ActivityInput {
   timing: string;
   status: string;
   owner: string;
+  /** @minimum 1 */
+  rowVersion?: number;
   position: Position;
 }
 
-export type MapInput = MapData;
+export interface CommunicationInput {
+  activityId: string;
+  /** @minLength 1 */
+  name: string;
+  type?: string;
+  timing?: string;
+  sortOrder?: number;
+  status?: DeliveryStatus;
+  owner?: string;
+  audienceBranchId?: string;
+  communicationType?: string;
+  channel?: string;
+  approvalStatus?: string;
+  qaAudienceConfirmed?: boolean;
+  qaContentApproved?: boolean;
+  qaLinksVerified?: boolean;
+  qaTimingVerified?: boolean;
+  qaOwnerConfirmed?: boolean;
+  blockingDependencyTaskIds?: string[];
+  blockingDependencyIds?: string[];
+}
+
+export interface CommunicationUpdate {
+  activityId?: string;
+  /** @minLength 1 */
+  name?: string;
+  type?: string;
+  timing?: string;
+  sortOrder?: number;
+  status?: DeliveryStatus;
+  owner?: string;
+  audienceBranchId?: string;
+  communicationType?: string;
+  channel?: string;
+  approvalStatus?: string;
+  qaAudienceConfirmed?: boolean;
+  qaContentApproved?: boolean;
+  qaLinksVerified?: boolean;
+  qaTimingVerified?: boolean;
+  qaOwnerConfirmed?: boolean;
+  blockingDependencyTaskIds?: string[];
+  blockingDependencyIds?: string[];
+}
+
+export interface ActivityTaskInput {
+  activityId: string;
+  /** @minLength 1 */
+  name: string;
+  type?: TaskType;
+  timing?: string;
+  sortOrder?: number;
+  status?: DeliveryStatus;
+  owner?: string;
+}
+
+export interface ActivityTaskUpdate {
+  activityId?: string;
+  /** @minLength 1 */
+  name?: string;
+  type?: TaskType;
+  timing?: string;
+  sortOrder?: number;
+  status?: DeliveryStatus;
+  owner?: string;
+}
+
+export interface CommunicationDetails {
+  audienceBranchId: string;
+  communicationType: string;
+  channel: string;
+  approvalStatus: string;
+  qaAudienceConfirmed: boolean;
+  qaContentApproved: boolean;
+  qaLinksVerified: boolean;
+  qaTimingVerified: boolean;
+  qaOwnerConfirmed: boolean;
+  blockingDependencyTaskIds: string[];
+  blockingDependencyIds: string[];
+}
+
+/**
+ * Every dependency ID must reference an activity task in the same campaign.
+ */
+export interface CommunicationInputExtension {
+  audienceBranchId?: string;
+  communicationType?: string;
+  channel?: string;
+  approvalStatus?: string;
+  qaAudienceConfirmed?: boolean;
+  qaContentApproved?: boolean;
+  qaLinksVerified?: boolean;
+  qaTimingVerified?: boolean;
+  qaOwnerConfirmed?: boolean;
+  blockingDependencyTaskIds?: string[];
+  blockingDependencyIds?: string[];
+}
+
+/**
+ * All properties optional for PATCH.
+ */
+export type CommunicationUpdateExtension = CommunicationInputExtension;
+
+export interface CampaignDelivery {
+  communications: Communication[];
+  tasks: ActivityTask[];
+}
+
+export type BranchConnectionFieldsEntryCondition = { [key: string]: unknown };
+
+export type BranchConnectionFieldsSuppressionRule = { [key: string]: unknown };
+
+export interface BranchConnectionFields {
+  /** @nullable */
+  parentBranchId?: string | null;
+  entryCondition?: BranchConnectionFieldsEntryCondition;
+  suppressionRule?: BranchConnectionFieldsSuppressionRule;
+}
+
+export type MapInput = MapData & {
+  /** @minimum 1 */
+  rowVersion: number;
+};
 
 export interface UtmInput {
   destinationUrl: string;
@@ -165,4 +363,516 @@ export interface AdapterStatus {
   airtable: AdapterStatusAirtable;
   ai: AdapterStatusAi;
 }
+
+export interface Error {
+  error: string;
+  rowVersion?: number;
+}
+
+export type ScheduleRuleInputDirection = typeof ScheduleRuleInputDirection[keyof typeof ScheduleRuleInputDirection];
+
+
+export const ScheduleRuleInputDirection = {
+  before: 'before',
+  after: 'after',
+} as const;
+
+export type ScheduleRuleInputBusinessDayStrategy = typeof ScheduleRuleInputBusinessDayStrategy[keyof typeof ScheduleRuleInputBusinessDayStrategy];
+
+
+export const ScheduleRuleInputBusinessDayStrategy = {
+  calendar: 'calendar',
+  skip_weekends: 'skip_weekends',
+  next_business_day: 'next_business_day',
+  previous_business_day: 'previous_business_day',
+} as const;
+
+export interface ScheduleRuleInput {
+  /** @nullable */
+  activityId?: string | null;
+  /** @nullable */
+  communicationId?: string | null;
+  /** @nullable */
+  anchorActivityId?: string | null;
+  /** @minimum 0 */
+  offsetDays: number;
+  /** @minimum 0 */
+  offsetMinutes: number;
+  direction: ScheduleRuleInputDirection;
+  businessDayStrategy: ScheduleRuleInputBusinessDayStrategy;
+  audienceLocalTimezone?: boolean;
+  /** IANA timezone */
+  timezone: string;
+  /**
+     * @nullable
+     * @pattern ^([01]\d|2[0-3]):[0-5]\d$
+     */
+  targetSendTime?: string | null;
+  enabled?: boolean;
+}
+
+export type ScheduleRuleUpdate = ScheduleRuleInput & {
+  /** @minimum 1 */
+  rowVersion?: number;
+};
+
+export type ScheduleRule = ScheduleRuleInput & {
+  id: string;
+  campaignId: string;
+  rowVersion: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export interface ScheduledInstance {
+  id: string;
+  campaignId: string;
+  ruleId: string;
+  /** @nullable */
+  activityId?: string | null;
+  /** @nullable */
+  communicationId?: string | null;
+  readonly originalCalculatedAt: string;
+  calculatedAt: string;
+  /** @nullable */
+  adjustedAt?: string | null;
+  /** @nullable */
+  adjustmentReason?: string | null;
+  timezone: string;
+  status: string;
+  rowVersion: number;
+}
+
+export interface ScheduleRuleCreateResponse {
+  rule: ScheduleRule;
+  instance?: ScheduledInstance | null;
+}
+
+export interface ScheduleRecomputeInput {
+  ruleId?: string;
+  activityId?: string;
+  anchorAt: string;
+  /** IANA timezone */
+  timezone: string;
+  reason?: string;
+}
+
+export interface ScheduledInstanceAdjustment {
+  calculatedAt: string;
+  /** @minLength 1 */
+  reason: string;
+  /** @minimum 1 */
+  rowVersion?: number;
+}
+
+export interface ScheduledInstanceHistory {
+  id: string;
+  scheduledInstanceId: string;
+  ruleId: string;
+  anchorAt: string;
+  /** @nullable */
+  previousCalculatedAt?: string | null;
+  calculatedAt: string;
+  reason: string;
+  createdAt: string;
+}
+
+export type VersionedCampaignUpdateStrategy = { [key: string]: unknown };
+
+export interface VersionedCampaignUpdate {
+  name?: string;
+  lifecycle?: string;
+  strategy?: VersionedCampaignUpdateStrategy;
+  /** @minimum 1 */
+  rowVersion?: number;
+}
+
+export interface VersionedActivity {
+  /** @minimum 1 */
+  rowVersion?: number;
+}
+
+export interface Speaker {
+  /** @minLength 1 */
+  name: string;
+  role?: string;
+  organization?: string;
+}
+
+export interface RegistrationRule {
+  suppressRecruitmentAfterRegistration: boolean;
+  registeredBranch?: string;
+  attendedBranch?: string;
+  noShowBranch?: string;
+}
+
+export interface WebinarSession {
+  id: string;
+  campaignId: string;
+  activityId: string;
+  /** @minLength 1 */
+  name: string;
+  sessionDate: string;
+  /** @pattern ^([01]\d|2[0-3]):[0-5]\d$ */
+  startTime: string;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  durationMinutes: number;
+  timezone: string;
+  platform: string;
+  speakers: Speaker[];
+  registrationRule: RegistrationRule;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface WebinarInput {
+  activityId: string;
+  /** @minLength 1 */
+  name: string;
+  sessionDate: string;
+  startTime: string;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  durationMinutes: number;
+  timezone: string;
+  platform: string;
+  speakers?: Speaker[];
+  registrationRule?: RegistrationRule;
+}
+
+/**
+ * Partial update; every property is optional.
+ */
+export interface WebinarUpdate {
+  activityId?: string;
+  /** @minLength 1 */
+  name?: string;
+  sessionDate?: string;
+  /** @pattern ^([01]\d|2[0-3]):[0-5]\d$ */
+  startTime?: string;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  durationMinutes?: number;
+  timezone?: string;
+  platform?: string;
+  speakers?: Speaker[];
+  registrationRule?: RegistrationRule;
+}
+
+export interface WebinarPerson {
+  id: string;
+  campaignId: string;
+  audienceBranchId: string;
+  name: string;
+  isSynthetic: true;
+}
+
+export interface SyntheticPersonInput {
+  /** @minLength 1 */
+  name: string;
+  audienceBranchId?: string;
+  isSynthetic?: true;
+}
+
+export type RegistrationResultInputResult = typeof RegistrationResultInputResult[keyof typeof RegistrationResultInputResult];
+
+
+export const RegistrationResultInputResult = {
+  registered: 'registered',
+  not_registered: 'not_registered',
+} as const;
+
+export interface RegistrationResultInput {
+  result: RegistrationResultInputResult;
+}
+
+export type AttendanceResultInputResult = typeof AttendanceResultInputResult[keyof typeof AttendanceResultInputResult];
+
+
+export const AttendanceResultInputResult = {
+  attended: 'attended',
+  no_show: 'no_show',
+} as const;
+
+export interface AttendanceResultInput {
+  result: AttendanceResultInputResult;
+}
+
+export interface WebinarPersonEvaluationInput {
+  personId: string;
+}
+
+export type WebinarEvaluationRegistrationResult = typeof WebinarEvaluationRegistrationResult[keyof typeof WebinarEvaluationRegistrationResult];
+
+
+export const WebinarEvaluationRegistrationResult = {
+  registered: 'registered',
+  not_registered: 'not_registered',
+} as const;
+
+/**
+ * @nullable
+ */
+export type WebinarEvaluationAttendanceResult = typeof WebinarEvaluationAttendanceResult[keyof typeof WebinarEvaluationAttendanceResult] | null;
+
+
+export const WebinarEvaluationAttendanceResult = {
+  attended: 'attended',
+  no_show: 'no_show',
+} as const;
+
+export type WebinarEvaluationBranch = typeof WebinarEvaluationBranch[keyof typeof WebinarEvaluationBranch];
+
+
+export const WebinarEvaluationBranch = {
+  not_registered: 'not_registered',
+  registered: 'registered',
+  attended: 'attended',
+  no_show: 'no_show',
+} as const;
+
+export interface WebinarEvaluation {
+  person: WebinarPerson;
+  sessionId: string;
+  registrationResult: WebinarEvaluationRegistrationResult;
+  /** @nullable */
+  attendanceResult: WebinarEvaluationAttendanceResult;
+  branch: WebinarEvaluationBranch;
+  recruitmentSuppressed: boolean;
+  plannedAction: string;
+  externalSending: false;
+}
+
+export interface GovernanceActorReason {
+  /** @minLength 1 */
+  actor: string;
+  /** @minLength 1 */
+  reason: string;
+}
+
+export interface TaxonomyTerm {
+  id: string;
+  versionId: string;
+  category: string;
+  label: string;
+  shortcode: string;
+  parentId?: string | null;
+  supersededBy?: string | null;
+  legacyCodes: string[];
+  isDeprecated: boolean;
+  deprecatedAt?: string | null;
+  deprecationReason?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TaxonomyTermsResponse {
+  version: string;
+  versionId: string;
+  terms: TaxonomyTerm[];
+}
+
+export type TaxonomyTermMutationAction = typeof TaxonomyTermMutationAction[keyof typeof TaxonomyTermMutationAction];
+
+
+export const TaxonomyTermMutationAction = {
+  update: 'update',
+  rename: 'rename',
+  deprecate: 'deprecate',
+  restore: 'restore',
+} as const;
+
+export type TaxonomyTermMutation = GovernanceActorReason & ({
+  versionId?: string;
+  version?: string;
+  category?: string;
+  label?: string;
+  shortcode?: string;
+  parentId?: string | null;
+  supersededBy?: string | null;
+  legacyCodes?: string[];
+  action?: TaxonomyTermMutationAction;
+});
+
+export interface TaxonomyVersionInput {
+  versionId?: string;
+  version?: string;
+}
+
+export type TaxonomyResolveInput = TaxonomyVersionInput & {
+  code: string;
+};
+
+export interface TaxonomyResolution {
+  input: string;
+  version: string;
+  versionId: string;
+  resolved: TaxonomyTerm;
+  chain: TaxonomyTerm[];
+}
+
+export type TaxonomyImportInputCandidatesItem = { [key: string]: unknown };
+
+export type TaxonomyImportInput = GovernanceActorReason & {
+  versionId?: string;
+  version?: string;
+  sourceName: string;
+  idempotencyKey?: string;
+  candidates: TaxonomyImportInputCandidatesItem[];
+};
+
+export type TaxonomyImportBatchResponseBatch = { [key: string]: unknown };
+
+export interface TaxonomyImportCandidate { [key: string]: unknown }
+
+export interface TaxonomyImportBatchResponse {
+  batch: TaxonomyImportBatchResponseBatch;
+  candidates: TaxonomyImportCandidate[];
+  idempotent?: boolean;
+}
+
+export type TaxonomyImportReviewStatus = typeof TaxonomyImportReviewStatus[keyof typeof TaxonomyImportReviewStatus];
+
+
+export const TaxonomyImportReviewStatus = {
+  approved: 'approved',
+  rejected: 'rejected',
+  staged: 'staged',
+  conflict: 'conflict',
+} as const;
+
+export type TaxonomyImportReviewPayload = { [key: string]: unknown };
+
+export type TaxonomyImportReview = GovernanceActorReason & {
+  status: TaxonomyImportReviewStatus;
+  note?: string;
+  resolveConflict?: boolean;
+  payload?: TaxonomyImportReviewPayload;
+};
+
+export type RecordType = typeof RecordType[keyof typeof RecordType];
+
+
+export const RecordType = {
+  campaign: 'campaign',
+  activity: 'activity',
+  communication: 'communication',
+  asset: 'asset',
+  landingPage: 'landingPage',
+  kpi: 'kpi',
+  budget: 'budget',
+  conflict: 'conflict',
+  taxonomyTerm: 'taxonomyTerm',
+  taxonomyVersion: 'taxonomyVersion',
+  importBatch: 'importBatch',
+  importCandidate: 'importCandidate',
+} as const;
+
+export interface GovernanceApproval { [key: string]: unknown }
+
+export type GovernanceApprovalInput = GovernanceActorReason & {
+  recordType: RecordType;
+  recordId: string;
+  stage: string;
+  status: string;
+  approver: string;
+};
+
+export type GovernanceApprovalUpdate = GovernanceActorReason & {
+  stage?: string;
+  status?: string;
+  approver?: string;
+};
+
+export interface GovernanceComment { [key: string]: unknown }
+
+export type GovernanceCommentInput = GovernanceActorReason & {
+  recordType: RecordType;
+  recordId: string;
+  body: string;
+};
+
+export type GovernanceCommentUpdate = GovernanceActorReason & {
+  body: string;
+};
+
+export type GovernanceAuditEventBefore = { [key: string]: unknown } | null;
+
+export type GovernanceAuditEventAfter = { [key: string]: unknown } | null;
+
+export type GovernanceAuditEventMetadata = { [key: string]: unknown };
+
+export interface GovernanceAuditEvent {
+  id: string;
+  entityType: string;
+  entityId: string;
+  action: string;
+  actor: string;
+  reason: string;
+  before?: GovernanceAuditEventBefore;
+  after?: GovernanceAuditEventAfter;
+  metadata?: GovernanceAuditEventMetadata;
+  createdAt: string;
+}
+
+/**
+ * Invalid request
+ */
+export type BadRequestResponse = Error;
+
+/**
+ * Concurrent update or duplicate
+ */
+export type ConflictResponse = Error;
+
+/**
+ * Resource not found
+ */
+export type NotFoundResponse = Error;
+
+export type TaxonomyVersionParameter = string;
+
+export type RecordTypeParameter = string;
+
+export type RecordIdParameter = string;
+
+export type RequiredRecordTypeParameter = string;
+
+export type RequiredRecordIdParameter = string;
+
+export type ListGovernanceAuditParams = {
+entityType?: string;
+entityId?: string;
+/**
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: number;
+};
+
+export type ListGovernanceTermsParams = {
+versionId?: TaxonomyVersionParameter;
+};
+
+export type ResolveGovernanceTermParams = {
+versionId?: TaxonomyVersionParameter;
+code: string;
+};
+
+export type ListGovernanceApprovalsParams = {
+recordType?: RecordTypeParameter;
+recordId?: RecordIdParameter;
+};
+
+export type ListGovernanceCommentsParams = {
+recordType: RequiredRecordTypeParameter;
+recordId: RequiredRecordIdParameter;
+};
 

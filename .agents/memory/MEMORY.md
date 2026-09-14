@@ -1,0 +1,1 @@
+- [Planning audit semantics](planning-audit-semantics.md) — scheduling corrections must preserve the first calculation; governance actor attribution is not authenticated identity.

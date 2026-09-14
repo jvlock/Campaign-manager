@@ -18,5 +18,7 @@ export interface Activity {
   owner: string;
   conflict: boolean;
   decisionStatus?: string;
+  /** @minimum 1 */
+  rowVersion?: number;
   position: Position;
 }

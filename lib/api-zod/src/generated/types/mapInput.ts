@@ -7,4 +7,7 @@
  */
 import type { MapData } from './mapData';
 
-export type MapInput = MapData;
+export type MapInput = MapData & {
+  /** @minimum 1 */
+  rowVersion: number;
+};
