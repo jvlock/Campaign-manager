@@ -154,6 +154,11 @@ overrides:
   esbuild: 0.28.2
   js-yaml: 4.3.2
 
+patchedDependencies:
+  '@xyflow/react@12.11.6':
+    hash: f1769222dcd0348573e1758f1592f67366881813cff1a4cb4e96d47f06739254
+    path: patches/@xyflow__react@12.11.6.patch
+
 importers:
 
   .:
@@ -234,7 +239,7 @@ importers:
         version: 11.0.0
       '@xyflow/react':
         specifier: ^12.11.6
-        version: 12.11.6(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 12.11.6(patch_hash=f1769222dcd0348573e1758f1592f67366881813cff1a4cb4e96d47f06739254)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
@@ -4476,7 +4481,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@xyflow/react@12.11.6(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+  '@xyflow/react@12.11.6(patch_hash=f1769222dcd0348573e1758f1592f67366881813cff1a4cb4e96d47f06739254)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@xyflow/system': 0.0.82
       classcat: 5.0.5

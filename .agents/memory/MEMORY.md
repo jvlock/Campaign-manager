@@ -1,1 +1,2 @@
 - [Planning audit semantics](planning-audit-semantics.md) — scheduling corrections must preserve the first calculation; governance actor attribution is not authenticated identity.
+- [Browser layout error diagnosis](browser-layout-errors.md) — unknown runtime reports can be native ResizeObserver notifications; capture ErrorEvent.message before blaming application data.

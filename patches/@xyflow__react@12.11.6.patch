@@ -1,0 +1,132 @@
+diff --git a/dist/esm/index.js b/dist/esm/index.js
+index 422889fc98ea26cf4c4b45d6d7b84479550f4728..9314a19cc6934e6e8c361e50cdb737502f1d1958 100644
+--- a/dist/esm/index.js
++++ b/dist/esm/index.js
+@@ -1264,6 +1264,36 @@ function useGlobalKeyHandler({ deleteKeyCode, multiSelectionKeyCode, }) {
+  *
+  * @internal
+  */
++// Keep React/store layout writes outside the browser's resize delivery cycle.
++function createFrameResizeObserver(callback) {
++    const pending = new Map();
++    let frame = null;
++    const observer = new ResizeObserver((entries) => {
++        entries.forEach((entry) => pending.set(entry.target, entry));
++        if (frame === null) {
++            frame = requestAnimationFrame(() => {
++                frame = null;
++                const batch = Array.from(pending.values());
++                pending.clear();
++                if (batch.length) callback(batch, observer);
++            });
++        }
++    });
++    const disconnect = observer.disconnect.bind(observer);
++    const unobserve = observer.unobserve.bind(observer);
++    observer.disconnect = () => {
++        if (frame !== null) cancelAnimationFrame(frame);
++        frame = null;
++        pending.clear();
++        disconnect();
++    };
++    observer.unobserve = (target) => {
++        pending.delete(target);
++        unobserve(target);
++    };
++    return observer;
++}
++
+ function useResizeHandler(domNode) {
+     const store = useStoreApi();
+     useEffect(() => {
+@@ -1280,13 +1310,11 @@ function useResizeHandler(domNode) {
+         if (domNode.current) {
+             updateDimensions();
+             window.addEventListener('resize', updateDimensions);
+-            const resizeObserver = new ResizeObserver(() => updateDimensions());
++            const resizeObserver = createFrameResizeObserver(() => updateDimensions());
+             resizeObserver.observe(domNode.current);
+             return () => {
+                 window.removeEventListener('resize', updateDimensions);
+-                if (resizeObserver && domNode.current) {
+-                    resizeObserver.unobserve(domNode.current);
+-                }
++                resizeObserver.disconnect();
+             };
+         }
+     }, []);
+@@ -2150,7 +2178,7 @@ function useResizeObserver() {
+         if (typeof ResizeObserver === 'undefined') {
+             return null;
+         }
+-        return new ResizeObserver((entries) => {
++        return createFrameResizeObserver((entries) => {
+             const updates = new Map();
+             entries.forEach((entry) => {
+                 const id = entry.target.getAttribute('data-id');
+diff --git a/dist/esm/index.mjs b/dist/esm/index.mjs
+index 422889fc98ea26cf4c4b45d6d7b84479550f4728..9314a19cc6934e6e8c361e50cdb737502f1d1958 100644
+--- a/dist/esm/index.mjs
++++ b/dist/esm/index.mjs
+@@ -1264,6 +1264,36 @@ function useGlobalKeyHandler({ deleteKeyCode, multiSelectionKeyCode, }) {
+  *
+  * @internal
+  */
++// Keep React/store layout writes outside the browser's resize delivery cycle.
++function createFrameResizeObserver(callback) {
++    const pending = new Map();
++    let frame = null;
++    const observer = new ResizeObserver((entries) => {
++        entries.forEach((entry) => pending.set(entry.target, entry));
++        if (frame === null) {
++            frame = requestAnimationFrame(() => {
++                frame = null;
++                const batch = Array.from(pending.values());
++                pending.clear();
++                if (batch.length) callback(batch, observer);
++            });
++        }
++    });
++    const disconnect = observer.disconnect.bind(observer);
++    const unobserve = observer.unobserve.bind(observer);
++    observer.disconnect = () => {
++        if (frame !== null) cancelAnimationFrame(frame);
++        frame = null;
++        pending.clear();
++        disconnect();
++    };
++    observer.unobserve = (target) => {
++        pending.delete(target);
++        unobserve(target);
++    };
++    return observer;
++}
++
+ function useResizeHandler(domNode) {
+     const store = useStoreApi();
+     useEffect(() => {
+@@ -1280,13 +1310,11 @@ function useResizeHandler(domNode) {
+         if (domNode.current) {
+             updateDimensions();
+             window.addEventListener('resize', updateDimensions);
+-            const resizeObserver = new ResizeObserver(() => updateDimensions());
++            const resizeObserver = createFrameResizeObserver(() => updateDimensions());
+             resizeObserver.observe(domNode.current);
+             return () => {
+                 window.removeEventListener('resize', updateDimensions);
+-                if (resizeObserver && domNode.current) {
+-                    resizeObserver.unobserve(domNode.current);
+-                }
++                resizeObserver.disconnect();
+             };
+         }
+     }, []);
+@@ -2150,7 +2178,7 @@ function useResizeObserver() {
+         if (typeof ResizeObserver === 'undefined') {
+             return null;
+         }
+-        return new ResizeObserver((entries) => {
++        return createFrameResizeObserver((entries) => {
+             const updates = new Map();
+             entries.forEach((entry) => {
+                 const id = entry.target.getAttribute('data-id');
