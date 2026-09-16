@@ -1,11 +1,26 @@
 import { Handle, Position } from '@xyflow/react';
 import { Activity } from '@workspace/api-client-react';
-import { AlertTriangle, Clock, User, Mail, CheckSquare } from 'lucide-react';
+import { AlertTriangle, Clock, User, Mail, CheckSquare, Link2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export default function ActivityNode({ data }: { data: Activity & { communications?: any[], tasks?: any[] } }) {
+type ActivityNodeData = Activity & {
+  communications?: any[];
+  tasks?: any[];
+  connectionSourceId?: string;
+  onConnectionAction?: (activityId: string) => void;
+};
+
+export default function ActivityNode({ data }: { data: ActivityNodeData }) {
   const commsCount = data.communications?.length || 0;
   const openTasks = data.tasks?.filter(t => t.status !== 'Confirmed' && t.status !== 'Not applicable')?.length || 0;
+  const connectionSourceId = data.connectionSourceId;
+  const isConnectionSource = connectionSourceId === data.id;
+  const isConnectionTarget = Boolean(connectionSourceId) && !isConnectionSource;
+  const connectionActionLabel = isConnectionSource
+    ? 'Cancel connection source'
+    : isConnectionTarget
+      ? `Connect to ${data.name}`
+      : `Start connection from ${data.name}`;
 
   return (
     <div className={cn(
@@ -47,7 +62,8 @@ export default function ActivityNode({ data }: { data: Activity & { communicatio
           </div>
         </div>
 
-        <div className="pt-2 mt-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+        <div className="pt-2 mt-2 border-t border-border space-y-2 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Mail className="h-3.5 w-3.5" />
             <span>{commsCount} {commsCount === 1 ? 'communication' : 'communications'}</span>
@@ -58,11 +74,49 @@ export default function ActivityNode({ data }: { data: Activity & { communicatio
               {openTasks} open {openTasks === 1 ? 'task' : 'tasks'}
             </span>
           </div>
+          </div>
+          {data.onConnectionAction && (
+            <button
+              type="button"
+              data-testid={`button-connect-activity-${data.id}`}
+              aria-label={connectionActionLabel}
+              title={connectionActionLabel}
+              onClick={(event) => {
+                event.stopPropagation();
+                data.onConnectionAction?.(data.id);
+              }}
+              className={cn(
+                "nodrag nopan flex min-h-9 w-full items-center justify-center gap-1.5 rounded border px-2 py-1.5 text-[11px] font-medium transition-colors touch-manipulation",
+                isConnectionSource
+                  ? "border-primary bg-primary/10 text-primary hover:bg-primary/15"
+                  : isConnectionTarget
+                    ? "border-secondary bg-secondary/10 text-secondary-foreground hover:bg-secondary/15"
+                    : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground"
+              )}
+            >
+              <Link2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span>{isConnectionSource ? 'Cancel source' : isConnectionTarget ? 'Connect here' : 'Connect from here'}</span>
+            </button>
+          )}
         </div>
       </div>
 
-      <Handle type="target" position={Position.Left} className="w-2 h-4 rounded-sm border-2 bg-muted border-border" />
-      <Handle type="source" position={Position.Right} className="w-2 h-4 rounded-sm border-2 bg-primary border-primary" />
+      <Handle
+        type="target"
+        position={Position.Left}
+        aria-label={`Connect into ${data.name}`}
+        title={`Connect into ${data.name}`}
+        data-testid={`handle-target-${data.id}`}
+        className="nodrag nopan !h-8 !w-4 rounded-md border-2 !border-border !bg-muted shadow-sm touch-none"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        aria-label={`Connect from ${data.name}`}
+        title={`Connect from ${data.name}`}
+        data-testid={`handle-source-${data.id}`}
+        className="nodrag nopan !h-8 !w-4 rounded-md border-2 !border-primary !bg-primary shadow-sm touch-none"
+      />
     </div>
   );
 }

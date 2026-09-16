@@ -495,7 +495,7 @@ paths:
         - {$ref: "#/components/parameters/SessionId"}
       responses:
         "200":
-          description: Fixed nine-communication webinar standard
+          description: Versioned fixed webinar communication standard
           content:
             application/json:
               schema: {$ref: "#/components/schemas/WebinarStandard"}
@@ -1698,16 +1698,22 @@ components:
           items: {$ref: "#/components/schemas/WebinarStandardVariant"}
     WebinarStandard:
       type: object
-      required: [campaignId, sessionId, activityId, launchAt, templateConfig, communications]
+      required: [campaignId, sessionId, activityId, launchAt, templateId, templateName, templateSummary, templateConfig, communications]
       properties:
         campaignId: {type: string, format: uuid}
         sessionId: {type: string, format: uuid}
         activityId: {type: string, format: uuid}
         launchAt: {type: [string, "null"], format: date-time}
+        templateId:
+          type: string
+          enum: [webinar_legacy_9, webinar_default_5]
+          description: Persisted identity of the fixed webinar communication template.
+        templateName: {type: string}
+        templateSummary: {type: string}
         templateConfig: {$ref: "#/components/schemas/WebinarStandardTemplateConfig"}
         communications:
           type: array
-          minItems: 9
+          minItems: 5
           maxItems: 9
           items: {$ref: "#/components/schemas/WebinarStandardCommunication"}
     WebinarStandardContentPatch:

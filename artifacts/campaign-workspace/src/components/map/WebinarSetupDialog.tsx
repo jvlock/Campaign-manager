@@ -107,29 +107,38 @@ export default function WebinarSetupDialog({ open, onOpenChange, onSubmit, submi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="left-4 right-4 top-[5dvh] w-auto max-w-none translate-x-0 translate-y-0 sm:left-1/2 sm:right-auto sm:top-1/2 sm:w-full sm:max-w-[425px] sm:-translate-x-1/2 sm:-translate-y-1/2 max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Setup New Webinar</DialogTitle>
           <DialogDescription>
-            Provide the required dates and configuration. These cannot be random defaults.
+            Set the event details to create your webinar and its five-message communications template.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs space-y-2">
+            <p className="font-semibold text-sm">Included automatically</p>
+            <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+              <li>2 invites: 14 and 7 days before the webinar</li>
+              <li>2 reminders: 24 hours and 1 hour before</li>
+              <li>1 attendee thank-you: 1 day after</li>
+            </ul>
+            <p className="text-muted-foreground">Weekend invites move to Friday; the thank-you moves to Monday. Invites before campaign launch are skipped. Edit the copy after creation; emails are not sent automatically.</p>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Event Date</Label>
-              <Input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} />
+              <Label htmlFor="webinar-event-date">Event Date</Label>
+              <Input id="webinar-event-date" type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Event Time</Label>
-              <Input type="time" value={eventTime} onChange={e => setEventTime(e.target.value)} />
+              <Label htmlFor="webinar-event-time">Event Time</Label>
+              <Input id="webinar-event-time" type="time" value={eventTime} onChange={e => setEventTime(e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Timezone</Label>
+              <Label htmlFor="webinar-timezone">Timezone</Label>
               <Select value={timezone} onValueChange={setTimezone}>
-                <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                <SelectTrigger id="webinar-timezone"><SelectValue placeholder="Select..." /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="America/New_York">America/New_York</SelectItem>
                   <SelectItem value="America/Chicago">America/Chicago</SelectItem>
@@ -140,9 +149,9 @@ export default function WebinarSetupDialog({ open, onOpenChange, onSubmit, submi
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Platform</Label>
+              <Label htmlFor="webinar-platform">Platform</Label>
               <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="webinar-platform"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Zoom">Zoom</SelectItem>
                   <SelectItem value="Teams">Teams</SelectItem>
@@ -153,17 +162,17 @@ export default function WebinarSetupDialog({ open, onOpenChange, onSubmit, submi
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Duration (Minutes)</Label>
-            <Input type="number" min={1} max={1440} value={durationMinutes} onChange={e => setDurationMinutes(Number(e.target.value))} />
+            <Label htmlFor="webinar-duration">Duration (Minutes)</Label>
+            <Input id="webinar-duration" type="number" min={1} max={1440} value={durationMinutes} onChange={e => setDurationMinutes(Number(e.target.value))} />
           </div>
           <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border mt-2">
             <div className="space-y-2">
-              <Label>Campaign Launch Date</Label>
-              <Input type="date" value={launchDate} onChange={e => setLaunchDate(e.target.value)} />
+              <Label htmlFor="webinar-launch-date">Campaign Launch Date</Label>
+              <Input id="webinar-launch-date" type="date" value={launchDate} onChange={e => setLaunchDate(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Campaign Launch Time</Label>
-              <Input type="time" value={launchTime} onChange={e => setLaunchTime(e.target.value)} />
+              <Label htmlFor="webinar-launch-time">Campaign Launch Time</Label>
+              <Input id="webinar-launch-time" type="time" value={launchTime} onChange={e => setLaunchTime(e.target.value)} />
             </div>
           </div>
           {error && <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{error}</div>}

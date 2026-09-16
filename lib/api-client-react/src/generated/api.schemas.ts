@@ -830,15 +830,30 @@ export interface WebinarStandardTemplateConfig {
   variants: WebinarStandardVariant[];
 }
 
+/**
+ * Persisted identity of the fixed webinar communication template.
+ */
+export type WebinarStandardTemplateId = typeof WebinarStandardTemplateId[keyof typeof WebinarStandardTemplateId];
+
+
+export const WebinarStandardTemplateId = {
+  webinar_legacy_9: 'webinar_legacy_9',
+  webinar_default_5: 'webinar_default_5',
+} as const;
+
 export interface WebinarStandard {
   campaignId: string;
   sessionId: string;
   activityId: string;
   /** @nullable */
   launchAt: string | null;
+  /** Persisted identity of the fixed webinar communication template. */
+  templateId: WebinarStandardTemplateId;
+  templateName: string;
+  templateSummary: string;
   templateConfig: WebinarStandardTemplateConfig;
   /**
-     * @minItems 9
+     * @minItems 5
      * @maxItems 9
      */
   communications: WebinarStandardCommunication[];

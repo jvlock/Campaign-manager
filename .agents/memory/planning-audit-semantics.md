@@ -20,3 +20,9 @@ For the standard webinar template, calendar-day offsets retain the event's local
 **Why:** The supplied nine-message specification defines days and weekend direction but does not supply a separate invitation/follow-up send time. Retaining the event clock avoids inventing a 09:00 default. Hour-based reminders must remain exact through daylight-saving changes.
 
 **How to apply:** Keep the fixed webinar template distinct from freely editable generic schedule rules. If a separate local send-time policy is later supplied, treat it as a deliberate template change, retaining prior calculations and history.
+
+Changing the default webinar sequence is not permission to convert existing webinars.
+
+**Why:** The user explicitly chose a five-message default for new webinars, with existing webinars left unchanged. Their previous nine-message sequence may already contain approved copy, schedules, and history.
+
+**How to apply:** Resolve behavior from each session's stored template version, including during repairs and reconciliation. Any conversion of existing sessions needs a separate, explicit user request.

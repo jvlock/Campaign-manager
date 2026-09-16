@@ -3,6 +3,17 @@ import { activities, audiences, campaigns } from "./campaign";
 
 export type WebinarSpeaker = { name: string; role?: string; organization?: string };
 
+/**
+ * A session owns the version of the fixed webinar communication sequence it
+ * was provisioned with.  This is deliberately persisted on the session rather
+ * than inferred from its current rows: legacy sessions must never be silently
+ * converted when the default for new sessions changes.
+ */
+export const WEBINAR_TEMPLATE_VERSIONS = ["legacy_9", "default_5"] as const;
+export type WebinarTemplateVersion = (typeof WEBINAR_TEMPLATE_VERSIONS)[number];
+export const LEGACY_WEBINAR_TEMPLATE_VERSION: WebinarTemplateVersion = "legacy_9";
+export const DEFAULT_NEW_WEBINAR_TEMPLATE_VERSION: WebinarTemplateVersion = "default_5";
+
 export const webinarSessions = pgTable(
   "webinar_sessions",
   {
@@ -17,6 +28,7 @@ export const webinarSessions = pgTable(
     platform: text("platform").notNull(),
     speakers: jsonb("speakers").$type<WebinarSpeaker[]>().notNull().default([]),
     recruitmentLaunchAt: timestamp("recruitment_launch_at", { withTimezone: true }),
+    templateVersion: text("template_version").notNull().default(LEGACY_WEBINAR_TEMPLATE_VERSION),
     registrationRule: jsonb("registration_rule")
       .$type<{
         suppressRecruitmentAfterRegistration: boolean;

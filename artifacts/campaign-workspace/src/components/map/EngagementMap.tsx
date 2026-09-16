@@ -30,11 +30,12 @@ import {
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import ActivityNode from './ActivityNode';
+import ConnectionEdge from './ConnectionEdge';
 import ActivityConfigDrawer from './ActivityConfigDrawer';
 import WebinarSetupDialog from './WebinarSetupDialog';
 import type { WebinarSetup } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
-import { Save, CheckCircle2, Loader2, AlertCircle, Plus, LayoutGrid, X } from 'lucide-react';
+import { Save, CheckCircle2, Loader2, AlertCircle, Plus, LayoutGrid, X, Link2, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -46,11 +47,16 @@ const nodeTypes = {
   activity: ActivityNode,
 };
 
+const edgeTypes = {
+  connection: ConnectionEdge,
+};
+
 function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | 'idle'>('saved');
   const [selectedElement, setSelectedElement] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
+  const [connectionMode, setConnectionMode] = useState<{ sourceId: string | null } | null>(null);
   const [webinarSetupDrop, setWebinarSetupDrop] = useState<{ position: any, type: string } | null>(null);
   const [webinarSetupError, setWebinarSetupError] = useState('');
   const [webinarSetupSaving, setWebinarSetupSaving] = useState(false);
@@ -67,6 +73,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
     onSuccess?: () => void;
     onError?: (error: unknown) => void;
   } | null>(null);
+  const connectionActionRef = useRef<(activityId: string) => void>(() => {});
   const [conflictFrozen, setConflictFrozen] = useState(false);
   const campaignVersion = useRef<number>((campaign as any).rowVersion ?? 1);
   const { screenToFlowPosition, fitView } = useReactFlow();
@@ -77,27 +84,37 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
   const { data: delivery } = useGetCampaignDelivery(campaign.id, {
     query: { enabled: !!campaign.id, queryKey: getGetCampaignDeliveryQueryKey(campaign.id) }
   });
+  const dispatchConnectionAction = useCallback((activityId: string) => {
+    connectionActionRef.current(activityId);
+  }, []);
 
   const hydrateFromCampaign = useCallback(() => {
     const initialNodes: Node[] = campaign.map.activities.map(act => ({
       id: act.id,
       type: 'activity',
       position: act.position,
-      data: act as unknown as Record<string, unknown>,
+      data: {
+        ...act,
+        connectionSourceId: connectionMode?.sourceId,
+        onConnectionAction: dispatchConnectionAction,
+      } as unknown as Record<string, unknown>,
     }));
     const initialEdges: Edge[] = campaign.map.connections.map(conn => ({
       id: conn.id,
+      type: 'connection',
       source: conn.source,
       target: conn.target,
       label: conn.trigger || undefined,
       data: conn as unknown as Record<string, unknown>,
       animated: true,
+      interactionWidth: 36,
+      deletable: true,
       style: { strokeWidth: 2, stroke: 'hsl(var(--primary))' },
     }));
     setNodes(initialNodes);
     setEdges(initialEdges);
     campaignVersion.current = (campaign as any).rowVersion ?? 1;
-  }, [campaign]);
+  }, [campaign, connectionMode?.sourceId, dispatchConnectionAction]);
 
   useEffect(() => {
     if (campaign && initializedId.current !== campaign.id) {
@@ -144,7 +161,13 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
       const mapData: MapInput = {
         rowVersion: campaignVersion.current,
         activities: currentMap.nodes.map(n => {
-          const { communications, tasks, ...restData } = n.data as any;
+          const {
+            communications,
+            tasks,
+            connectionSourceId,
+            onConnectionAction,
+            ...restData
+          } = n.data as any;
           return { ...restData, id: n.id, position: n.position };
         }),
         connections: currentMap.edges.map(e => ({
@@ -278,40 +301,159 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
     [nodes, triggerSave]
   );
 
+  const connectActivities = useCallback((sourceId: string, targetId: string) => {
+    if (sourceId === targetId) {
+      toast({
+        title: 'Choose two different activities',
+        description: 'An activity cannot connect to itself.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (edges.some((edge) => edge.source === sourceId && edge.target === targetId)) {
+      toast({
+        title: 'Connection already exists',
+        description: 'Choose another target or edit the existing connection.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const id = uuidv4();
+    const newEdge: Edge = {
+      id,
+      type: 'connection',
+      source: sourceId,
+      target: targetId,
+      label: 'Response',
+      animated: true,
+      interactionWidth: 36,
+      deletable: true,
+      style: { strokeWidth: 2, stroke: 'hsl(var(--primary))' },
+      data: {
+        id,
+        source: sourceId,
+        target: targetId,
+        trigger: 'Response',
+        timing: 'Immediate',
+        exclusions: [],
+        sentence: 'On Response, Immediate',
+        parentBranchId: null,
+        entryCondition: { event: 'Response' },
+        suppressionRule: {},
+      } as unknown as Record<string, unknown>,
+    };
+
+    setEdges((currentEdges) => {
+      const nextEdges = addEdge(newEdge, currentEdges);
+      // addEdge also guards against duplicate source/target pairs if another
+      // pointer event arrives before React has committed the first update.
+      if (nextEdges.length === currentEdges.length) return currentEdges;
+      triggerSave(nodes, nextEdges);
+      return nextEdges;
+    });
+    setConnectionMode(null);
+    setSelectedElement({ type: 'edge', id });
+  }, [edges, nodes, toast, triggerSave]);
+
   const onConnect = useCallback(
     (params: FlowConnection) => {
-      setEdges((eds) => {
-        const id = uuidv4();
-        const newEdge: Edge = { 
-          ...params, 
-          id,
-          animated: true,
-          style: { strokeWidth: 2, stroke: 'hsl(var(--primary))' },
-          data: {
-            id,
-            source: params.source,
-            target: params.target,
-            trigger: 'Response',
-            timing: 'Immediate',
-            exclusions: [],
-            sentence: 'On Response, Immediate',
-            parentBranchId: null,
-            entryCondition: { event: 'Response' },
-            suppressionRule: {}
-          } as unknown as Record<string, unknown>
-        } as Edge;
-        const nextEdges = addEdge(newEdge, eds);
-        triggerSave(nodes, nextEdges);
-        return nextEdges;
-      });
+      if (params.source && params.target) {
+        connectActivities(params.source, params.target);
+      }
     },
-    [nodes, triggerSave]
+    [connectActivities]
   );
+
+  const onConnectionAction = useCallback((activityId: string) => {
+    if (!connectionMode || !connectionMode.sourceId) {
+      setSelectedElement(null);
+      setConnectionMode({ sourceId: activityId });
+      return;
+    }
+    if (connectionMode.sourceId === activityId) {
+      setConnectionMode(null);
+      return;
+    }
+    connectActivities(connectionMode.sourceId, activityId);
+  }, [connectActivities, connectionMode]);
+
+  useEffect(() => {
+    connectionActionRef.current = onConnectionAction;
+  }, [onConnectionAction]);
+
+  // Interaction callbacks live on the React Flow node only. They are removed
+  // in enqueueSave so no UI functions can leak into the map API payload.
+  useEffect(() => {
+    setNodes((currentNodes) => currentNodes.map((node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        connectionSourceId: connectionMode?.sourceId,
+        onConnectionAction: dispatchConnectionAction,
+      },
+    })));
+  }, [connectionMode?.sourceId, dispatchConnectionAction]);
 
   const onDragOver = useCallback((event: DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
+
+  const addActivityAtPosition = useCallback((type: string, position: { x: number; y: number }) => {
+    if (type === 'Webinar') {
+      setWebinarSetupError('');
+      setWebinarSetupSaving(false);
+      setWebinarSetupDrop({ position, type });
+      return;
+    }
+
+    const newNode: Node = {
+      id: uuidv4(),
+      type: 'activity',
+      position,
+      data: {
+        name: `New ${type}`,
+        type,
+        audience: campaign.audience,
+        region: campaign.region,
+        timing: 'TBD',
+        status: 'Estimated',
+        owner: 'Unassigned',
+        conflict: false,
+        position,
+      } as unknown as Record<string, unknown>,
+    };
+
+    setNodes((nds) => {
+      const nodeWithMatchingId = {
+        ...newNode,
+        data: { ...newNode.data, id: newNode.id } as unknown as Record<string, unknown>,
+      };
+      const next = nds.concat(nodeWithMatchingId);
+      triggerSave(next, edges);
+      return next;
+    });
+  }, [campaign.audience, campaign.region, edges, triggerSave]);
+
+  const positionForLibraryAdd = useCallback(() => {
+    const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+    const screenPosition = bounds
+      ? { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 }
+      : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    const flowPosition = screenToFlowPosition(screenPosition);
+    const position = { x: flowPosition.x - 144, y: flowPosition.y - 110 };
+    // New cards must not cover existing handles or connections.
+    while (nodes.some((node) => (
+      position.x < node.position.x + (node.measured?.width ?? 288) + 32
+      && position.x + 320 > node.position.x
+      && position.y < node.position.y + (node.measured?.height ?? 260) + 32
+      && position.y + 292 > node.position.y
+    ))) {
+      position.y += 320;
+    }
+    return position;
+  }, [nodes, screenToFlowPosition]);
 
   const onDrop = useCallback(
     (event: DragEvent) => {
@@ -325,36 +467,9 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
         y: event.clientY,
       });
 
-      if (type === 'Webinar') {
-        setWebinarSetupDrop({ position, type });
-        return;
-      }
-
-       const newNode: Node = {
-         id: uuidv4(),
-        type: 'activity',
-        position,
-         data: {
-          name: `New ${type}`,
-          type: type,
-          audience: campaign.audience,
-          region: campaign.region,
-          timing: 'TBD',
-          status: 'Estimated',
-          owner: 'Unassigned',
-          conflict: false,
-          position
-        } as unknown as Record<string, unknown>,
-      };
-
-       setNodes((nds) => {
-         const nodeWithMatchingId = { ...newNode, data: { ...newNode.data, id: newNode.id } as unknown as Record<string, unknown> };
-         const next = nds.concat(nodeWithMatchingId);
-        triggerSave(next, edges);
-        return next;
-      });
+      addActivityAtPosition(type, position);
     },
-    [screenToFlowPosition, campaign, edges, triggerSave]
+    [addActivityAtPosition, screenToFlowPosition]
   );
 
   const onDragStart = (event: DragEvent, nodeType: string) => {
@@ -362,9 +477,26 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
     event.dataTransfer.effectAllowed = 'move';
   };
 
-  const onNodeClick: NodeMouseHandler = (_, node) => setSelectedElement({ type: 'node', id: node.id });
+  const onNodeClick: NodeMouseHandler = (_, node) => {
+    if (connectionMode && !connectionMode.sourceId) {
+      setConnectionMode({ sourceId: node.id });
+      return;
+    }
+    if (connectionMode?.sourceId) {
+      if (connectionMode.sourceId === node.id) {
+        setConnectionMode(null);
+        return;
+      }
+      connectActivities(connectionMode.sourceId, node.id);
+      return;
+    }
+    setSelectedElement({ type: 'node', id: node.id });
+  };
   const onEdgeClick: EdgeMouseHandler = (_, edge) => setSelectedElement({ type: 'edge', id: edge.id });
-  const onPaneClick = () => setSelectedElement(null);
+  const onPaneClick = () => {
+    setSelectedElement(null);
+    setConnectionMode(null);
+  };
 
   const updateSelectedNodeData = (key: string, value: string) => {
     if (selectedElement?.type !== 'node') return;
@@ -391,31 +523,57 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
     });
   };
 
+  const deleteSelectedEdge = () => {
+    if (selectedElement?.type !== 'edge') return;
+    const edgeId = selectedElement.id;
+    setEdges((eds) => {
+      const next = eds.filter((edge) => edge.id !== edgeId);
+      if (next.length !== eds.length) triggerSave(nodes, next);
+      return next;
+    });
+    setSelectedElement(null);
+  };
+
   const selectedNode = selectedElement?.type === 'node' ? nodes.find(n => n.id === selectedElement.id) : null;
   const selectedEdge = selectedElement?.type === 'edge' ? edges.find(e => e.id === selectedElement.id) : null;
 
   return (
     <div className="flex h-full w-full">
       {/* Activity Library Sidebar */}
-      <div className="w-64 bg-card border-r border-border flex flex-col shrink-0 z-10">
-        <div className="p-4 border-b border-border bg-muted/20">
+      <div className="w-44 sm:w-64 bg-card border-r border-border flex flex-col shrink-0 z-10">
+        <div className="p-3 sm:p-4 border-b border-border bg-muted/20">
           <h3 className="font-semibold flex items-center gap-2 text-sm">
             <LayoutGrid className="h-4 w-4 text-primary" />
             Activity Library
           </h3>
-          <p className="text-xs text-muted-foreground mt-1">Drag governed types onto the map.</p>
+          <p className="text-xs text-muted-foreground mt-1">Tap Add or drag onto the map.</p>
         </div>
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-3">
+        <ScrollArea className="flex-1 p-3 sm:p-4">
+          <div className="space-y-2 sm:space-y-3">
             {governance?.activityTypes.map(type => (
               <div 
                 key={type}
                 draggable
                 onDragStart={(e) => onDragStart(e as unknown as DragEvent, type)}
-                className="p-3 border border-border rounded-md bg-background text-sm cursor-grab active:cursor-grabbing hover:border-primary/50 hover:shadow-sm transition-all"
+                className="touch-manipulation rounded-md border border-border bg-background p-2 text-sm transition-all hover:border-primary/50 hover:shadow-sm active:cursor-grabbing sm:p-3"
               >
-                <div className="font-medium">{type}</div>
-                <div className="text-xs text-muted-foreground mt-1">Standard template</div>
+                <div className="truncate font-medium" title={type}>{type}</div>
+                <div className="mt-1 hidden text-xs text-muted-foreground sm:block">Standard template</div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 h-8 w-full px-2 text-xs"
+                  data-testid={`button-add-activity-${type.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    addActivityAtPosition(type, positionForLibraryAdd());
+                  }}
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                  <span className="sm:hidden">Add</span>
+                  <span className="hidden sm:inline">Add {type}</span>
+                </Button>
               </div>
             ))}
             {!governance && (
@@ -440,20 +598,66 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
           onEdgeClick={onEdgeClick}
           onPaneClick={onPaneClick}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           className="bg-slate-50/50"
         >
           <Background gap={24} size={2} color="hsl(var(--border))" />
           <Controls className="bg-card border-border shadow-sm" />
           
-          <Panel position="top-left" className="m-4 flex gap-2">
-            <Button variant="outline" size="sm" className="bg-card" onClick={() => fitView({ padding: 0.2, duration: 800 })}>
-              <LayoutGrid className="h-4 w-4 mr-2" />
-              Fit View
-            </Button>
+          <Panel position="top-left" className="m-4 flex max-w-[min(28rem,calc(100%-2rem))] flex-col gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={connectionMode ? 'default' : 'outline'}
+                size="sm"
+                className="bg-card"
+                aria-pressed={Boolean(connectionMode)}
+                data-testid="button-connect-activities"
+                onClick={() => {
+                  setSelectedElement(null);
+                  setConnectionMode((current) => current ? null : { sourceId: null });
+                }}
+              >
+                <Link2 className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">{connectionMode ? 'Cancel connection' : 'Connect activities'}</span>
+                <span className="sm:hidden">{connectionMode ? 'Cancel' : 'Connect'}</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-card"
+                data-testid="button-fit-view"
+                onClick={() => fitView({ padding: 0.2, duration: 800 })}
+              >
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                Fit View
+              </Button>
+            </div>
+            {connectionMode && (
+              <div
+                role="status"
+                aria-live="polite"
+                data-testid="status-connection-mode"
+                className="rounded-md border border-primary/30 bg-card/95 px-3 py-2 text-xs shadow-sm"
+              >
+                {connectionMode.sourceId ? (
+                  <>
+                    <span className="font-medium text-primary">
+                      {String(nodes.find((node) => node.id === connectionMode.sourceId)?.data.name || 'Activity')} selected.
+                    </span>{' '}
+                    Tap another activity or its <span className="font-medium">Connect here</span> button.
+                  </>
+                ) : (
+                  <>
+                    <span className="font-medium text-primary">Connect mode.</span>{' '}
+                    Tap an activity or its <span className="font-medium">Connect from here</span> button to choose the source.
+                  </>
+                )}
+              </div>
+            )}
           </Panel>
 
-          <Panel position="top-right" className="m-4">
-            <div className="bg-card border border-border shadow-sm rounded-md px-3 py-1.5 flex items-center gap-2 text-sm">
+          <Panel position="bottom-right" className="m-4 max-w-[calc(100%-2rem)]">
+            <div className="bg-card border border-border shadow-sm rounded-md px-3 py-1.5 flex flex-wrap items-center gap-2 text-sm">
               {conflictFrozen ? (
                 <>
                   <AlertCircle className="h-4 w-4 text-destructive" />
@@ -539,14 +743,27 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
         {selectedElement && selectedElement.type === 'edge' && (
           <div className="w-80 bg-card border-l border-border h-full flex flex-col absolute right-0 top-0 shadow-xl animate-in slide-in-from-right-8 z-20">
             <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20 shrink-0">
-              <h3 className="font-semibold text-sm">Rule Builder</h3>
-              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setSelectedElement(null)}>
+              <h3 className="font-semibold text-sm">Connection rule</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+                aria-label="Close connection rule"
+                data-testid="button-close-connection-rule"
+                onClick={() => setSelectedElement(null)}
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>
             <ScrollArea className="flex-1 p-4">
               {selectedEdge && (
                 <div className="space-y-4">
+                  <div className="rounded-md border border-border bg-background p-3 text-xs">
+                    <span className="mb-1 block font-medium text-muted-foreground">Activities</span>
+                    <span className="font-medium">{String(nodes.find((node) => node.id === selectedEdge.source)?.data.name || selectedEdge.source.slice(0, 8))}</span>
+                    <span className="mx-1 text-muted-foreground" aria-hidden="true">→</span>
+                    <span className="font-medium">{String(nodes.find((node) => node.id === selectedEdge.target)?.data.name || selectedEdge.target.slice(0, 8))}</span>
+                  </div>
                   <div className="p-3 bg-muted rounded-md text-sm border border-border">
                     <span className="font-medium text-muted-foreground block mb-1">Logic Sentence</span>
                     "{(selectedEdge.data as any)?.sentence || 'If recipient interacts, proceed.'}"
@@ -627,6 +844,16 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
                        }}
                      />
                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-10 w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      data-testid={`button-delete-connection-${selectedEdge.id}`}
+                      onClick={deleteSelectedEdge}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete connection
+                    </Button>
                 </div>
               )}
             </ScrollArea>

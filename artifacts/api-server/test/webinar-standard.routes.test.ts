@@ -35,7 +35,14 @@ const setup = {
   speakers: [{ name: "Route test speaker" }],
   recruitmentLaunchAt: "2027-03-01T15:00:00.000Z",
 };
-const standardKeys = [
+const defaultFiveKeys = [
+  "recruitment_1",
+  "recruitment_2",
+  "registered_reminder",
+  "final_reminder",
+  "attendee_followup",
+] as const;
+const legacyNineKeys = [
   "registration_confirmation",
   "recruitment_1",
   "recruitment_2",
@@ -92,7 +99,7 @@ after(async () => {
   for (const campaignId of campaignIds) await cleanupCampaign(campaignId);
 });
 
-test("activity POST provisions exactly nine standard rows and replay map is idempotent", async () => {
+test("activity POST provisions exactly five standard rows and replay map is idempotent", async () => {
   const createdCampaign = await campaign(`Webinar route activity ${randomUUID()}`);
   const response = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/activities`, {
     method: "POST",
@@ -113,12 +120,13 @@ test("activity POST provisions exactly nine standard rows and replay map is idem
   assert.equal(response.status, 201);
   const activity = await response.json() as { id: string; rowVersion: number; position: { x: number; y: number } };
   const [session] = await db.select().from(webinarSessions).where(eq(webinarSessions.activityId, activity.id));
-  assert.ok(session);
-  const standardRows = await db.select().from(webinarStandardCommunications).where(eq(webinarStandardCommunications.sessionId, session.id));
-  assert.equal(standardRows.length, 9);
-  assert.equal(new Set(standardRows.map((row) => row.key)).size, 9);
-  assert.equal(new Set(standardRows.map((row) => row.communicationId)).size, 9);
-  assert.equal((await db.select().from(communications).where(eq(communications.campaignId, createdCampaign.id))).length, 9);
+   assert.ok(session);
+   assert.equal(session.templateVersion, "default_5");
+   const standardRows = await db.select().from(webinarStandardCommunications).where(eq(webinarStandardCommunications.sessionId, session.id));
+   assert.equal(standardRows.length, 5);
+   assert.equal(new Set(standardRows.map((row) => row.key)).size, 5);
+   assert.equal(new Set(standardRows.map((row) => row.communicationId)).size, 5);
+   assert.equal((await db.select().from(communications).where(eq(communications.campaignId, createdCampaign.id))).length, 5);
   const standardConfig = await db.select().from(webinarStandardConfigs).where(eq(webinarStandardConfigs.sessionId, session.id));
   assert.equal(standardConfig.length, 1);
 
@@ -148,11 +156,11 @@ test("activity POST provisions exactly nine standard rows and replay map is idem
   const sessionsAfterReplay = await db.select().from(webinarSessions).where(eq(webinarSessions.activityId, activity.id));
   const [sessionAfterReplay] = await db.select().from(webinarSessions).where(eq(webinarSessions.activityId, activity.id));
   const rowsAfterReplay = await db.select().from(webinarStandardCommunications).where(eq(webinarStandardCommunications.sessionId, sessionAfterReplay.id));
-  assert.equal(sessionsAfterReplay.length, 1);
-  assert.equal(rowsAfterReplay.length, 9);
+   assert.equal(sessionsAfterReplay.length, 1);
+   assert.equal(rowsAfterReplay.length, 5);
 });
 
-test("session POST persists the nine standard identities and draft copy", async () => {
+test("session POST persists the five-message default and draft copy", async () => {
   const createdCampaign = await campaign(`Webinar route session ${randomUUID()}`);
   const [activity] = await db.insert(activities).values({
     campaignId: createdCampaign.id,
@@ -184,12 +192,12 @@ test("session POST persists the nine standard identities and draft copy", async 
   });
   assert.equal(response.status, 201);
   const session = await response.json() as { id: string };
-  const rows = await db.select().from(webinarStandardCommunications).where(eq(webinarStandardCommunications.sessionId, session.id));
-  assert.equal(rows.length, 9);
+   const rows = await db.select().from(webinarStandardCommunications).where(eq(webinarStandardCommunications.sessionId, session.id));
+   const [sessionRecord] = await db.select().from(webinarSessions).where(eq(webinarSessions.id, session.id));
+   assert.equal(sessionRecord.templateVersion, "default_5");
+   assert.equal(rows.length, 5);
   assert.ok(rows.every((row) => row.status === "DRAFT"));
-  const trigger = rows.find((row) => row.key === "registration_confirmation");
-  assert.equal(trigger?.originalScheduledAt, null);
-  assert.equal(trigger?.effectiveScheduledAt, null);
+   assert.deepEqual(rows.map((row) => row.key), defaultFiveKeys);
 
   const draftPatch = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`, {
     method: "PATCH",
@@ -210,7 +218,7 @@ test("session POST persists the nine standard identities and draft copy", async 
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       templateConfig: { variants: [{ slot: 1, name: "Default", inUse: true, audienceDefinition: "All people", messageAngle: "Useful planning", valueProposition: "Clear next steps" }] },
-      communications: standardKeys.map((key) => ({
+      communications: defaultFiveKeys.map((key) => ({
         key,
         variants: [{
           slot: 1,
@@ -229,15 +237,30 @@ test("session POST persists the nine standard identities and draft copy", async 
   assert.equal(validPatch.status, 200);
   const validExportResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard/export`);
   assert.equal(validExportResponse.status, 200);
-  const validExport = await validExportResponse.json() as { communications: Array<{ key: string; scheduled?: { effectiveAt: string | null } }> };
-  assert.equal(validExport.communications.length, 9);
+   const validExport = await validExportResponse.json() as { communications: Array<{ key: string; scheduled?: { effectiveAt: string | null } }> };
+   assert.equal(validExport.communications.length, 5);
   assert.ok(validExport.communications.find((communication) => communication.key === "recruitment_1")?.scheduled?.effectiveAt);
-  assert.equal(validExport.communications.find((communication) => communication.key === "registration_confirmation")?.scheduled, undefined);
+   assert.equal(validExport.communications.some((communication) => communication.key === "registration_confirmation" || communication.key === "no_show_followup"), false);
+   const [audience] = await db.select().from(audiences).where(eq(audiences.campaignId, createdCampaign.id));
+   const personResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/people`, {
+     method: "POST",
+     headers: { "content-type": "application/json" },
+     body: JSON.stringify({ name: "Five template person", audienceBranchId: audience.id }),
+   });
+   assert.equal(personResponse.status, 201);
+   const person = await personResponse.json() as { id: string };
+   const eligibilityResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard/eligibility`);
+   assert.equal(eligibilityResponse.status, 200);
+   const eligibility = await eligibilityResponse.json() as { people: Array<{ personId: string; communicationKey: string }> };
+   assert.deepEqual(
+     eligibility.people.filter((row) => row.personId === person.id).map((row) => row.communicationKey),
+     [...defaultFiveKeys],
+   );
 
-  const skipLaunch = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`, {
+   const skipLaunch = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ launchAt: "2027-04-01T15:00:00.000Z" }),
+     body: JSON.stringify({ launchAt: "2027-04-10T15:00:00.000Z" }),
   });
   assert.equal(skipLaunch.status, 200);
   const skippedExportResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard/export`);
@@ -274,23 +297,52 @@ test("registration confirmation is persisted per successful person event", async
     x: "0",
     y: "0",
   }).returning();
-  const sessionResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars`, {
-    method: "POST",
+  const [session] = await db.insert(webinarSessions).values({
+    campaignId: createdCampaign.id,
+    activityId: activity.id,
+    name: "Registration session",
+    sessionDate: setup.eventDate,
+    startTime: setup.eventTime,
+    durationMinutes: setup.durationMinutes,
+    timezone: setup.timezone,
+    platform: setup.platform,
+    speakers: setup.speakers,
+    recruitmentLaunchAt: new Date(setup.recruitmentLaunchAt),
+    templateVersion: "legacy_9",
+    registrationRule: { suppressRecruitmentAfterRegistration: true },
+  }).returning();
+  const sessionResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`);
+  assert.equal(sessionResponse.status, 200);
+  const standard = await sessionResponse.json() as { templateId: string; communications: Array<{ key: string }> };
+  assert.equal(standard.templateId, "webinar_legacy_9");
+  assert.equal(standard.communications.length, 9);
+  const legacyCopyPatch = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`, {
+    method: "PATCH",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      activityId: activity.id,
-      name: "Registration session",
-      sessionDate: setup.eventDate,
-      startTime: setup.eventTime,
-      durationMinutes: setup.durationMinutes,
-      timezone: setup.timezone,
-      platform: setup.platform,
-      speakers: setup.speakers,
-      recruitmentLaunchAt: setup.recruitmentLaunchAt,
+      templateConfig: { variants: [{ slot: 1, name: "Default", inUse: true, audienceDefinition: "All people", messageAngle: "Useful planning", valueProposition: "Clear next steps" }] },
+      communications: legacyNineKeys.map((key) => ({
+        key,
+        variants: [{
+          slot: 1,
+          content: {
+            subject: "Subject",
+            preheader: "Preheader",
+            hero: "Hero",
+            body: "Body",
+            ctaLabel: "Join",
+            ctaUrl: "https://example.com",
+          },
+        }],
+      })),
     }),
   });
-  assert.equal(sessionResponse.status, 201);
-  const session = await sessionResponse.json() as { id: string };
+  assert.equal(legacyCopyPatch.status, 200);
+  const legacyExportResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard/export`);
+  assert.equal(legacyExportResponse.status, 200);
+  const legacyExport = await legacyExportResponse.json() as { communications: Array<{ key: string }> };
+  assert.equal(legacyExport.communications.length, 9);
+  assert.equal(legacyExport.communications.some((communication) => communication.key === "registration_confirmation" || communication.key === "no_show_followup"), true);
   const skippedLaunch = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },

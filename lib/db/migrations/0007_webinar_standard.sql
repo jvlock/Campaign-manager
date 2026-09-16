@@ -85,6 +85,11 @@ BEGIN
     SELECT ws.id, ws.campaign_id, ws.activity_id
     FROM webinar_sessions ws
     JOIN activities a ON a.id = ws.activity_id AND a.campaign_id = ws.campaign_id
+    -- This migration predates template_version.  On a fresh database the
+    -- expression defaults to legacy for every row; on a later idempotent
+    -- rerun it prevents provisioning legacy rows onto a new five-message
+    -- session created after migration 0011.
+    WHERE COALESCE(to_jsonb(ws)->>'template_version', 'legacy_9') = 'legacy_9'
   LOOP
     used_legacy_ids := ARRAY[]::uuid[];
     INSERT INTO webinar_standard_configs (campaign_id, session_id)

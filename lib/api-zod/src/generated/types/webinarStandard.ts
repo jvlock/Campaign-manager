@@ -7,6 +7,7 @@
  */
 import type { WebinarStandardCommunication } from './webinarStandardCommunication';
 import type { WebinarStandardTemplateConfig } from './webinarStandardTemplateConfig';
+import type { WebinarStandardTemplateId } from './webinarStandardTemplateId';
 
 export interface WebinarStandard {
   campaignId: string;
@@ -14,9 +15,13 @@ export interface WebinarStandard {
   activityId: string;
   /** @nullable */
   launchAt: Date | null;
+  /** Persisted identity of the fixed webinar communication template. */
+  templateId: WebinarStandardTemplateId;
+  templateName: string;
+  templateSummary: string;
   templateConfig: WebinarStandardTemplateConfig;
   /**
-     * @minItems 9
+     * @minItems 5
      * @maxItems 9
      */
   communications: WebinarStandardCommunication[];

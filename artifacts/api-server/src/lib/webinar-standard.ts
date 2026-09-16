@@ -11,6 +11,8 @@ import {
   scheduledInstanceHistory,
   scheduledInstances,
   type WebinarSession,
+  type WebinarTemplateVersion,
+  DEFAULT_NEW_WEBINAR_TEMPLATE_VERSION,
   webinarAttendanceResults,
   webinarPeople,
   webinarRegistrationResults,
@@ -40,7 +42,18 @@ const contentFields = [
 ] as const;
 type ContentField = (typeof contentFields)[number];
 
-const standardDefinitions = [
+type StandardDefinition = {
+  key: string;
+  name: string;
+  kind: "trigger" | "calendar" | "elapsed";
+  offset: number;
+  unit: "instant" | "days" | "hours";
+  direction: "trigger" | "before" | "after";
+  weekend: "none" | "previous_friday" | "next_monday";
+  audience: string;
+};
+
+const legacyStandardDefinitions: readonly StandardDefinition[] = [
   { key: "registration_confirmation", name: "Registration confirmation", kind: "trigger", offset: 0, unit: "instant", direction: "trigger", weekend: "none", audience: "Successful registration record instant only" },
   { key: "recruitment_1", name: "Recruitment invitation 1", kind: "calendar", offset: 21, unit: "days", direction: "before", weekend: "previous_friday", audience: "Not registered and no successful registration record" },
   { key: "recruitment_2", name: "Recruitment invitation 2", kind: "calendar", offset: 14, unit: "days", direction: "before", weekend: "previous_friday", audience: "Not registered and no successful registration record" },
@@ -50,9 +63,44 @@ const standardDefinitions = [
   { key: "final_reminder", name: "Final attendee reminder", kind: "elapsed", offset: 1, unit: "hours", direction: "before", weekend: "none", audience: "Registered and non-canceled" },
   { key: "attendee_followup", name: "Attendee follow-up", kind: "calendar", offset: 1, unit: "days", direction: "after", weekend: "next_monday", audience: "Confirmed attendance; no-show excluded" },
   { key: "no_show_followup", name: "No-show follow-up", kind: "calendar", offset: 1, unit: "days", direction: "after", weekend: "next_monday", audience: "Registered nonattendance; attended excluded" },
-] as const;
+];
 
-const definitionByKey = new Map(standardDefinitions.map((definition) => [definition.key, definition]));
+const defaultFiveStandardDefinitions: readonly StandardDefinition[] = [
+  { key: "recruitment_1", name: "Recruitment invitation 1", kind: "calendar", offset: 14, unit: "days", direction: "before", weekend: "previous_friday", audience: "Not registered and no successful registration record" },
+  { key: "recruitment_2", name: "Recruitment invitation 2", kind: "calendar", offset: 7, unit: "days", direction: "before", weekend: "previous_friday", audience: "Not registered and no successful registration record" },
+  { key: "registered_reminder", name: "Registered attendee reminder", kind: "elapsed", offset: 24, unit: "hours", direction: "before", weekend: "none", audience: "Registered and non-canceled" },
+  { key: "final_reminder", name: "Final attendee reminder", kind: "elapsed", offset: 1, unit: "hours", direction: "before", weekend: "none", audience: "Registered and non-canceled" },
+  { key: "attendee_followup", name: "Attendee thank-you", kind: "calendar", offset: 1, unit: "days", direction: "after", weekend: "next_monday", audience: "Confirmed attendee; no-show excluded" },
+];
+
+const definitionsByTemplate: Record<WebinarTemplateVersion, readonly StandardDefinition[]> = {
+  legacy_9: legacyStandardDefinitions,
+  default_5: defaultFiveStandardDefinitions,
+};
+
+export const webinarTemplateMetadata = {
+  legacy_9: {
+    templateId: "webinar_legacy_9",
+    templateName: "Legacy 9-message webinar communications",
+    templateSummary: "Registration confirmation, four recruitment waves, two reminders, attendee follow-up, and no-show follow-up.",
+  },
+  default_5: {
+    templateId: "webinar_default_5",
+    templateName: "5-message webinar communications",
+    templateSummary: "Two invites at 14 and 7 calendar days before, two reminders at 24 and 1 hour before, and an attendee thank-you 1 calendar day after.",
+  },
+} as const;
+
+function templateVersionFor(value: string): WebinarTemplateVersion {
+  if (value === "legacy_9" || value === "default_5") return value;
+  throw new WebinarStandardValidationError(`Unknown webinar template version ${value}`, 500);
+}
+
+function definitionsForTemplate(value: string) {
+  return definitionsByTemplate[templateVersionFor(value)];
+}
+
+const definitionByKey = new Map(legacyStandardDefinitions.map((definition) => [definition.key, definition]));
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -269,7 +317,7 @@ function calendarTarget(session: WebinarSession, offset: number, direction: "bef
   return { date, instant: fromLocalParts({ ...date, hour: anchor.hour, minute: anchor.minute, second: anchor.second }, session.timezone) };
 }
 
-function scheduleForDefinition(session: WebinarSession, definition: (typeof standardDefinitions)[number]) {
+function scheduleForDefinition(session: WebinarSession, definition: StandardDefinition) {
   if (definition.kind === "trigger") {
     const now = new Date();
     return { original: now, calculated: now, effective: now, localDate: null as string | null };
@@ -279,7 +327,7 @@ function scheduleForDefinition(session: WebinarSession, definition: (typeof stan
     const calculated = new Date(anchor.getTime() + (definition.direction === "before" ? -1 : 1) * definition.offset * 60 * 60 * 1000);
     return { original: calculated, calculated, effective: calculated, localDate: partsInTimezone(calculated, session.timezone).toString() };
   }
-  const target = calendarTarget(session, definition.offset, definition.direction);
+  const target = calendarTarget(session, definition.offset, definition.direction === "after" ? "after" : "before");
   return {
     original: target.instant,
     calculated: target.instant,
@@ -320,7 +368,7 @@ async function createOrUpdateSchedule(
   row: typeof webinarStandardCommunications.$inferSelect,
   executor: any,
 ) {
-  const definition = definitionByKey.get(row.key as typeof standardKeys[number]);
+  const definition = definitionsForTemplate(session.templateVersion).find((candidate) => candidate.key === row.key);
   if (!definition) throw new WebinarStandardValidationError(`Unknown standard key ${row.key}`, 500);
   let rule = row.scheduleRuleId
     ? (await executor.select().from(scheduleRules).where(eq(scheduleRules.id, row.scheduleRuleId)))[0]
@@ -440,13 +488,14 @@ async function createOrUpdateSchedule(
  * path and from anchor recomputation.
  */
 export async function ensureWebinarStandard(session: WebinarSession, executor: any = db) {
+  const definitions = definitionsForTemplate(session.templateVersion);
   const config = await getConfig(session, executor);
   const variants = normalizeVariants(config.variants);
   const limits = normalizeLimits(config.pilotLimits);
   if (JSON.stringify(variants) !== JSON.stringify(config.variants) || JSON.stringify(limits) !== JSON.stringify(config.pilotLimits)) {
     await executor.update(webinarStandardConfigs).set({ variants, pilotLimits: limits, updatedAt: new Date() }).where(eq(webinarStandardConfigs.id, config.id));
   }
-  for (const definition of standardDefinitions) {
+  for (const definition of definitions) {
     let [row] = await executor.select().from(webinarStandardCommunications).where(and(
       eq(webinarStandardCommunications.sessionId, session.id),
       eq(webinarStandardCommunications.key, definition.key),
@@ -458,7 +507,7 @@ export async function ensureWebinarStandard(session: WebinarSession, executor: a
         activityId: session.activityId,
         key: definition.key,
         name: definition.name,
-        sortOrder: standardDefinitions.indexOf(definition),
+         sortOrder: definitions.indexOf(definition),
         status: "DRAFT",
         audienceRule: definition.audience,
         timingKind: definition.kind,
@@ -491,7 +540,7 @@ export async function ensureWebinarStandard(session: WebinarSession, executor: a
         name: definition.name,
         type: "Email",
         timing: definition.kind === "trigger" ? "Immediate trigger" : `${definition.direction === "before" ? "-" : "+"}${definition.offset} ${definition.unit}`,
-        sortOrder: standardDefinitions.indexOf(definition),
+         sortOrder: definitions.indexOf(definition),
         status: "Estimated",
         owner: "Campaign team",
       }).returning({ id: communications.id });
@@ -558,12 +607,16 @@ export function standardResponse(
   config: typeof webinarStandardConfigs.$inferSelect,
   rows: typeof webinarStandardCommunications.$inferSelect[],
   timezone = "UTC",
+  templateVersion = "legacy_9",
 ) {
+  const resolvedTemplateVersion = templateVersionFor(templateVersion);
+  const definitions = definitionsForTemplate(resolvedTemplateVersion);
   const variants = normalizeVariants(config.variants);
   return {
+    ...webinarTemplateMetadata[resolvedTemplateVersion],
     templateConfig: { pilotLimits: normalizeLimits(config.pilotLimits), variants },
     communications: rows.sort((a, b) => a.sortOrder - b.sortOrder).map((row) => {
-      const definition = definitionByKey.get(row.key as typeof standardKeys[number])!;
+      const definition = definitions.find((candidate) => candidate.key === row.key)!;
       const scheduled = {
         status: row.scheduleStatus,
         originalAt: dateValue(row.originalScheduledAt),
@@ -607,13 +660,15 @@ export async function standardForSession(campaignId: string, sessionId: string, 
   await ensureWebinarStandard(session, executor);
   const [config] = await executor.select().from(webinarStandardConfigs).where(eq(webinarStandardConfigs.sessionId, session.id));
   const rows = await executor.select().from(webinarStandardCommunications).where(eq(webinarStandardCommunications.sessionId, session.id)).orderBy(asc(webinarStandardCommunications.sortOrder));
-  if (!config || rows.length !== 9) throw new WebinarStandardValidationError("Webinar standard is incomplete", 500);
+  const templateVersion = templateVersionFor(session.templateVersion);
+  const expectedDefinitions = definitionsForTemplate(templateVersion);
+  if (!config || rows.length !== expectedDefinitions.length) throw new WebinarStandardValidationError("Webinar standard is incomplete", 500);
   return {
     campaignId,
     sessionId,
     activityId: session.activityId,
     launchAt: session.recruitmentLaunchAt?.toISOString() ?? null,
-    ...standardResponse(config, rows, session.timezone),
+    ...standardResponse(config, rows, session.timezone, templateVersion),
   };
 }
 
@@ -711,6 +766,7 @@ export async function eligibilityForSession(campaignId: string, sessionId: strin
     if (!previous || previous.recordedAt.getTime() < event.recordedAt.getTime()) latestTriggerByPerson.set(event.personId, event);
   }
   const rowByKey = new Map<string, typeof webinarStandardCommunications.$inferSelect>(standardRows.map((row) => [row.key, row]));
+  const sessionKeys = definitionsForTemplate(templateVersionFor(session.templateVersion)).map((definition) => definition.key);
   const now = Date.now();
   const peopleRows = people.flatMap((person: typeof webinarPeople.$inferSelect) => {
     const registration = registrationByPerson.get(person.id);
@@ -718,7 +774,7 @@ export async function eligibilityForSession(campaignId: string, sessionId: strin
     const everRegistered = Boolean(registration?.firstRegisteredAt) || registration?.result === "registered";
     const currentRegistered = registration?.result === "registered";
     const triggerEvent = latestTriggerByPerson.get(person.id);
-    return standardKeys.map((key) => {
+    return sessionKeys.map((key) => {
       const standardRow = rowByKey.get(key);
       const scheduledAt = standardRow?.effectiveScheduledAt?.getTime() ?? null;
       const skipped = standardRow?.scheduleStatus === "skipped";
@@ -779,7 +835,8 @@ export async function ensureWebinarForActivity(
       timezone: parsed.data.timezone,
       platform: parsed.data.platform,
       speakers: parsed.data.speakers,
-      recruitmentLaunchAt: new Date(parsed.data.recruitmentLaunchAt),
+       recruitmentLaunchAt: new Date(parsed.data.recruitmentLaunchAt),
+       templateVersion: DEFAULT_NEW_WEBINAR_TEMPLATE_VERSION,
       registrationRule: { suppressRecruitmentAfterRegistration: true, registeredBranch: "registered", attendedBranch: "attended", noShowBranch: "no_show" },
     }).returning();
     session = created;
@@ -800,8 +857,9 @@ export function contentValidation(
 export function calculateStandardSchedule(
   session: Pick<WebinarSession, "sessionDate" | "startTime" | "timezone" | "recruitmentLaunchAt">,
   key: string,
+  templateVersion: WebinarTemplateVersion = "legacy_9",
 ) {
-  const definition = definitionByKey.get(key as typeof standardKeys[number]);
+  const definition = definitionsForTemplate(templateVersion).find((candidate) => candidate.key === key);
   if (!definition) throw new WebinarStandardValidationError(`Unknown standard key ${key}`);
   return scheduleForDefinition(session as WebinarSession, definition);
 }

@@ -1549,7 +1549,7 @@ export const getWebinarStandardResponseTemplateConfigVariantsMax = 4;
 
 export const getWebinarStandardResponseCommunicationsItemVariantsItemSlotMax = 4;
 
-export const getWebinarStandardResponseCommunicationsMin = 9;
+export const getWebinarStandardResponseCommunicationsMin = 5;
 export const getWebinarStandardResponseCommunicationsMax = 9;
 
 
@@ -1559,6 +1559,9 @@ export const GetWebinarStandardResponse = zod.object({
   "sessionId": zod.string().uuid(),
   "activityId": zod.string().uuid(),
   "launchAt": zod.coerce.date().nullable(),
+  "templateId": zod.enum(['webinar_legacy_9', 'webinar_default_5']).describe('Persisted identity of the fixed webinar communication template.'),
+  "templateName": zod.string(),
+  "templateSummary": zod.string(),
   "templateConfig": zod.object({
   "pilotLimits": zod.object({
   "subject": zod.number().int().min(1).default(getWebinarStandardResponseTemplateConfigPilotLimitsSubjectDefault),
@@ -1715,7 +1718,7 @@ export const updateWebinarStandardResponseTemplateConfigVariantsMax = 4;
 
 export const updateWebinarStandardResponseCommunicationsItemVariantsItemSlotMax = 4;
 
-export const updateWebinarStandardResponseCommunicationsMin = 9;
+export const updateWebinarStandardResponseCommunicationsMin = 5;
 export const updateWebinarStandardResponseCommunicationsMax = 9;
 
 
@@ -1725,6 +1728,9 @@ export const UpdateWebinarStandardResponse = zod.object({
   "sessionId": zod.string().uuid(),
   "activityId": zod.string().uuid(),
   "launchAt": zod.coerce.date().nullable(),
+  "templateId": zod.enum(['webinar_legacy_9', 'webinar_default_5']).describe('Persisted identity of the fixed webinar communication template.'),
+  "templateName": zod.string(),
+  "templateSummary": zod.string(),
   "templateConfig": zod.object({
   "pilotLimits": zod.object({
   "subject": zod.number().int().min(1).default(updateWebinarStandardResponseTemplateConfigPilotLimitsSubjectDefault),

@@ -1,7 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { Router, type IRouter, type NextFunction, type Request, type Response } from "express";
 import { z } from "zod";
-import { activities, audiences, campaigns, db } from "@workspace/db";
+import { activities, audiences, campaigns, db, DEFAULT_NEW_WEBINAR_TEMPLATE_VERSION } from "@workspace/db";
 import {
   webinarAttendanceResults,
   webinarPeople,
@@ -151,7 +151,12 @@ router.post("/campaigns/:id/webinars", async (req, res, next): Promise<void> => 
     const row = await db.transaction(async (tx) => {
       const [created] = await tx
         .insert(webinarSessions)
-        .values({ ...body, campaignId, recruitmentLaunchAt: new Date(body.recruitmentLaunchAt) })
+        .values({
+          ...body,
+          campaignId,
+          recruitmentLaunchAt: new Date(body.recruitmentLaunchAt),
+          templateVersion: DEFAULT_NEW_WEBINAR_TEMPLATE_VERSION,
+        })
         .returning();
       if (!created) throw new WebinarValidationError("Unable to create webinar session", 500);
        await ensureWebinarStandard(created, tx);

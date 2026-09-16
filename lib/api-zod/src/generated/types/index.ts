@@ -141,6 +141,7 @@ export * from './webinarStandardPatchTemplateConfigPilotLimits';
 export * from './webinarStandardScheduled';
 export * from './webinarStandardTemplateConfig';
 export * from './webinarStandardTemplateConfigPilotLimits';
+export * from './webinarStandardTemplateId';
 export * from './webinarStandardTiming';
 export * from './webinarStandardTimingDirection';
 export * from './webinarStandardTimingKind';

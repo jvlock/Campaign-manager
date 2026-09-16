@@ -16,6 +16,14 @@ export const STANDARD_WEBINAR_KEYS = [
 ] as const;
 
 export type WebinarStandardKey = (typeof STANDARD_WEBINAR_KEYS)[number];
+export const DEFAULT_WEBINAR_STANDARD_KEYS = [
+  "recruitment_1",
+  "recruitment_2",
+  "registered_reminder",
+  "final_reminder",
+  "attendee_followup",
+] as const;
+export type DefaultWebinarStandardKey = (typeof DEFAULT_WEBINAR_STANDARD_KEYS)[number];
 export type WebinarStandardContent = {
   subject: string;
   preheader: string;

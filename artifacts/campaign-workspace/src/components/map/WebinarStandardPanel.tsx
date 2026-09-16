@@ -408,6 +408,19 @@ export default function WebinarStandardPanel({
 
   return (
     <div className="space-y-6">
+      <div className="rounded-md border border-primary/20 bg-primary/5 p-4">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Layers className="h-4 w-4 text-primary" />
+          {localData.templateName}
+        </h3>
+        <p className="text-xs text-muted-foreground mt-2">{localData.templateSummary}</p>
+        <p className="text-xs text-muted-foreground mt-2">
+          {localData.templateId === 'webinar_legacy_9'
+            ? 'This existing webinar keeps its original sequence. New webinars use the five-message template.'
+            : 'Created from the default webinar template. Customize each message and audience variant below.'}
+          {' '}These are planning drafts; emails are not sent automatically.
+        </p>
+      </div>
       <div className="bg-card border border-border rounded-md shadow-sm p-4 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold">Campaign Launch</h3>
