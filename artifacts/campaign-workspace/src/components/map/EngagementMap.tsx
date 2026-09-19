@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, DragEvent } from 'react';
+import { useSearch, useLocation } from 'wouter';
 import { 
   ReactFlow, 
   Controls, 
@@ -62,6 +63,20 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
   const [webinarSetupSaving, setWebinarSetupSaving] = useState(false);
   
   const { toast } = useToast();
+  const search = useSearch();
+  const [_, setLocation] = useLocation();
+  const searchParams = new URLSearchParams(search);
+  const urlActivity = searchParams.get('activity');
+
+  useEffect(() => {
+    if (urlActivity && nodes.length > 0 && nodes.some(n => n.id === urlActivity)) {
+      setSelectedElement({ type: 'node', id: urlActivity });
+      const params = new URLSearchParams(search);
+      params.delete('activity');
+      setLocation(`/campaigns/${campaign.id}?${params.toString()}`, { replace: true });
+    }
+  }, [urlActivity, nodes, search, setLocation, campaign.id]);
+
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const initializedId = useRef<string | null>(null);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);

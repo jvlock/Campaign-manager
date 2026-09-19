@@ -8,6 +8,119 @@
 import * as zod from 'zod';
 
 
+export const getTaskDefaultsResponseOffsetDaysMin = -36500;
+export const getTaskDefaultsResponseOffsetDaysMax = 36500;
+
+
+
+export const GetTaskDefaultsResponseItem = zod.object({
+  "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
+  "offsetDays": zod.number().int().min(getTaskDefaultsResponseOffsetDaysMin).max(getTaskDefaultsResponseOffsetDaysMax),
+  "label": zod.string().optional()
+})
+export const GetTaskDefaultsResponse = zod.array(GetTaskDefaultsResponseItem)
+
+
+export const updateTaskDefaultsBodyDefaultsItemOffsetDaysMin = -36500;
+export const updateTaskDefaultsBodyDefaultsItemOffsetDaysMax = 36500;
+
+
+
+
+export const UpdateTaskDefaultsBody = zod.object({
+  "defaults": zod.array(zod.object({
+  "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
+  "offsetDays": zod.number().int().min(updateTaskDefaultsBodyDefaultsItemOffsetDaysMin).max(updateTaskDefaultsBodyDefaultsItemOffsetDaysMax)
+})).min(1)
+})
+
+export const updateTaskDefaultsResponseOffsetDaysMin = -36500;
+export const updateTaskDefaultsResponseOffsetDaysMax = 36500;
+
+
+
+export const UpdateTaskDefaultsResponseItem = zod.object({
+  "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
+  "offsetDays": zod.number().int().min(updateTaskDefaultsResponseOffsetDaysMin).max(updateTaskDefaultsResponseOffsetDaysMax),
+  "label": zod.string().optional()
+})
+export const UpdateTaskDefaultsResponse = zod.array(UpdateTaskDefaultsResponseItem)
+
+
+export const getOwnerCapacitiesResponseCeilingMin = 0;
+
+
+
+export const GetOwnerCapacitiesResponseItem = zod.object({
+  "owner": zod.string(),
+  "ceiling": zod.number().min(getOwnerCapacitiesResponseCeilingMin),
+  "totalEffort": zod.number().optional(),
+  "overallocated": zod.boolean().optional(),
+  "label": zod.string().optional()
+})
+export const GetOwnerCapacitiesResponse = zod.array(GetOwnerCapacitiesResponseItem)
+
+
+
+export const updateOwnerCapacitiesBodyCapacitiesItemCeilingMin = 0;
+
+
+
+
+export const UpdateOwnerCapacitiesBody = zod.object({
+  "capacities": zod.array(zod.object({
+  "owner": zod.string().min(1),
+  "ceiling": zod.number().min(updateOwnerCapacitiesBodyCapacitiesItemCeilingMin)
+})).min(1)
+})
+
+export const updateOwnerCapacitiesResponseCeilingMin = 0;
+
+
+
+export const UpdateOwnerCapacitiesResponseItem = zod.object({
+  "owner": zod.string(),
+  "ceiling": zod.number().min(updateOwnerCapacitiesResponseCeilingMin),
+  "totalEffort": zod.number().optional(),
+  "overallocated": zod.boolean().optional(),
+  "label": zod.string().optional()
+})
+export const UpdateOwnerCapacitiesResponse = zod.array(UpdateOwnerCapacitiesResponseItem)
+
+
+export const GetActivityTaskSettingsParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "activityId": zod.coerce.string().uuid()
+})
+
+export const GetActivityTaskSettingsResponse = zod.object({
+  "gtmLaunchAt": zod.coerce.date().nullish(),
+  "eventAt": zod.coerce.date().nullish(),
+  "timezone": zod.string().optional(),
+  "tier": zod.union([zod.literal('Gold'),zod.literal('Silver'),zod.literal('Bronze'),zod.literal(null)]).nullish()
+})
+
+
+export const UpdateActivityTaskSettingsParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "activityId": zod.coerce.string().uuid()
+})
+
+export const UpdateActivityTaskSettingsBody = zod.object({
+  "gtmLaunchAt": zod.coerce.date().nullish(),
+  "eventAt": zod.coerce.date().nullish(),
+  "timezone": zod.string().optional(),
+  "tier": zod.union([zod.literal('Gold'),zod.literal('Silver'),zod.literal('Bronze'),zod.literal(null)]).nullish()
+})
+
+export const UpdateActivityTaskSettingsResponse = zod.object({
+  "gtmLaunchAt": zod.coerce.date().nullish(),
+  "eventAt": zod.coerce.date().nullish(),
+  "timezone": zod.string().optional(),
+  "tier": zod.union([zod.literal('Gold'),zod.literal('Silver'),zod.literal('Bronze'),zod.literal(null)]).nullish()
+})
+
+
 export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })
@@ -56,9 +169,14 @@ export const createCampaignResponseTwoCommunicationsItemTypeDefault = `Other`;
 export const createCampaignResponseTwoCommunicationsItemTimingDefault = `TBD`;
 export const createCampaignResponseTwoCommunicationsItemSortOrderDefault = 0;
 export const createCampaignResponseTwoCommunicationsItemOwnerDefault = `Campaign team`;
-export const createCampaignResponseTwoTasksItemTimingDefault = `TBD`;
-export const createCampaignResponseTwoTasksItemSortOrderDefault = 0;
-export const createCampaignResponseTwoTasksItemOwnerDefault = `Campaign team`;
+export const createCampaignResponseTwoTasksItemOneOneOffsetDaysMin = -36500;
+export const createCampaignResponseTwoTasksItemOneOneOffsetDaysMax = 36500;
+
+export const createCampaignResponseTwoTasksItemOneOneEffortPointsMin = 0;
+
+export const createCampaignResponseTwoTasksItemTwoTimingDefault = `TBD`;
+export const createCampaignResponseTwoTasksItemTwoSortOrderDefault = 0;
+export const createCampaignResponseTwoTasksItemTwoOwnerDefault = `Campaign team`;
 
 export const CreateCampaignResponse = zod.object({
   "id": zod.string().uuid(),
@@ -153,16 +271,32 @@ export const CreateCampaignResponse = zod.object({
   "blockingDependencyIds": zod.array(zod.string().uuid())
 })),
   "tasks": zod.array(zod.object({
+  "stage": zod.enum(['Not Started', 'In Progress', 'Ready for Review', 'Complete']).optional(),
+  "blocked": zod.boolean().optional(),
+  "blockedReason": zod.union([zod.literal('On Hold'),zod.literal('Content'),zod.literal('Technical'),zod.literal('Legal'),zod.literal(null)]).nullish(),
+  "supportingOwner": zod.string().optional(),
+  "requestingTeam": zod.string().optional(),
+  "requester": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "trigger": zod.enum(['gtm_launch', 'event']).optional(),
+  "offsetDays": zod.number().int().min(createCampaignResponseTwoTasksItemOneOneOffsetDaysMin).max(createCampaignResponseTwoTasksItemOneOneOffsetDaysMax).nullish(),
+  "businessDayStrategy": zod.enum(['calendar', 'skip_weekends', 'next_business_day', 'previous_business_day']).optional(),
+  "effortPoints": zod.number().min(createCampaignResponseTwoTasksItemOneOneEffortPointsMin).optional()
+}).and(zod.object({
+  "dueAt": zod.string().nullish(),
+  "schedulingIssue": zod.string().nullish(),
+  "effectiveOffsetDays": zod.number().int().optional()
+})).and(zod.object({
   "id": zod.string().uuid(),
   "campaignId": zod.string().uuid(),
   "activityId": zod.string().uuid(),
   "name": zod.string(),
   "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
-  "timing": zod.string().default(createCampaignResponseTwoTasksItemTimingDefault),
-  "sortOrder": zod.number().int().default(createCampaignResponseTwoTasksItemSortOrderDefault),
-  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
-  "owner": zod.string().default(createCampaignResponseTwoTasksItemOwnerDefault)
-}))
+  "timing": zod.string().default(createCampaignResponseTwoTasksItemTwoTimingDefault),
+  "sortOrder": zod.number().int().default(createCampaignResponseTwoTasksItemTwoSortOrderDefault),
+  "status": zod.string().describe('Legacy delivery status preserved verbatim; independent of implementation stage and blockage.'),
+  "owner": zod.string().default(createCampaignResponseTwoTasksItemTwoOwnerDefault)
+})))
 }))
 
 
@@ -182,9 +316,14 @@ export const getCampaignResponseTwoCommunicationsItemTypeDefault = `Other`;
 export const getCampaignResponseTwoCommunicationsItemTimingDefault = `TBD`;
 export const getCampaignResponseTwoCommunicationsItemSortOrderDefault = 0;
 export const getCampaignResponseTwoCommunicationsItemOwnerDefault = `Campaign team`;
-export const getCampaignResponseTwoTasksItemTimingDefault = `TBD`;
-export const getCampaignResponseTwoTasksItemSortOrderDefault = 0;
-export const getCampaignResponseTwoTasksItemOwnerDefault = `Campaign team`;
+export const getCampaignResponseTwoTasksItemOneOneOffsetDaysMin = -36500;
+export const getCampaignResponseTwoTasksItemOneOneOffsetDaysMax = 36500;
+
+export const getCampaignResponseTwoTasksItemOneOneEffortPointsMin = 0;
+
+export const getCampaignResponseTwoTasksItemTwoTimingDefault = `TBD`;
+export const getCampaignResponseTwoTasksItemTwoSortOrderDefault = 0;
+export const getCampaignResponseTwoTasksItemTwoOwnerDefault = `Campaign team`;
 
 export const GetCampaignResponse = zod.object({
   "id": zod.string().uuid(),
@@ -279,16 +418,32 @@ export const GetCampaignResponse = zod.object({
   "blockingDependencyIds": zod.array(zod.string().uuid())
 })),
   "tasks": zod.array(zod.object({
+  "stage": zod.enum(['Not Started', 'In Progress', 'Ready for Review', 'Complete']).optional(),
+  "blocked": zod.boolean().optional(),
+  "blockedReason": zod.union([zod.literal('On Hold'),zod.literal('Content'),zod.literal('Technical'),zod.literal('Legal'),zod.literal(null)]).nullish(),
+  "supportingOwner": zod.string().optional(),
+  "requestingTeam": zod.string().optional(),
+  "requester": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "trigger": zod.enum(['gtm_launch', 'event']).optional(),
+  "offsetDays": zod.number().int().min(getCampaignResponseTwoTasksItemOneOneOffsetDaysMin).max(getCampaignResponseTwoTasksItemOneOneOffsetDaysMax).nullish(),
+  "businessDayStrategy": zod.enum(['calendar', 'skip_weekends', 'next_business_day', 'previous_business_day']).optional(),
+  "effortPoints": zod.number().min(getCampaignResponseTwoTasksItemOneOneEffortPointsMin).optional()
+}).and(zod.object({
+  "dueAt": zod.string().nullish(),
+  "schedulingIssue": zod.string().nullish(),
+  "effectiveOffsetDays": zod.number().int().optional()
+})).and(zod.object({
   "id": zod.string().uuid(),
   "campaignId": zod.string().uuid(),
   "activityId": zod.string().uuid(),
   "name": zod.string(),
   "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
-  "timing": zod.string().default(getCampaignResponseTwoTasksItemTimingDefault),
-  "sortOrder": zod.number().int().default(getCampaignResponseTwoTasksItemSortOrderDefault),
-  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
-  "owner": zod.string().default(getCampaignResponseTwoTasksItemOwnerDefault)
-}))
+  "timing": zod.string().default(getCampaignResponseTwoTasksItemTwoTimingDefault),
+  "sortOrder": zod.number().int().default(getCampaignResponseTwoTasksItemTwoSortOrderDefault),
+  "status": zod.string().describe('Legacy delivery status preserved verbatim; independent of implementation stage and blockage.'),
+  "owner": zod.string().default(getCampaignResponseTwoTasksItemTwoOwnerDefault)
+})))
 }))
 
 
@@ -318,9 +473,14 @@ export const updateCampaignResponseTwoCommunicationsItemTypeDefault = `Other`;
 export const updateCampaignResponseTwoCommunicationsItemTimingDefault = `TBD`;
 export const updateCampaignResponseTwoCommunicationsItemSortOrderDefault = 0;
 export const updateCampaignResponseTwoCommunicationsItemOwnerDefault = `Campaign team`;
-export const updateCampaignResponseTwoTasksItemTimingDefault = `TBD`;
-export const updateCampaignResponseTwoTasksItemSortOrderDefault = 0;
-export const updateCampaignResponseTwoTasksItemOwnerDefault = `Campaign team`;
+export const updateCampaignResponseTwoTasksItemOneOneOffsetDaysMin = -36500;
+export const updateCampaignResponseTwoTasksItemOneOneOffsetDaysMax = 36500;
+
+export const updateCampaignResponseTwoTasksItemOneOneEffortPointsMin = 0;
+
+export const updateCampaignResponseTwoTasksItemTwoTimingDefault = `TBD`;
+export const updateCampaignResponseTwoTasksItemTwoSortOrderDefault = 0;
+export const updateCampaignResponseTwoTasksItemTwoOwnerDefault = `Campaign team`;
 
 export const UpdateCampaignResponse = zod.object({
   "id": zod.string().uuid(),
@@ -415,16 +575,32 @@ export const UpdateCampaignResponse = zod.object({
   "blockingDependencyIds": zod.array(zod.string().uuid())
 })),
   "tasks": zod.array(zod.object({
+  "stage": zod.enum(['Not Started', 'In Progress', 'Ready for Review', 'Complete']).optional(),
+  "blocked": zod.boolean().optional(),
+  "blockedReason": zod.union([zod.literal('On Hold'),zod.literal('Content'),zod.literal('Technical'),zod.literal('Legal'),zod.literal(null)]).nullish(),
+  "supportingOwner": zod.string().optional(),
+  "requestingTeam": zod.string().optional(),
+  "requester": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "trigger": zod.enum(['gtm_launch', 'event']).optional(),
+  "offsetDays": zod.number().int().min(updateCampaignResponseTwoTasksItemOneOneOffsetDaysMin).max(updateCampaignResponseTwoTasksItemOneOneOffsetDaysMax).nullish(),
+  "businessDayStrategy": zod.enum(['calendar', 'skip_weekends', 'next_business_day', 'previous_business_day']).optional(),
+  "effortPoints": zod.number().min(updateCampaignResponseTwoTasksItemOneOneEffortPointsMin).optional()
+}).and(zod.object({
+  "dueAt": zod.string().nullish(),
+  "schedulingIssue": zod.string().nullish(),
+  "effectiveOffsetDays": zod.number().int().optional()
+})).and(zod.object({
   "id": zod.string().uuid(),
   "campaignId": zod.string().uuid(),
   "activityId": zod.string().uuid(),
   "name": zod.string(),
   "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
-  "timing": zod.string().default(updateCampaignResponseTwoTasksItemTimingDefault),
-  "sortOrder": zod.number().int().default(updateCampaignResponseTwoTasksItemSortOrderDefault),
-  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
-  "owner": zod.string().default(updateCampaignResponseTwoTasksItemOwnerDefault)
-}))
+  "timing": zod.string().default(updateCampaignResponseTwoTasksItemTwoTimingDefault),
+  "sortOrder": zod.number().int().default(updateCampaignResponseTwoTasksItemTwoSortOrderDefault),
+  "status": zod.string().describe('Legacy delivery status preserved verbatim; independent of implementation stage and blockage.'),
+  "owner": zod.string().default(updateCampaignResponseTwoTasksItemTwoOwnerDefault)
+})))
 }))
 
 
@@ -634,11 +810,20 @@ export const getCampaignDeliveryResponseCommunicationsItemTypeDefault = `Other`;
 export const getCampaignDeliveryResponseCommunicationsItemTimingDefault = `TBD`;
 export const getCampaignDeliveryResponseCommunicationsItemSortOrderDefault = 0;
 export const getCampaignDeliveryResponseCommunicationsItemOwnerDefault = `Campaign team`;
-export const getCampaignDeliveryResponseTasksItemTimingDefault = `TBD`;
-export const getCampaignDeliveryResponseTasksItemSortOrderDefault = 0;
-export const getCampaignDeliveryResponseTasksItemOwnerDefault = `Campaign team`;
+export const getCampaignDeliveryResponseTasksItemOneOneOffsetDaysMin = -36500;
+export const getCampaignDeliveryResponseTasksItemOneOneOffsetDaysMax = 36500;
+
+export const getCampaignDeliveryResponseTasksItemOneOneEffortPointsMin = 0;
+
+export const getCampaignDeliveryResponseTasksItemTwoTimingDefault = `TBD`;
+export const getCampaignDeliveryResponseTasksItemTwoSortOrderDefault = 0;
+export const getCampaignDeliveryResponseTasksItemTwoOwnerDefault = `Campaign team`;
 
 export const GetCampaignDeliveryResponse = zod.object({
+  "taskCounts": zod.object({
+  "stages": zod.record(zod.string(), zod.number().int()).optional(),
+  "blocked": zod.number().int().optional()
+}).optional(),
   "communications": zod.array(zod.object({
   "id": zod.string().uuid(),
   "campaignId": zod.string().uuid(),
@@ -662,16 +847,32 @@ export const GetCampaignDeliveryResponse = zod.object({
   "blockingDependencyIds": zod.array(zod.string().uuid())
 })),
   "tasks": zod.array(zod.object({
+  "stage": zod.enum(['Not Started', 'In Progress', 'Ready for Review', 'Complete']).optional(),
+  "blocked": zod.boolean().optional(),
+  "blockedReason": zod.union([zod.literal('On Hold'),zod.literal('Content'),zod.literal('Technical'),zod.literal('Legal'),zod.literal(null)]).nullish(),
+  "supportingOwner": zod.string().optional(),
+  "requestingTeam": zod.string().optional(),
+  "requester": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "trigger": zod.enum(['gtm_launch', 'event']).optional(),
+  "offsetDays": zod.number().int().min(getCampaignDeliveryResponseTasksItemOneOneOffsetDaysMin).max(getCampaignDeliveryResponseTasksItemOneOneOffsetDaysMax).nullish(),
+  "businessDayStrategy": zod.enum(['calendar', 'skip_weekends', 'next_business_day', 'previous_business_day']).optional(),
+  "effortPoints": zod.number().min(getCampaignDeliveryResponseTasksItemOneOneEffortPointsMin).optional()
+}).and(zod.object({
+  "dueAt": zod.string().nullish(),
+  "schedulingIssue": zod.string().nullish(),
+  "effectiveOffsetDays": zod.number().int().optional()
+})).and(zod.object({
   "id": zod.string().uuid(),
   "campaignId": zod.string().uuid(),
   "activityId": zod.string().uuid(),
   "name": zod.string(),
   "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
-  "timing": zod.string().default(getCampaignDeliveryResponseTasksItemTimingDefault),
-  "sortOrder": zod.number().int().default(getCampaignDeliveryResponseTasksItemSortOrderDefault),
-  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
-  "owner": zod.string().default(getCampaignDeliveryResponseTasksItemOwnerDefault)
-}))
+  "timing": zod.string().default(getCampaignDeliveryResponseTasksItemTwoTimingDefault),
+  "sortOrder": zod.number().int().default(getCampaignDeliveryResponseTasksItemTwoSortOrderDefault),
+  "status": zod.string().describe('Legacy delivery status preserved verbatim; independent of implementation stage and blockage.'),
+  "owner": zod.string().default(getCampaignDeliveryResponseTasksItemTwoOwnerDefault)
+})))
 })
 
 
@@ -806,38 +1007,84 @@ export const CreateActivityTaskParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const createActivityTaskBodyOneOffsetDaysMin = -36500;
+export const createActivityTaskBodyOneOffsetDaysMax = 36500;
 
-export const createActivityTaskBodyTypeDefault = `Other`;
-export const createActivityTaskBodyTimingDefault = `TBD`;
-export const createActivityTaskBodySortOrderDefault = 0;
-export const createActivityTaskBodyStatusDefault = `Estimated`;
-export const createActivityTaskBodyOwnerDefault = `Campaign team`;
+export const createActivityTaskBodyOneEffortPointsMin = 0;
+
+
+export const createActivityTaskBodyTwoTypeDefault = `Other`;
+export const createActivityTaskBodyTwoTimingDefault = `TBD`;
+export const createActivityTaskBodyTwoSortOrderDefault = 0;
+export const createActivityTaskBodyTwoStatusDefault = `Estimated`;
+export const createActivityTaskBodyTwoOwnerDefault = `Campaign team`;
 
 export const CreateActivityTaskBody = zod.object({
+  "stage": zod.enum(['Not Started', 'In Progress', 'Ready for Review', 'Complete']).optional(),
+  "blocked": zod.boolean().optional(),
+  "blockedReason": zod.union([zod.literal('On Hold'),zod.literal('Content'),zod.literal('Technical'),zod.literal('Legal'),zod.literal(null)]).nullish(),
+  "supportingOwner": zod.string().optional(),
+  "requestingTeam": zod.string().optional(),
+  "requester": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "trigger": zod.enum(['gtm_launch', 'event']).optional(),
+  "offsetDays": zod.number().int().min(createActivityTaskBodyOneOffsetDaysMin).max(createActivityTaskBodyOneOffsetDaysMax).nullish(),
+  "businessDayStrategy": zod.enum(['calendar', 'skip_weekends', 'next_business_day', 'previous_business_day']).optional(),
+  "effortPoints": zod.number().min(createActivityTaskBodyOneEffortPointsMin).optional()
+}).and(zod.object({
   "activityId": zod.string().uuid(),
   "name": zod.string().min(1),
-  "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']).default(createActivityTaskBodyTypeDefault),
-  "timing": zod.string().default(createActivityTaskBodyTimingDefault),
-  "sortOrder": zod.number().int().default(createActivityTaskBodySortOrderDefault),
-  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']).default(createActivityTaskBodyStatusDefault),
-  "owner": zod.string().default(createActivityTaskBodyOwnerDefault)
-})
+  "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']).default(createActivityTaskBodyTwoTypeDefault),
+  "timing": zod.string().default(createActivityTaskBodyTwoTimingDefault),
+  "sortOrder": zod.number().int().default(createActivityTaskBodyTwoSortOrderDefault),
+  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']).default(createActivityTaskBodyTwoStatusDefault),
+  "owner": zod.string().default(createActivityTaskBodyTwoOwnerDefault)
+}))
 
-export const createActivityTaskResponseTimingDefault = `TBD`;
-export const createActivityTaskResponseSortOrderDefault = 0;
-export const createActivityTaskResponseOwnerDefault = `Campaign team`;
+export const createActivityTaskResponseOneOneOffsetDaysMin = -36500;
+export const createActivityTaskResponseOneOneOffsetDaysMax = 36500;
+
+export const createActivityTaskResponseOneOneEffortPointsMin = 0;
+
+export const createActivityTaskResponseTwoTimingDefault = `TBD`;
+export const createActivityTaskResponseTwoSortOrderDefault = 0;
+export const createActivityTaskResponseTwoOwnerDefault = `Campaign team`;
 
 export const CreateActivityTaskResponse = zod.object({
+  "stage": zod.enum(['Not Started', 'In Progress', 'Ready for Review', 'Complete']).optional(),
+  "blocked": zod.boolean().optional(),
+  "blockedReason": zod.union([zod.literal('On Hold'),zod.literal('Content'),zod.literal('Technical'),zod.literal('Legal'),zod.literal(null)]).nullish(),
+  "supportingOwner": zod.string().optional(),
+  "requestingTeam": zod.string().optional(),
+  "requester": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "trigger": zod.enum(['gtm_launch', 'event']).optional(),
+  "offsetDays": zod.number().int().min(createActivityTaskResponseOneOneOffsetDaysMin).max(createActivityTaskResponseOneOneOffsetDaysMax).nullish(),
+  "businessDayStrategy": zod.enum(['calendar', 'skip_weekends', 'next_business_day', 'previous_business_day']).optional(),
+  "effortPoints": zod.number().min(createActivityTaskResponseOneOneEffortPointsMin).optional()
+}).and(zod.object({
+  "dueAt": zod.string().nullish(),
+  "schedulingIssue": zod.string().nullish(),
+  "effectiveOffsetDays": zod.number().int().optional()
+})).and(zod.object({
   "id": zod.string().uuid(),
   "campaignId": zod.string().uuid(),
   "activityId": zod.string().uuid(),
   "name": zod.string(),
   "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
-  "timing": zod.string().default(createActivityTaskResponseTimingDefault),
-  "sortOrder": zod.number().int().default(createActivityTaskResponseSortOrderDefault),
-  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
-  "owner": zod.string().default(createActivityTaskResponseOwnerDefault)
+  "timing": zod.string().default(createActivityTaskResponseTwoTimingDefault),
+  "sortOrder": zod.number().int().default(createActivityTaskResponseTwoSortOrderDefault),
+  "status": zod.string().describe('Legacy delivery status preserved verbatim; independent of implementation stage and blockage.'),
+  "owner": zod.string().default(createActivityTaskResponseTwoOwnerDefault)
+}))
+
+
+export const DeleteActivityTaskParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "itemId": zod.coerce.string().uuid()
 })
+
+export const DeleteActivityTaskResponse = zod.void()
 
 
 export const UpdateActivityTaskParams = zod.object({
@@ -845,10 +1092,27 @@ export const UpdateActivityTaskParams = zod.object({
   "itemId": zod.coerce.string().uuid()
 })
 
+export const updateActivityTaskBodyOneOffsetDaysMin = -36500;
+export const updateActivityTaskBodyOneOffsetDaysMax = 36500;
+
+export const updateActivityTaskBodyOneEffortPointsMin = 0;
+
 
 
 
 export const UpdateActivityTaskBody = zod.object({
+  "stage": zod.enum(['Not Started', 'In Progress', 'Ready for Review', 'Complete']).optional(),
+  "blocked": zod.boolean().optional(),
+  "blockedReason": zod.union([zod.literal('On Hold'),zod.literal('Content'),zod.literal('Technical'),zod.literal('Legal'),zod.literal(null)]).nullish(),
+  "supportingOwner": zod.string().optional(),
+  "requestingTeam": zod.string().optional(),
+  "requester": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "trigger": zod.enum(['gtm_launch', 'event']).optional(),
+  "offsetDays": zod.number().int().min(updateActivityTaskBodyOneOffsetDaysMin).max(updateActivityTaskBodyOneOffsetDaysMax).nullish(),
+  "businessDayStrategy": zod.enum(['calendar', 'skip_weekends', 'next_business_day', 'previous_business_day']).optional(),
+  "effortPoints": zod.number().min(updateActivityTaskBodyOneEffortPointsMin).optional()
+}).and(zod.object({
   "activityId": zod.string().uuid().optional(),
   "name": zod.string().min(1).optional(),
   "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']).optional(),
@@ -856,23 +1120,44 @@ export const UpdateActivityTaskBody = zod.object({
   "sortOrder": zod.number().int().optional(),
   "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']).optional(),
   "owner": zod.string().optional()
-})
+}))
 
-export const updateActivityTaskResponseTimingDefault = `TBD`;
-export const updateActivityTaskResponseSortOrderDefault = 0;
-export const updateActivityTaskResponseOwnerDefault = `Campaign team`;
+export const updateActivityTaskResponseOneOneOffsetDaysMin = -36500;
+export const updateActivityTaskResponseOneOneOffsetDaysMax = 36500;
+
+export const updateActivityTaskResponseOneOneEffortPointsMin = 0;
+
+export const updateActivityTaskResponseTwoTimingDefault = `TBD`;
+export const updateActivityTaskResponseTwoSortOrderDefault = 0;
+export const updateActivityTaskResponseTwoOwnerDefault = `Campaign team`;
 
 export const UpdateActivityTaskResponse = zod.object({
+  "stage": zod.enum(['Not Started', 'In Progress', 'Ready for Review', 'Complete']).optional(),
+  "blocked": zod.boolean().optional(),
+  "blockedReason": zod.union([zod.literal('On Hold'),zod.literal('Content'),zod.literal('Technical'),zod.literal('Legal'),zod.literal(null)]).nullish(),
+  "supportingOwner": zod.string().optional(),
+  "requestingTeam": zod.string().optional(),
+  "requester": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "trigger": zod.enum(['gtm_launch', 'event']).optional(),
+  "offsetDays": zod.number().int().min(updateActivityTaskResponseOneOneOffsetDaysMin).max(updateActivityTaskResponseOneOneOffsetDaysMax).nullish(),
+  "businessDayStrategy": zod.enum(['calendar', 'skip_weekends', 'next_business_day', 'previous_business_day']).optional(),
+  "effortPoints": zod.number().min(updateActivityTaskResponseOneOneEffortPointsMin).optional()
+}).and(zod.object({
+  "dueAt": zod.string().nullish(),
+  "schedulingIssue": zod.string().nullish(),
+  "effectiveOffsetDays": zod.number().int().optional()
+})).and(zod.object({
   "id": zod.string().uuid(),
   "campaignId": zod.string().uuid(),
   "activityId": zod.string().uuid(),
   "name": zod.string(),
   "type": zod.enum(['Asset', 'Landing page', 'Approval', 'Tracking', 'Other']),
-  "timing": zod.string().default(updateActivityTaskResponseTimingDefault),
-  "sortOrder": zod.number().int().default(updateActivityTaskResponseSortOrderDefault),
-  "status": zod.enum(['Known', 'Estimated', 'Decision needed', 'Not applicable', 'Confirmed']),
-  "owner": zod.string().default(updateActivityTaskResponseOwnerDefault)
-})
+  "timing": zod.string().default(updateActivityTaskResponseTwoTimingDefault),
+  "sortOrder": zod.number().int().default(updateActivityTaskResponseTwoSortOrderDefault),
+  "status": zod.string().describe('Legacy delivery status preserved verbatim; independent of implementation stage and blockage.'),
+  "owner": zod.string().default(updateActivityTaskResponseTwoOwnerDefault)
+}))
 
 
 export const ListScheduleRulesParams = zod.object({

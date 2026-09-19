@@ -4,6 +4,7 @@ import { communicationDetails } from "@workspace/db/schema/communication-details
 import { z } from "zod";
 import { assertTimezone, instanceResponse, recomputeForAnchor } from "./planning";
 import { ensureWebinarStandard } from "./webinar-standard";
+import { countTasks, implementationTaskResponse } from "./implementation-tasks";
 
 export class DeliveryValidationError extends Error {
   readonly status: number;
@@ -81,19 +82,7 @@ function communicationResponse(
   };
 }
 
-function taskResponse(row: typeof activityTasks.$inferSelect) {
-  return {
-    id: row.id,
-    campaignId: row.campaignId,
-    activityId: row.activityId,
-    name: row.name,
-    type: row.type,
-    timing: row.timing,
-    sortOrder: row.sortOrder,
-    status: row.status,
-    owner: row.owner,
-  };
-}
+const taskResponse = implementationTaskResponse;
 
 export async function deliveryFor(campaignId: string) {
   const [communicationRows, taskRows] = await Promise.all([
@@ -112,7 +101,8 @@ export async function deliveryFor(campaignId: string) {
 
   return {
     communications: communicationRows.map(({ communication, detail }) => communicationResponse(communication, detail ?? undefined)),
-    tasks: taskRows.map(taskResponse),
+    tasks: await Promise.all(taskRows.map(taskResponse)),
+    taskCounts: countTasks(taskRows),
   };
 }
 

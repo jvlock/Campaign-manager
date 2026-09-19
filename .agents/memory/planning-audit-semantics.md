@@ -26,3 +26,9 @@ Changing the default webinar sequence is not permission to convert existing webi
 **Why:** The user explicitly chose a five-message default for new webinars, with existing webinars left unchanged. Their previous nine-message sequence may already contain approved copy, schedules, and history.
 
 **How to apply:** Resolve behavior from each session's stored template version, including during repairs and reconciliation. Any conversion of existing sessions needs a separate, explicit user request.
+
+Implementation-task stage and blockage must remain independent, including in future imports and rollups.
+
+**Why:** The user specifically rejected Airtable's single Task Status model because it conflates progress with impediments. A blocked task does not lose its stage, and clearing a block does not imply any stage transition.
+
+**How to apply:** Do not infer a stage from a blocked reason in imports. Count each task in exactly one stage and count blocked tasks separately, even when those counts overlap. Gold/Silver/Bronze tier remains informational until the user defines a rule for it.

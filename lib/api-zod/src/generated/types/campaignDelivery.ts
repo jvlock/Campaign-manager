@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ActivityTask } from './activityTask';
+import type { CampaignDeliveryTaskCounts } from './campaignDeliveryTaskCounts';
 import type { Communication } from './communication';
 
 export interface CampaignDelivery {
+  taskCounts?: CampaignDeliveryTaskCounts;
   communications: Communication[];
   tasks: ActivityTask[];
 }

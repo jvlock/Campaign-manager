@@ -1,4 +1,4 @@
-import { useRoute, useLocation } from 'wouter';
+import { useRoute, useLocation, useSearch } from 'wouter';
 import { useGetCampaign, getGetCampaignQueryKey } from '@workspace/api-client-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -7,13 +7,35 @@ import { Link } from 'wouter';
 import EngagementMap from '@/components/map/EngagementMap';
 import CampaignDeliveryTab from './CampaignDeliveryTab';
 import { format } from 'date-fns';
+import { useEffect, useState } from 'react';
 
 export default function CampaignDetail() {
   const [match, params] = useRoute('/campaigns/:id');
+  const search = useSearch();
+  const [_, setLocation] = useLocation();
   const id = params?.id;
   const { data: campaign, isLoading } = useGetCampaign(id || '', {
     query: { enabled: !!id && id !== 'new', queryKey: getGetCampaignQueryKey(id || '') }
   });
+
+  const searchParams = new URLSearchParams(search);
+  const tabFromUrl = searchParams.get('tab') || 'map';
+  const activityFromUrl = searchParams.get('activity');
+
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+
+  useEffect(() => {
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl, activeTab]);
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val);
+    const params = new URLSearchParams(search);
+    params.set('tab', val);
+    setLocation(`/campaigns/${id}?${params.toString()}`);
+  };
 
   if (!id || id === 'new') return null;
 
@@ -70,7 +92,7 @@ export default function CampaignDetail() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="map" className="flex-1 flex flex-col overflow-hidden">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col overflow-hidden">
         <div className="px-6 border-b border-border bg-card shrink-0">
           <TabsList className="bg-transparent h-12 p-0 gap-6">
             <TabsTrigger 

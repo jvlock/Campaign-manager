@@ -24,6 +24,7 @@ import type {
   ActivityInput,
   ActivityTask,
   ActivityTaskInput,
+  ActivityTaskSettings,
   ActivityTaskUpdate,
   AdapterStatus,
   AttendanceResultInput,
@@ -55,6 +56,8 @@ import type {
   MapData,
   MapInput,
   NotFoundResponse,
+  OwnerCapacitiesUpdate,
+  OwnerCapacity,
   Portfolio,
   RegistrationResultInput,
   ResolveGovernanceTermParams,
@@ -66,6 +69,8 @@ import type {
   ScheduledInstance,
   ScheduledInstanceAdjustment,
   SyntheticPersonInput,
+  TaskDefault,
+  TaskDefaultsUpdate,
   TaxonomyImportBatchResponse,
   TaxonomyImportCandidate,
   TaxonomyImportInput,
@@ -116,6 +121,473 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetTaskDefaultsUrl = () => {
+
+
+
+
+  return `/api/task-defaults`
+}
+
+export const getTaskDefaults = async ( options?: Parameters<typeof customFetch>[1]): Promise<TaskDefault[]> => {
+
+  return customFetch<TaskDefault[]>(getGetTaskDefaultsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTaskDefaultsQueryKey = () => {
+    return [
+    `/api/task-defaults`
+    ] as const;
+    }
+
+
+export const getGetTaskDefaultsQueryOptions = <TData = Awaited<ReturnType<typeof getTaskDefaults>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTaskDefaults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTaskDefaultsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTaskDefaults>>> = ({ signal }) => getTaskDefaults({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTaskDefaults>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTaskDefaultsQueryResult = NonNullable<Awaited<ReturnType<typeof getTaskDefaults>>>
+export type GetTaskDefaultsQueryError = ErrorType<unknown>
+
+
+
+export function useGetTaskDefaults<TData = Awaited<ReturnType<typeof getTaskDefaults>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTaskDefaults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTaskDefaultsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateTaskDefaultsUrl = () => {
+
+
+
+
+  return `/api/task-defaults`
+}
+
+export const updateTaskDefaults = async (taskDefaultsUpdate: TaskDefaultsUpdate, options?: Parameters<typeof customFetch>[1]): Promise<TaskDefault[]> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<TaskDefault[]>(getUpdateTaskDefaultsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(taskDefaultsUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateTaskDefaultsMutationKey = () => ['updateTaskDefaults'] as const;
+
+export const getUpdateTaskDefaultsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTaskDefaults>>, TError,UpdateTaskDefaultsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTaskDefaults>>, TError,UpdateTaskDefaultsMutationVariables, TContext> => {
+
+const mutationKey = getUpdateTaskDefaultsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTaskDefaults>>, UpdateTaskDefaultsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateTaskDefaults(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTaskDefaultsMutationResult = NonNullable<Awaited<ReturnType<typeof updateTaskDefaults>>>
+    export type UpdateTaskDefaultsMutationBody = BodyType<TaskDefaultsUpdate>
+    export type UpdateTaskDefaultsMutationError = ErrorType<unknown>
+    export type UpdateTaskDefaultsMutationVariables = {data: BodyType<TaskDefaultsUpdate>}
+
+    export const useUpdateTaskDefaults = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTaskDefaults>>, TError,UpdateTaskDefaultsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTaskDefaults>>,
+        TError,
+        UpdateTaskDefaultsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateTaskDefaultsMutationOptions(options));
+    }
+
+export const getGetOwnerCapacitiesUrl = () => {
+
+
+
+
+  return `/api/owner-capacities`
+}
+
+export const getOwnerCapacities = async ( options?: Parameters<typeof customFetch>[1]): Promise<OwnerCapacity[]> => {
+
+  return customFetch<OwnerCapacity[]>(getGetOwnerCapacitiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOwnerCapacitiesQueryKey = () => {
+    return [
+    `/api/owner-capacities`
+    ] as const;
+    }
+
+
+export const getGetOwnerCapacitiesQueryOptions = <TData = Awaited<ReturnType<typeof getOwnerCapacities>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOwnerCapacities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOwnerCapacitiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOwnerCapacities>>> = ({ signal }) => getOwnerCapacities({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOwnerCapacities>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOwnerCapacitiesQueryResult = NonNullable<Awaited<ReturnType<typeof getOwnerCapacities>>>
+export type GetOwnerCapacitiesQueryError = ErrorType<unknown>
+
+
+
+export function useGetOwnerCapacities<TData = Awaited<ReturnType<typeof getOwnerCapacities>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOwnerCapacities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOwnerCapacitiesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateOwnerCapacitiesUrl = () => {
+
+
+
+
+  return `/api/owner-capacities`
+}
+
+export const updateOwnerCapacities = async (ownerCapacitiesUpdate: OwnerCapacitiesUpdate, options?: Parameters<typeof customFetch>[1]): Promise<OwnerCapacity[]> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<OwnerCapacity[]>(getUpdateOwnerCapacitiesUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(ownerCapacitiesUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateOwnerCapacitiesMutationKey = () => ['updateOwnerCapacities'] as const;
+
+export const getUpdateOwnerCapacitiesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOwnerCapacities>>, TError,UpdateOwnerCapacitiesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateOwnerCapacities>>, TError,UpdateOwnerCapacitiesMutationVariables, TContext> => {
+
+const mutationKey = getUpdateOwnerCapacitiesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateOwnerCapacities>>, UpdateOwnerCapacitiesMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateOwnerCapacities(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateOwnerCapacitiesMutationResult = NonNullable<Awaited<ReturnType<typeof updateOwnerCapacities>>>
+    export type UpdateOwnerCapacitiesMutationBody = BodyType<OwnerCapacitiesUpdate>
+    export type UpdateOwnerCapacitiesMutationError = ErrorType<unknown>
+    export type UpdateOwnerCapacitiesMutationVariables = {data: BodyType<OwnerCapacitiesUpdate>}
+
+    export const useUpdateOwnerCapacities = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOwnerCapacities>>, TError,UpdateOwnerCapacitiesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateOwnerCapacities>>,
+        TError,
+        UpdateOwnerCapacitiesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateOwnerCapacitiesMutationOptions(options));
+    }
+
+export const getGetActivityTaskSettingsUrl = (id: string,
+    activityId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/activities/${activityId}/task-settings`
+}
+
+export const getActivityTaskSettings = async (id: string,
+    activityId: string, options?: Parameters<typeof customFetch>[1]): Promise<ActivityTaskSettings> => {
+
+  return customFetch<ActivityTaskSettings>(getGetActivityTaskSettingsUrl(id,activityId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetActivityTaskSettingsQueryKey = (id: string,
+    activityId: string,) => {
+    return [
+    `/api/campaigns/${id}/activities/${activityId}/task-settings`
+    ] as const;
+    }
+
+
+export const getGetActivityTaskSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getActivityTaskSettings>>, TError = ErrorType<unknown>>(id: string,
+    activityId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActivityTaskSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetActivityTaskSettingsQueryKey(id,activityId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivityTaskSettings>>> = ({ signal }) => getActivityTaskSettings(id,activityId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && activityId !== null && activityId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getActivityTaskSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetActivityTaskSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getActivityTaskSettings>>>
+export type GetActivityTaskSettingsQueryError = ErrorType<unknown>
+
+
+
+export function useGetActivityTaskSettings<TData = Awaited<ReturnType<typeof getActivityTaskSettings>>, TError = ErrorType<unknown>>(
+ id: string,
+    activityId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActivityTaskSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetActivityTaskSettingsQueryOptions(id,activityId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateActivityTaskSettingsUrl = (id: string,
+    activityId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/activities/${activityId}/task-settings`
+}
+
+export const updateActivityTaskSettings = async (id: string,
+    activityId: string,
+    activityTaskSettings: ActivityTaskSettings, options?: Parameters<typeof customFetch>[1]): Promise<ActivityTaskSettings> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ActivityTaskSettings>(getUpdateActivityTaskSettingsUrl(id,activityId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(activityTaskSettings)
+  }
+);}
+
+
+
+
+
+export const getUpdateActivityTaskSettingsMutationKey = () => ['updateActivityTaskSettings'] as const;
+
+export const getUpdateActivityTaskSettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateActivityTaskSettings>>, TError,UpdateActivityTaskSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateActivityTaskSettings>>, TError,UpdateActivityTaskSettingsMutationVariables, TContext> => {
+
+const mutationKey = getUpdateActivityTaskSettingsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateActivityTaskSettings>>, UpdateActivityTaskSettingsMutationVariables> = (props) => {
+          const {id,activityId,data} = props ?? {};
+
+          return  updateActivityTaskSettings(id,activityId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateActivityTaskSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateActivityTaskSettings>>>
+    export type UpdateActivityTaskSettingsMutationBody = BodyType<ActivityTaskSettings>
+    export type UpdateActivityTaskSettingsMutationError = ErrorType<unknown>
+    export type UpdateActivityTaskSettingsMutationVariables = {id: string;activityId: string;data: BodyType<ActivityTaskSettings>}
+
+    export const useUpdateActivityTaskSettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateActivityTaskSettings>>, TError,UpdateActivityTaskSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateActivityTaskSettings>>,
+        TError,
+        UpdateActivityTaskSettingsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateActivityTaskSettingsMutationOptions(options));
+    }
 
 export const getHealthCheckUrl = () => {
 
@@ -1051,6 +1523,76 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreateActivityTaskMutationOptions(options));
+    }
+
+export const getDeleteActivityTaskUrl = (id: string,
+    itemId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/tasks/${itemId}`
+}
+
+export const deleteActivityTask = async (id: string,
+    itemId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteActivityTaskUrl(id,itemId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteActivityTaskMutationKey = () => ['deleteActivityTask'] as const;
+
+export const getDeleteActivityTaskMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteActivityTask>>, TError,DeleteActivityTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteActivityTask>>, TError,DeleteActivityTaskMutationVariables, TContext> => {
+
+const mutationKey = getDeleteActivityTaskMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteActivityTask>>, DeleteActivityTaskMutationVariables> = (props) => {
+          const {id,itemId} = props ?? {};
+
+          return  deleteActivityTask(id,itemId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteActivityTaskMutationResult = NonNullable<Awaited<ReturnType<typeof deleteActivityTask>>>
+
+    export type DeleteActivityTaskMutationError = ErrorType<unknown>
+    export type DeleteActivityTaskMutationVariables = {id: string;itemId: string}
+
+    export const useDeleteActivityTask = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteActivityTask>>, TError,DeleteActivityTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteActivityTask>>,
+        TError,
+        DeleteActivityTaskMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteActivityTaskMutationOptions(options));
     }
 
 export const getUpdateActivityTaskUrl = (id: string,

@@ -12,7 +12,16 @@ type ActivityNodeData = Activity & {
 
 export default function ActivityNode({ data }: { data: ActivityNodeData }) {
   const commsCount = data.communications?.length || 0;
-  const openTasks = data.tasks?.filter(t => t.status !== 'Confirmed' && t.status !== 'Not applicable')?.length || 0;
+
+  const tasks = (data.tasks || []) as any[];
+  const stages = {
+    notStarted: tasks.filter(t => t.stage === 'Not Started').length,
+    inProgress: tasks.filter(t => t.stage === 'In Progress').length,
+    ready: tasks.filter(t => t.stage === 'Ready for Review').length,
+    complete: tasks.filter(t => t.stage === 'Complete').length,
+  };
+  const blockedCount = tasks.filter(t => t.blocked).length;
+
   const connectionSourceId = data.connectionSourceId;
   const isConnectionSource = connectionSourceId === data.id;
   const isConnectionTarget = Boolean(connectionSourceId) && !isConnectionSource;
@@ -47,10 +56,10 @@ export default function ActivityNode({ data }: { data: ActivityNodeData }) {
           {data.status}
         </div>
       </div>
-      
+
       <div className="p-3 space-y-3">
         <h3 className="font-semibold text-foreground leading-tight text-sm">{data.name}</h3>
-        
+
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <User className="h-3 w-3 shrink-0" />
@@ -62,19 +71,41 @@ export default function ActivityNode({ data }: { data: ActivityNodeData }) {
           </div>
         </div>
 
-        <div className="pt-2 mt-2 border-t border-border space-y-2 text-xs text-muted-foreground">
-          <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Mail className="h-3.5 w-3.5" />
-            <span>{commsCount} {commsCount === 1 ? 'communication' : 'communications'}</span>
+        <div className="pt-3 mt-3 border-t border-border space-y-2 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-1.5 font-medium text-foreground">
+              <Mail className="h-3.5 w-3.5" />
+              <span>{commsCount} comms</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <CheckSquare className="h-3.5 w-3.5" />
-            <span className={cn(openTasks > 0 ? "font-medium text-foreground" : "")}>
-              {openTasks} open {openTasks === 1 ? 'task' : 'tasks'}
-            </span>
-          </div>
-          </div>
+
+          {(
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[10px] bg-muted/30 p-2 rounded border border-border/50">
+              <div className="flex justify-between items-center">
+                <span>Not Started:</span>
+                <span className="font-semibold text-slate-700">{stages.notStarted}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>In Progress:</span>
+                <span className="font-semibold text-amber-600">{stages.inProgress}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                 <span>Ready for Review:</span>
+                <span className="font-semibold text-blue-600">{stages.ready}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Complete:</span>
+                <span className="font-semibold text-green-600">{stages.complete}</span>
+              </div>
+               {(
+                 <div className={cn("col-span-2 flex justify-between items-center px-1.5 py-1 rounded mt-1", blockedCount > 0 ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground")}>
+                  <span className="flex items-center gap-1 font-bold uppercase tracking-wider"><AlertTriangle className="h-3 w-3" /> Blocked</span>
+                  <span className="font-bold">{blockedCount}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {data.onConnectionAction && (
             <button
               type="button"

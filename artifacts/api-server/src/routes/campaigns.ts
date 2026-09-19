@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { syncCapacityConflicts } from "../lib/implementation-tasks";
 import { and, eq, inArray, not, or, sql } from "drizzle-orm";
 import {
   db, campaigns, campaignStrategy, activities, activityConnections,
@@ -429,6 +430,7 @@ router.get("/portfolio", async (_req, res, next) => {
 
 router.post("/conflicts/run", async (_req, res, next) => {
   try {
+    await syncCapacityConflicts();
     const cs = await db.select().from(campaigns);
     const duplicateGroups = new Map<string, typeof cs>();
     for (const campaign of cs) {
@@ -472,7 +474,7 @@ router.get("/governance", async (_req, res, next) => {
   try {
     const [v] = await db.select().from(taxonomyVersions);
     const terms = v ? await db.select().from(taxonomyTerms).where(eq(taxonomyTerms.versionId, v.id)) : [];
-    res.json({ version: v?.version ?? "2026.1", activityTypes: ["Email", "Content", "Webinar", "Event", "Paid social", "Paid search", "Display", "Video", "Landing page", "Sales handoff", "Custom"], taxonomyTerms: terms.map((t) => ({ category: t.category, label: t.label, shortcode: t.shortcode })), namingExamples: ["Commodity Indexes Launch — EMEA", "EMEA_AM_EMAIL_INVITE", "IDX-COM-2026-EMEA"] });
+    res.json({ version: v?.version ?? "2026.1", activityTypes: ["Email", "Content", "Webinar", "Event", "Paid social", "Paid search", "Display", "Video", "Landing page", "Sales handoff", "Custom"], taxonomyTerms: terms.map((t) => ({ category: t.category, label: t.label, shortcode: t.shortcode })), namingExamples: [] });
   } catch (e) { next(e); }
 });
 

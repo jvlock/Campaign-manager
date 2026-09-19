@@ -177,6 +177,76 @@ export interface Communication {
   blockingDependencyIds: string[];
 }
 
+export type ImplementationTaskWriteFieldsStage = typeof ImplementationTaskWriteFieldsStage[keyof typeof ImplementationTaskWriteFieldsStage];
+
+
+export const ImplementationTaskWriteFieldsStage = {
+  Not_Started: 'Not Started',
+  In_Progress: 'In Progress',
+  Ready_for_Review: 'Ready for Review',
+  Complete: 'Complete',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ImplementationTaskWriteFieldsBlockedReason = typeof ImplementationTaskWriteFieldsBlockedReason[keyof typeof ImplementationTaskWriteFieldsBlockedReason] | null;
+
+
+export const ImplementationTaskWriteFieldsBlockedReason = {
+  On_Hold: 'On Hold',
+  Content: 'Content',
+  Technical: 'Technical',
+  Legal: 'Legal',
+} as const;
+
+export type ImplementationTaskWriteFieldsTrigger = typeof ImplementationTaskWriteFieldsTrigger[keyof typeof ImplementationTaskWriteFieldsTrigger];
+
+
+export const ImplementationTaskWriteFieldsTrigger = {
+  gtm_launch: 'gtm_launch',
+  event: 'event',
+} as const;
+
+export type ImplementationTaskWriteFieldsBusinessDayStrategy = typeof ImplementationTaskWriteFieldsBusinessDayStrategy[keyof typeof ImplementationTaskWriteFieldsBusinessDayStrategy];
+
+
+export const ImplementationTaskWriteFieldsBusinessDayStrategy = {
+  calendar: 'calendar',
+  skip_weekends: 'skip_weekends',
+  next_business_day: 'next_business_day',
+  previous_business_day: 'previous_business_day',
+} as const;
+
+export interface ImplementationTaskWriteFields {
+  stage?: ImplementationTaskWriteFieldsStage;
+  blocked?: boolean;
+  /** @nullable */
+  blockedReason?: ImplementationTaskWriteFieldsBlockedReason;
+  supportingOwner?: string;
+  requestingTeam?: string;
+  requester?: string;
+  notes?: string;
+  trigger?: ImplementationTaskWriteFieldsTrigger;
+  /**
+     * @minimum -36500
+     * @maximum 36500
+     * @nullable
+     */
+  offsetDays?: number | null;
+  businessDayStrategy?: ImplementationTaskWriteFieldsBusinessDayStrategy;
+  /** @minimum 0 */
+  effortPoints?: number;
+}
+
+export type ImplementationTaskFields = ImplementationTaskWriteFields & ({
+  /** @nullable */
+  readonly dueAt?: string | null;
+  /** @nullable */
+  readonly schedulingIssue?: string | null;
+  readonly effectiveOffsetDays?: number;
+});
+
 export type TaskType = typeof TaskType[keyof typeof TaskType];
 
 
@@ -188,7 +258,7 @@ export const TaskType = {
   Other: 'Other',
 } as const;
 
-export interface ActivityTask {
+export type ActivityTask = ImplementationTaskFields & {
   id: string;
   campaignId: string;
   activityId: string;
@@ -196,9 +266,10 @@ export interface ActivityTask {
   type: TaskType;
   timing: string;
   sortOrder: number;
-  status: DeliveryStatus;
+  /** Legacy delivery status preserved verbatim; independent of implementation stage and blockage. */
+  status: string;
   owner: string;
-}
+};
 
 export type CampaignDetail = CampaignSummary & {
   strategy: CampaignDetailStrategy;
@@ -267,7 +338,7 @@ export interface CommunicationUpdate {
   blockingDependencyIds?: string[];
 }
 
-export interface ActivityTaskInput {
+export type ActivityTaskInput = ImplementationTaskWriteFields & {
   activityId: string;
   /** @minLength 1 */
   name: string;
@@ -276,9 +347,9 @@ export interface ActivityTaskInput {
   sortOrder?: number;
   status?: DeliveryStatus;
   owner?: string;
-}
+};
 
-export interface ActivityTaskUpdate {
+export type ActivityTaskUpdate = ImplementationTaskWriteFields & {
   activityId?: string;
   /** @minLength 1 */
   name?: string;
@@ -287,6 +358,73 @@ export interface ActivityTaskUpdate {
   sortOrder?: number;
   status?: DeliveryStatus;
   owner?: string;
+};
+
+/**
+ * @nullable
+ */
+export type ActivityTaskSettingsTier = typeof ActivityTaskSettingsTier[keyof typeof ActivityTaskSettingsTier] | null;
+
+
+export const ActivityTaskSettingsTier = {
+  Gold: 'Gold',
+  Silver: 'Silver',
+  Bronze: 'Bronze',
+} as const;
+
+export interface ActivityTaskSettings {
+  /** @nullable */
+  gtmLaunchAt?: string | null;
+  /** @nullable */
+  eventAt?: string | null;
+  timezone?: string;
+  /** @nullable */
+  tier?: ActivityTaskSettingsTier;
+}
+
+export interface TaskDefault {
+  type: TaskType;
+  /**
+     * @minimum -36500
+     * @maximum 36500
+     */
+  offsetDays: number;
+  readonly label?: string;
+}
+
+export interface TaskDefaultInput {
+  type: TaskType;
+  /**
+     * @minimum -36500
+     * @maximum 36500
+     */
+  offsetDays: number;
+}
+
+export interface TaskDefaultsUpdate {
+  /** @minItems 1 */
+  defaults: TaskDefaultInput[];
+}
+
+export interface OwnerCapacity {
+  owner: string;
+  /** @minimum 0 */
+  ceiling: number;
+  readonly totalEffort?: number;
+  readonly overallocated?: boolean;
+  readonly label?: string;
+}
+
+export interface OwnerCapacityInput {
+  /** @minLength 1 */
+  owner: string;
+  /** @minimum 0 */
+  ceiling: number;
+}
+
+export interface OwnerCapacitiesUpdate {
+  /** @minItems 1 */
+  capacities: OwnerCapacityInput[];
 }
 
 export interface CommunicationDetails {
@@ -325,7 +463,15 @@ export interface CommunicationInputExtension {
  */
 export type CommunicationUpdateExtension = CommunicationInputExtension;
 
+export type CampaignDeliveryTaskCountsStages = {[key: string]: number};
+
+export type CampaignDeliveryTaskCounts = {
+  stages?: CampaignDeliveryTaskCountsStages;
+  blocked?: number;
+};
+
 export interface CampaignDelivery {
+  taskCounts?: CampaignDeliveryTaskCounts;
   communications: Communication[];
   tasks: ActivityTask[];
 }

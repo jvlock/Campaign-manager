@@ -6,9 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { DeliveryStatus } from './deliveryStatus';
+import type { ImplementationTaskWriteFields } from './implementationTaskWriteFields';
 import type { TaskType } from './taskType';
 
-export interface ActivityTaskUpdate {
+export type ActivityTaskUpdate = ImplementationTaskWriteFields & {
   activityId?: string;
   /** @minLength 1 */
   name?: string;
@@ -17,4 +18,4 @@ export interface ActivityTaskUpdate {
   sortOrder?: number;
   status?: DeliveryStatus;
   owner?: string;
-}
+};

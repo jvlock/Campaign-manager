@@ -5,10 +5,10 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
-import type { DeliveryStatus } from './deliveryStatus';
+import type { ImplementationTaskFields } from './implementationTaskFields';
 import type { TaskType } from './taskType';
 
-export interface ActivityTask {
+export type ActivityTask = ImplementationTaskFields & {
   id: string;
   campaignId: string;
   activityId: string;
@@ -16,6 +16,7 @@ export interface ActivityTask {
   type: TaskType;
   timing: string;
   sortOrder: number;
-  status: DeliveryStatus;
+  /** Legacy delivery status preserved verbatim; independent of implementation stage and blockage. */
+  status: string;
   owner: string;
-}
+};

@@ -35,6 +35,7 @@ import {
 } from "../lib/delivery";
 
 const router: IRouter = Router();
+import { validateTaskFields, syncCapacityConflicts, TaskValidationError } from "../lib/implementation-tasks";
 
 async function campaignExists(campaignId: string) {
   const [campaign] = await db
@@ -223,6 +224,7 @@ router.delete("/campaigns/:id/communications/:itemId", async (req, res, next): P
 
 router.post("/campaigns/:id/tasks", async (req, res, next): Promise<void> => {
   try {
+    const fields = validateTaskFields(req.body);
     const parsedParams = CreateActivityTaskParams.safeParse(req.params);
     const parsedBody = CreateActivityTaskBody.safeParse(req.body);
     if (!parsedParams.success || !parsedBody.success) {
@@ -247,6 +249,7 @@ router.post("/campaigns/:id/tasks", async (req, res, next): Promise<void> => {
     const [row] = await db
       .insert(activityTasks)
       .values({
+        ...fields,
         campaignId,
         activityId: body.activityId,
         name: body.name,
@@ -257,9 +260,11 @@ router.post("/campaigns/:id/tasks", async (req, res, next): Promise<void> => {
         owner: body.owner,
       })
       .returning();
-    res.status(201).json(CreateActivityTaskResponse.parse(taskResponse(row)));
+    await syncCapacityConflicts();
+    res.status(201).json(CreateActivityTaskResponse.parse(await taskResponse(row)));
   } catch (error) {
-    next(error);
+    if (error instanceof TaskValidationError) res.status(400).json({ error: error.message });
+    else next(error);
   }
 });
 
@@ -294,7 +299,7 @@ router.patch("/campaigns/:id/tasks/:itemId", async (req, res, next): Promise<voi
       return;
     }
 
-    const patch: Partial<typeof activityTasks.$inferInsert> = { updatedAt: new Date() };
+    const patch: Partial<typeof activityTasks.$inferInsert> = { ...validateTaskFields(req.body, existing), updatedAt: new Date() };
     if (body.activityId !== undefined) patch.activityId = body.activityId;
     if (body.name !== undefined) patch.name = body.name;
     if (body.type !== undefined) patch.type = body.type;
@@ -308,9 +313,11 @@ router.patch("/campaigns/:id/tasks/:itemId", async (req, res, next): Promise<voi
       .set(patch)
       .where(and(eq(activityTasks.id, itemId), eq(activityTasks.campaignId, campaignId)))
       .returning();
-    res.json(UpdateActivityTaskResponse.parse(taskResponse(row)));
+    await syncCapacityConflicts();
+    res.json(UpdateActivityTaskResponse.parse(await taskResponse(row)));
   } catch (error) {
-    next(error);
+    if (error instanceof TaskValidationError) res.status(400).json({ error: error.message });
+    else next(error);
   }
 });
 

@@ -230,7 +230,7 @@ function sessionDateText(session: Pick<WebinarSession, "sessionDate">) {
   return String(session.sessionDate).slice(0, 10);
 }
 
-function sessionAnchor(session: Pick<WebinarSession, "sessionDate" | "startTime" | "timezone">) {
+export function sessionAnchor(session: Pick<WebinarSession, "sessionDate" | "startTime" | "timezone">) {
   assertTimezone(session.timezone);
   const [year, month, day] = sessionDateText(session).split("-").map(Number);
   const [hour, minute, second = 0] = String(session.startTime).split(":").map(Number);
