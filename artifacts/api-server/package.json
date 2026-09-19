@@ -13,7 +13,8 @@
     "test:webinar-standard": "tsx --test ./test/webinar-standard.test.ts ./test/webinar-standard.routes.test.ts",
     "test:webinar-standard-routes": "tsx --test ./test/webinar-standard.routes.test.ts",
     "test:governance": "tsx --test ./test/governance.test.ts",
-    "test:planning": "tsx --test ./test/planning.test.ts"
+    "test:planning": "tsx --test ./test/planning.test.ts",
+    "test:utm": "tsx --test ./test/utm-compiler.test.ts ./test/utm-routes.test.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",

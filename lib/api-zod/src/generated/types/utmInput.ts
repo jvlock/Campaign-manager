@@ -7,10 +7,43 @@
  */
 
 export interface UtmInput {
-  destinationUrl: string;
-  source: string;
-  medium: string;
-  content: string;
-  term: string;
-  salesforceCampaignId: string;
+  /** Approved governed channel term ID */
+  channel: string;
+  destinationUrl?: string;
+  productLine?: string;
+  campaignShortcode?: string;
+  subcampaign?: string;
+  adsSubtype?: string;
+  objective?: string;
+  audience?: string;
+  audienceSegment?: string;
+  region?: string;
+  creativeType?: string;
+  imageSize?: string;
+  videoLength?: string;
+  contentType?: string;
+  creativeCta?: string;
+  contentOrder?: string;
+  emailType?: string;
+  owner?: string;
+  displayPartner?: string;
+  source?: string;
+  captureSource?: string;
+  newsletterVersion?: string;
+  linkPosition?: string;
+  nurtureSequence?: string;
+  keyword?: string;
+  /**
+     * Backward-compatible alias for keyword
+     * @deprecated
+     */
+  term?: string;
+  sendDate?: Date;
+  eventDate?: Date;
+  automationName?: string;
+  eventName?: string;
+  creativeDescription?: string;
+  eventCta?: string;
+  /** @pattern ^701[A-Za-z0-9]{12}([A-Za-z0-9]{3})?$ */
+  salesforceCampaignId?: string;
 }

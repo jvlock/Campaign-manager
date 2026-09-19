@@ -493,12 +493,74 @@ export type MapInput = MapData & {
 };
 
 export interface UtmInput {
-  destinationUrl: string;
-  source: string;
-  medium: string;
-  content: string;
-  term: string;
-  salesforceCampaignId: string;
+  /** Approved governed channel term ID */
+  channel: string;
+  destinationUrl?: string;
+  productLine?: string;
+  campaignShortcode?: string;
+  subcampaign?: string;
+  adsSubtype?: string;
+  objective?: string;
+  audience?: string;
+  audienceSegment?: string;
+  region?: string;
+  creativeType?: string;
+  imageSize?: string;
+  videoLength?: string;
+  contentType?: string;
+  creativeCta?: string;
+  contentOrder?: string;
+  emailType?: string;
+  owner?: string;
+  displayPartner?: string;
+  source?: string;
+  captureSource?: string;
+  newsletterVersion?: string;
+  linkPosition?: string;
+  nurtureSequence?: string;
+  keyword?: string;
+  /**
+     * Backward-compatible alias for keyword
+     * @deprecated
+     */
+  term?: string;
+  sendDate?: string;
+  eventDate?: string;
+  automationName?: string;
+  eventName?: string;
+  creativeDescription?: string;
+  eventCta?: string;
+  /** @pattern ^701[A-Za-z0-9]{12}([A-Za-z0-9]{3})?$ */
+  salesforceCampaignId?: string;
+}
+
+export type UtmGenerationResponseParameters = {[key: string]: string};
+
+export interface UtmGenerationResponse {
+  /** @nullable */
+  id: string | null;
+  /** @nullable */
+  destinationUrl: string | null;
+  /** @nullable */
+  fullUrl: string | null;
+  taxonomyVersion: string;
+  parameters: UtmGenerationResponseParameters;
+  /** @nullable */
+  automationName: string | null;
+  validation: string;
+  status: string;
+  /** @nullable */
+  message: string | null;
+}
+
+export type UtmGenerationErrorError = {
+  field: string;
+  code: string;
+  message: string;
+};
+
+export interface UtmGenerationError {
+  error: UtmGenerationErrorError;
 }
 
 export interface Conflict {
@@ -1167,6 +1229,7 @@ export interface TaxonomyTerm {
 export interface TaxonomyTermsResponse {
   version: string;
   versionId: string;
+  categories: string[];
   terms: TaxonomyTerm[];
 }
 

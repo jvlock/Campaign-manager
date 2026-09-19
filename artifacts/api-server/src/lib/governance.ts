@@ -12,6 +12,7 @@ import {
   kpis,
   taxonomyImportBatches,
   taxonomyImportCandidates,
+  taxonomyCategories,
   taxonomyTerms,
   taxonomyVersions,
   communications,
@@ -362,8 +363,16 @@ export async function listTerms(input: { versionId?: unknown; version?: unknown 
       .where(sql`${taxonomyVersions.effectiveAt} <= now() AND (${taxonomyVersions.deprecatedAt} IS NULL OR ${taxonomyVersions.deprecatedAt} > now())`)
       .orderBy(desc(taxonomyVersions.effectiveAt)).limit(1))[0];
   if (!version) throw new GovernanceError("No currently effective taxonomy version", 404);
-  const terms = await termsForVersion(db, version.id);
-  return { version: version.version, versionId: version.id, terms: terms.map(termResponse) };
+  const [terms, categories] = await Promise.all([
+    termsForVersion(db, version.id),
+    db.select().from(taxonomyCategories),
+  ]);
+  return {
+    version: version.version,
+    versionId: version.id,
+    categories: categories.map((category) => category.key).sort(),
+    terms: terms.map(termResponse),
+  };
 }
 
 export async function createTerm(input: {

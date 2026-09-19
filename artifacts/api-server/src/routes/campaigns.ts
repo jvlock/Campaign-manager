@@ -1,13 +1,21 @@
 import { Router, type IRouter } from "express";
 import { syncCapacityConflicts } from "../lib/implementation-tasks";
-import { and, eq, inArray, not, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, not, or, sql } from "drizzle-orm";
 import {
   db, campaigns, campaignStrategy, activities, activityConnections,
-  activityTasks, communications, conflicts, scheduleRules, taxonomyTerms, taxonomyVersions, utmLinks,
+  activityTasks, approvals, communications, conflicts, scheduleRules, taxonomyTerms, taxonomyVersions, utmLinks,
   webinarSessions,
 } from "@workspace/db";
 import { deliveryFor } from "../lib/delivery";
 import { ensureWebinarForActivity } from "../lib/webinar-standard";
+import {
+  appendUtm,
+  compileUtm,
+  normalizeGoverned,
+  UtmInputError,
+  type UtmCategoryKey,
+  type UtmFormula,
+} from "../lib/utm-compiler";
 
 const router: IRouter = Router();
 
@@ -409,15 +417,190 @@ router.post("/campaigns/:id/activities", async (req, res, next) => {
   }
 });
 
+const utmFieldCategories: Record<string, UtmCategoryKey> = {
+  productLine: "product_line", campaignShortcode: "campaign_shortcode", subcampaign: "subcampaign",
+  adsSubtype: "ads_subtype", objective: "utm_objective", audience: "audience",
+  audienceSegment: "audience_segment", region: "utm_region", creativeType: "creative_type",
+  imageSize: "image_size", videoLength: "video_length", contentType: "content_type",
+  creativeCta: "creative_cta", contentOrder: "content_order", emailType: "email_type",
+  owner: "owner", displayPartner: "display_partner", source: "source",
+  captureSource: "capture_source", newsletterVersion: "newsletter_version",
+  linkPosition: "link_position", nurtureSequence: "nurture_sequence",
+};
+
+const formulaRequiredFields: Record<UtmFormula, string[]> = {
+  paid_search: ["productLine", "campaignShortcode", "subcampaign", "adsSubtype", "objective", "audience", "audienceSegment"],
+  paid_social: ["productLine", "campaignShortcode", "subcampaign", "adsSubtype", "objective", "audience", "audienceSegment", "creativeType", "contentType", "creativeCta"],
+  display: ["productLine", "campaignShortcode", "subcampaign", "adsSubtype", "objective", "audience", "audienceSegment", "creativeType", "contentType", "creativeCta"],
+  newsletter_email: ["owner", "productLine", "campaignShortcode", "subcampaign", "objective", "audience", "newsletterVersion", "linkPosition", "contentType"],
+  nurture_email: ["owner", "productLine", "campaignShortcode", "subcampaign", "objective", "audience"],
+  pre_event_email: ["owner", "productLine", "campaignShortcode", "subcampaign", "emailType", "objective", "audience", "creativeCta", "contentType"],
+  post_event_email: ["owner", "productLine", "campaignShortcode", "subcampaign", "emailType", "objective", "audience", "creativeCta", "contentType"],
+  events: ["productLine", "campaignShortcode", "subcampaign", "region", "captureSource"],
+};
+
+class UtmGovernanceError extends Error {
+  constructor(public field: string, public code: string, message: string) { super(message); }
+}
+
+function utmError(res: any, status: number, field: string, code: string, message: string) {
+  res.status(status).json({ error: { field, code, message } });
+}
+
+function optionalString(body: Record<string, unknown>, field: string): string | undefined {
+  const value = body[field];
+  if (value === undefined || value === null || value === "") return undefined;
+  if (typeof value !== "string") throw new UtmInputError(field, "invalid_type", `${field} must be a string`);
+  if (value.trim().toLowerCase() === "undefined") throw new UtmInputError(field, "invalid_value", `${field} cannot be "undefined"`);
+  return value;
+}
+
 router.post("/campaigns/:id/utm-links", async (req, res, next) => {
   try {
     const [c] = await db.select().from(campaigns).where(eq(campaigns.id, req.params.id));
-    const code = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const params = new URLSearchParams({ utm_source: req.body.source, utm_medium: req.body.medium, utm_campaign: code, utm_content: req.body.content, utm_term: req.body.term, utm_sf_cmp_id: req.body.salesforceCampaignId });
-    const fullUrl = `${req.body.destinationUrl}${req.body.destinationUrl.includes("?") ? "&" : "?"}${params}`;
-    const [u] = await db.insert(utmLinks).values({ campaignId: c.id, destinationUrl: req.body.destinationUrl, fullUrl, taxonomyVersion: "2026.1", generatedValues: Object.fromEntries(params), validation: "Valid", status: "Draft" }).returning();
-    res.status(201).json({ id: u.id, destinationUrl: u.destinationUrl, fullUrl: u.fullUrl, taxonomyVersion: u.taxonomyVersion, validation: u.validation, status: u.status });
-  } catch (e) { next(e); }
+    if (!c) { utmError(res, 404, "campaignId", "not_found", "Campaign not found"); return; }
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const allowedFields = new Set([
+      "channel", "destinationUrl", ...Object.keys(utmFieldCategories), "keyword", "term",
+      "sendDate", "eventDate", "automationName", "eventName", "creativeDescription",
+      "eventCta", "salesforceCampaignId",
+    ]);
+    const unknownField = Object.keys(body).find((field) => !allowedFields.has(field));
+    if (unknownField) throw new UtmInputError(unknownField, "unknown_field", `${unknownField} is not accepted`);
+    const channelReference = optionalString(body, "channel");
+    if (!channelReference) throw new UtmGovernanceError("channel", "required", "channel is required");
+
+    const [version] = await db.select().from(taxonomyVersions)
+      .where(sql`${taxonomyVersions.effectiveAt} <= now() AND (${taxonomyVersions.deprecatedAt} IS NULL OR ${taxonomyVersions.deprecatedAt} > now())`)
+      .orderBy(desc(taxonomyVersions.effectiveAt)).limit(1);
+    if (!version) throw new UtmGovernanceError("channel", "no_effective_taxonomy", "No taxonomy version is currently in effect");
+
+    const versionTerms = await db.select().from(taxonomyTerms).where(eq(taxonomyTerms.versionId, version.id));
+    const now = Date.now();
+    const activeTerms = versionTerms.filter((term) =>
+      !term.isDeprecated && !term.supersededBy && (!term.deprecatedAt || term.deprecatedAt.valueOf() > now));
+    const termIds = activeTerms.map((term) => term.id);
+    const approvalRows = termIds.length
+      ? await db.select().from(approvals).where(and(
+          inArray(approvals.recordType, ["taxonomyTerm", "taxonomy_term"]),
+          inArray(approvals.recordId, termIds),
+        )).orderBy(desc(approvals.updatedAt))
+      : [];
+    const latestApproval = new Map<string, string>();
+    for (const approval of approvalRows) {
+      if (!latestApproval.has(approval.recordId)) latestApproval.set(approval.recordId, approval.status.toLowerCase());
+    }
+    const approvedTerms = activeTerms.filter((term) => latestApproval.get(term.id) === "approved");
+    const findApproved = (field: string, category: UtmCategoryKey, reference: string) => {
+      const normalized = reference.trim().toLowerCase();
+      const subject = field === "channel" ? `channel ${JSON.stringify(reference)}` : field;
+      const categoryTerms = versionTerms.filter((term) => term.category === category);
+      const idMatch = categoryTerms.find((term) => term.id.toLowerCase() === normalized);
+      const matches = idMatch ? [idMatch] : categoryTerms.filter((term) =>
+        term.shortcode.toLowerCase() === normalized || term.label.toLowerCase() === normalized);
+      if (!matches.length) throw new UtmGovernanceError(field, "not_governed", `${subject} is not a governed ${category} value`);
+      const activeMatches = matches.filter((term) => activeTerms.some((active) => active.id === term.id));
+      if (!activeMatches.length) throw new UtmGovernanceError(field, "inactive", `${subject} is not an active ${category} value`);
+      if (activeMatches.length > 1) {
+        throw new UtmGovernanceError(field, "ambiguous", `${subject} matches multiple active ${category} values; supply the term ID`);
+      }
+      const matched = activeMatches[0];
+      if (!approvedTerms.some((term) => term.id === matched.id)) {
+        throw new UtmGovernanceError(field, "not_approved", `${subject} is not an approved active ${category} value`);
+      }
+      return matched;
+    };
+
+    const channel = findApproved("channel", "channel", channelReference);
+    const metadata = channel.sourceMetadata && typeof channel.sourceMetadata === "object"
+      ? channel.sourceMetadata as Record<string, unknown> : {};
+    const formula = metadata.formulaKey;
+    const supportedFormulas: UtmFormula[] = ["paid_search", "paid_social", "display", "newsletter_email", "nurture_email", "pre_event_email", "post_event_email", "events"];
+    if (typeof formula !== "string" || !supportedFormulas.includes(formula as UtmFormula)) {
+      throw new UtmGovernanceError("channel", "missing_formula_metadata", "channel is missing supported formulaKey metadata");
+    }
+    if (typeof metadata.utmSource !== "string" || !metadata.utmSource.trim()) {
+      throw new UtmGovernanceError("channel", "missing_source_metadata", "channel is missing utmSource metadata");
+    }
+    if (typeof metadata.utmMedium !== "string" || !metadata.utmMedium.trim()) {
+      throw new UtmGovernanceError("channel", "missing_medium_metadata", "channel is missing utmMedium metadata");
+    }
+
+    const governedTerms = new Map<string, typeof taxonomyTerms.$inferSelect>();
+    for (const [field, category] of Object.entries(utmFieldCategories)) {
+      const reference = optionalString(body, field);
+      if (reference) governedTerms.set(field, findApproved(field, category, reference));
+    }
+    for (const field of formulaRequiredFields[formula as UtmFormula]) {
+      if (!governedTerms.has(field)) {
+        throw new UtmGovernanceError(field, "required", `${field} is required for ${channel.label}`);
+      }
+    }
+    if ((formula === "paid_social" || formula === "display")) {
+      const hasImage = governedTerms.has("imageSize");
+      const hasVideo = governedTerms.has("videoLength");
+      if (hasImage === hasVideo) {
+        throw new UtmGovernanceError("imageSize", "exactly_one_required", "Exactly one of imageSize or videoLength is required");
+      }
+    }
+    const product = governedTerms.get("productLine")!;
+    const campaignShortcode = governedTerms.get("campaignShortcode")!;
+    const subcampaign = governedTerms.get("subcampaign")!;
+    if (campaignShortcode.parentId !== product.id) {
+      throw new UtmGovernanceError("campaignShortcode", "invalid_hierarchy", "campaignShortcode must be a child of productLine");
+    }
+    if (subcampaign.parentId !== campaignShortcode.id) {
+      throw new UtmGovernanceError("subcampaign", "invalid_hierarchy", "subcampaign must be a child of campaignShortcode");
+    }
+
+    const values: Partial<Record<UtmCategoryKey, string>> = {};
+    for (const [field, term] of governedTerms) values[utmFieldCategories[field]] = normalizeGoverned(term.shortcode);
+    const displayPartner = governedTerms.get("displayPartner");
+    const sourceOverride = governedTerms.get("source");
+    const salesforceCampaignId = optionalString(body, "salesforceCampaignId");
+    if (salesforceCampaignId && !/^701[A-Za-z0-9]{12}(?:[A-Za-z0-9]{3})?$/.test(salesforceCampaignId)) {
+      throw new UtmInputError("salesforceCampaignId", "invalid_format", "salesforceCampaignId must be a 15 or 18 character Salesforce Campaign ID beginning with 701");
+    }
+    const compiled = compileUtm({
+      formula: formula as UtmFormula,
+      values,
+      keyword: optionalString(body, "keyword") ?? optionalString(body, "term"),
+      sendDate: optionalString(body, "sendDate"),
+      eventDate: optionalString(body, "eventDate"),
+      automationName: optionalString(body, "automationName"),
+      eventName: optionalString(body, "eventName"),
+      creativeDescription: optionalString(body, "creativeDescription"),
+      eventCta: optionalString(body, "eventCta"),
+      channelSource: normalizeGoverned(displayPartner?.shortcode ?? sourceOverride?.shortcode ?? String(metadata.utmSource)),
+      channelMedium: normalizeGoverned(String(metadata.utmMedium)),
+      salesforceCampaignId,
+    });
+    const destinationUrl = optionalString(body, "destinationUrl");
+    if (!destinationUrl) {
+      res.status(200).json({
+        id: null, destinationUrl: null, fullUrl: null, taxonomyVersion: version.version,
+        parameters: compiled.parameters, automationName: compiled.automationName,
+        validation: "Valid", status: "Not persisted",
+        message: "Destination URL is required to build the full link.",
+      });
+      return;
+    }
+    const fullUrl = appendUtm(destinationUrl, compiled.parameters);
+    const [u] = await db.insert(utmLinks).values({
+      campaignId: c.id, destinationUrl, fullUrl, taxonomyVersion: version.version,
+      generatedValues: compiled.parameters, validation: "Valid", status: "Draft",
+    }).returning();
+    res.status(201).json({
+      id: u.id, destinationUrl: u.destinationUrl, fullUrl: u.fullUrl,
+      taxonomyVersion: u.taxonomyVersion, parameters: compiled.parameters,
+      automationName: compiled.automationName, validation: u.validation,
+      status: u.status, message: null,
+    });
+  } catch (e) {
+    if (e instanceof UtmGovernanceError) { utmError(res, 422, e.field, e.code, e.message); return; }
+    if (e instanceof UtmInputError) { utmError(res, 400, e.field, e.code, e.message); return; }
+    next(e);
+  }
 });
 
 router.get("/portfolio", async (_req, res, next) => {

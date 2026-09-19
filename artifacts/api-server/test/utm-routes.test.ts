@@ -1,0 +1,162 @@
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { after, before, test } from "node:test";
+import express from "express";
+import { eq, inArray } from "drizzle-orm";
+import {
+  approvals, campaigns, db, taxonomyTerms, taxonomyVersions, utmLinks,
+} from "@workspace/db";
+import campaignsRouter from "../src/routes/campaigns";
+
+const marker = randomUUID().slice(0, 8);
+const termIds: string[] = [];
+let campaignId = "";
+let server: ReturnType<ReturnType<typeof express>["listen"]>;
+let base = "";
+
+const post = async (body: unknown) => {
+  const response = await fetch(`${base}/campaigns/${campaignId}/utm-links`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  return { status: response.status, body: await response.json() as any };
+};
+
+before(async () => {
+  const [version] = await db.select().from(taxonomyVersions).where(eq(taxonomyVersions.version, "2026.1"));
+  assert.ok(version);
+  const [campaign] = await db.insert(campaigns).values({
+    name: `UTM route ${marker}`, scope: "Global", audience: "Test", outcome: "Test",
+  }).returning();
+  campaignId = campaign.id;
+
+  const create = async (category: string, name: string, parentId?: string, sourceMetadata: Record<string, unknown> = {}) => {
+    const [term] = await db.insert(taxonomyTerms).values({
+      versionId: version.id, category, label: `${name} ${marker}`,
+      shortcode: `${name}_${marker}`, parentId, sourceMetadata,
+    }).returning();
+    termIds.push(term.id);
+    await db.insert(approvals).values({
+      recordType: "taxonomyTerm", recordId: term.id, stage: "Governance",
+      status: "approved", approver: "test:declared",
+    });
+    return term;
+  };
+  const product = await create("product_line", "Product");
+  const campaignCode = await create("campaign_shortcode", "Campaign", product.id);
+  await create("subcampaign", "Subcampaign", campaignCode.id);
+  await create("subcampaign", "WrongSubcampaign", product.id);
+  await create("ads_subtype", "Ads");
+  await create("utm_objective", "Objective");
+  await create("audience", "Audience");
+  await create("audience_segment", "Segment");
+  await create("source", "Override");
+  await create("display_partner", "Partner");
+  await create("channel", "PaidSearch", undefined, {
+    formulaKey: "paid_search", utmSource: "Google Ads", utmMedium: "Paid Search",
+  });
+  for (const [name, isDeprecated] of [["Unapproved", false], ["Inactive", true]] as const) {
+    const [term] = await db.insert(taxonomyTerms).values({
+      versionId: version.id, category: "channel", label: `${name} ${marker}`,
+      shortcode: `${name}_${marker}`, isDeprecated,
+      sourceMetadata: { formulaKey: "paid_search", utmSource: "Google", utmMedium: "CPC" },
+    }).returning();
+    termIds.push(term.id);
+  }
+
+  const app = express();
+  app.use(express.json());
+  app.use(campaignsRouter);
+  server = app.listen(0, "127.0.0.1");
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  base = `http://127.0.0.1:${(server.address() as any).port}`;
+});
+
+after(async () => {
+  await db.delete(utmLinks).where(eq(utmLinks.campaignId, campaignId));
+  await db.delete(approvals).where(inArray(approvals.recordId, termIds));
+  await db.delete(taxonomyTerms).where(inArray(taxonomyTerms.id, termIds.reverse()));
+  await db.delete(campaigns).where(eq(campaigns.id, campaignId));
+  await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+});
+
+const governedRequest = () => ({
+  channel: `PaidSearch_${marker}`,
+  productLine: `Product_${marker}`,
+  campaignShortcode: `Campaign_${marker}`,
+  subcampaign: `Subcampaign_${marker}`,
+  adsSubtype: `Ads_${marker}`,
+  objective: `Objective_${marker}`,
+  audience: `Audience_${marker}`,
+  audienceSegment: `Segment_${marker}`,
+  keyword: "{keyword}",
+});
+
+test("names an ungoverned channel and inserts nothing", async () => {
+  const before = await db.select().from(utmLinks).where(eq(utmLinks.campaignId, campaignId));
+  const result = await post({ channel: "Paid Search" });
+  assert.equal(result.status, 422);
+  assert.deepEqual(result.body.error, {
+    field: "channel", code: "not_governed",
+    message: "channel \"Paid Search\" is not a governed channel value",
+  });
+  const after = await db.select().from(utmLinks).where(eq(utmLinks.campaignId, campaignId));
+  assert.equal(after.length, before.length);
+});
+
+test("distinguishes unapproved and inactive governed channels", async () => {
+  const unapproved = await post({ channel: `Unapproved_${marker}` });
+  assert.equal(unapproved.status, 422);
+  assert.equal(unapproved.body.error.code, "not_approved");
+  assert.equal(unapproved.body.error.field, "channel");
+  assert.equal(unapproved.body.error.message, `channel "Unapproved_${marker}" is not an approved active channel value`);
+  const inactive = await post({ channel: `Inactive_${marker}` });
+  assert.equal(inactive.status, 422);
+  assert.equal(inactive.body.error.code, "inactive");
+  assert.equal(inactive.body.error.field, "channel");
+  assert.equal(inactive.body.error.message, `channel "Inactive_${marker}" is not an active channel value`);
+});
+
+test("returns parameters without destination and does not persist", async () => {
+  const result = await post(governedRequest());
+  assert.equal(result.status, 200);
+  assert.equal(result.body.fullUrl, null);
+  assert.equal(result.body.id, null);
+  assert.equal(result.body.message, "Destination URL is required to build the full link.");
+  assert.equal(result.body.parameters.utm_source, "google-ads");
+  assert.equal(result.body.parameters.utm_medium, "paid-search");
+  assert.equal(result.body.parameters.utm_term, "{keyword}");
+  assert.equal(JSON.stringify(result.body).includes("undefined"), false);
+  assert.equal((await db.select().from(utmLinks).where(eq(utmLinks.campaignId, campaignId))).length, 0);
+});
+
+test("persists a full link, uses approved source override, and passes Salesforce ID", async () => {
+  const result = await post({
+    ...governedRequest(), source: `Override_${marker}`, displayPartner: `Partner_${marker}`,
+    destinationUrl: "https://example.com/path?existing=yes#section",
+    salesforceCampaignId: "701ABCdef123456XYZ",
+  });
+  assert.equal(result.status, 201);
+  const url = new URL(result.body.fullUrl);
+  assert.equal(url.searchParams.get("existing"), "yes");
+  assert.equal(url.searchParams.get("utm_source"), `partner_${marker}`);
+  assert.equal(url.searchParams.get("utm_sf_cmp_id"), "701ABCdef123456XYZ");
+  assert.equal(url.hash, "#section");
+});
+
+test("returns named validation errors for missing fields, malformed URL, and Salesforce ID", async () => {
+  const missing = await post({ ...governedRequest(), audience: undefined });
+  assert.equal(missing.status, 422);
+  assert.equal(missing.body.error.field, "audience");
+  const badUrl = await post({ ...governedRequest(), destinationUrl: "not-url" });
+  assert.equal(badUrl.status, 400);
+  assert.equal(badUrl.body.error.field, "destinationUrl");
+  const badSalesforce = await post({ ...governedRequest(), salesforceCampaignId: "generated-code" });
+  assert.equal(badSalesforce.status, 400);
+  assert.equal(badSalesforce.body.error.field, "salesforceCampaignId");
+  const hierarchy = await post({ ...governedRequest(), subcampaign: `WrongSubcampaign_${marker}` });
+  assert.equal(hierarchy.status, 422);
+  assert.deepEqual(hierarchy.body.error, {
+    field: "subcampaign", code: "invalid_hierarchy",
+    message: "subcampaign must be a child of campaignShortcode",
+  });
+});

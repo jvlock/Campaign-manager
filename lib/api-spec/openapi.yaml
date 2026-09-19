@@ -638,11 +638,31 @@ paths:
           application/json:
             schema: {$ref: "#/components/schemas/UtmInput"}
       responses:
-        "201":
-          description: Generated link
+        "200":
+          description: Generated parameter set; no destination was supplied and nothing was persisted
           content:
             application/json:
-              schema: {$ref: "#/components/schemas/UtmLink"}
+              schema: {$ref: "#/components/schemas/UtmGenerationResponse"}
+        "201":
+          description: Generated and persisted link
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/UtmGenerationResponse"}
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/UtmGenerationError"}
+        "404":
+          description: Campaign not found
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/UtmGenerationError"}
+        "422":
+          description: Governance validation failure
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/UtmGenerationError"}
   /campaigns/{id}/export/{format}:
     get:
       operationId: exportCampaign
@@ -1464,14 +1484,44 @@ components:
             rowVersion: {type: integer, minimum: 1}
     UtmInput:
       type: object
-      required: [destinationUrl, source, medium, content, term, salesforceCampaignId]
+      required: [channel]
+      additionalProperties: false
       properties:
-        destinationUrl: {type: string}
+        channel: {type: string, description: Approved governed channel term ID, label, or shortcode}
+        destinationUrl: {type: string, format: uri}
+        productLine: {type: string}
+        campaignShortcode: {type: string}
+        subcampaign: {type: string}
+        adsSubtype: {type: string}
+        objective: {type: string}
+        audience: {type: string}
+        audienceSegment: {type: string}
+        region: {type: string}
+        creativeType: {type: string}
+        imageSize: {type: string}
+        videoLength: {type: string}
+        contentType: {type: string}
+        creativeCta: {type: string}
+        contentOrder: {type: string}
+        emailType: {type: string}
+        owner: {type: string}
+        displayPartner: {type: string}
         source: {type: string}
-        medium: {type: string}
-        content: {type: string}
-        term: {type: string}
-        salesforceCampaignId: {type: string}
+        captureSource: {type: string}
+        newsletterVersion: {type: string}
+        linkPosition: {type: string}
+        nurtureSequence: {type: string}
+        keyword: {type: string}
+        term: {type: string, deprecated: true, description: Backward-compatible alias for keyword}
+        sendDate: {type: string, format: date}
+        eventDate: {type: string, format: date}
+        automationName: {type: string}
+        eventName: {type: string}
+        creativeDescription: {type: string}
+        eventCta: {type: string}
+        salesforceCampaignId:
+          type: string
+          pattern: "^701[A-Za-z0-9]{12}([A-Za-z0-9]{3})?$"
     UtmLink:
       type: object
       required: [id, destinationUrl, fullUrl, taxonomyVersion, validation, status]
@@ -1482,6 +1532,32 @@ components:
         taxonomyVersion: {type: string}
         validation: {type: string}
         status: {type: string}
+    UtmGenerationResponse:
+      type: object
+      required: [id, destinationUrl, fullUrl, taxonomyVersion, parameters, automationName, validation, status, message]
+      properties:
+        id: {type: [string, "null"], format: uuid}
+        destinationUrl: {type: [string, "null"]}
+        fullUrl: {type: [string, "null"]}
+        taxonomyVersion: {type: string}
+        parameters:
+          type: object
+          additionalProperties: {type: string}
+        automationName: {type: [string, "null"]}
+        validation: {type: string}
+        status: {type: string}
+        message: {type: [string, "null"]}
+    UtmGenerationError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [field, code, message]
+          properties:
+            field: {type: string}
+            code: {type: string}
+            message: {type: string}
     Conflict:
       type: object
       required: [id, classification, severity, title, reason, campaigns, dates, recommendation, owner, status]
@@ -2015,10 +2091,13 @@ components:
         updatedAt: {type: string, format: date-time}
     TaxonomyTermsResponse:
       type: object
-      required: [version, versionId, terms]
+      required: [version, versionId, categories, terms]
       properties:
         version: {type: string}
         versionId: {type: string, format: uuid}
+        categories:
+          type: array
+          items: {type: string}
         terms:
           type: array
           items: {$ref: "#/components/schemas/TaxonomyTerm"}

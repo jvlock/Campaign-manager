@@ -2162,22 +2162,55 @@ export const GenerateUtmLinkParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const generateUtmLinkBodySalesforceCampaignIdRegExp = new RegExp('^701[A-Za-z0-9]{12}([A-Za-z0-9]{3})?$');
+
+
 export const GenerateUtmLinkBody = zod.object({
-  "destinationUrl": zod.string(),
-  "source": zod.string(),
-  "medium": zod.string(),
-  "content": zod.string(),
-  "term": zod.string(),
-  "salesforceCampaignId": zod.string()
+  "channel": zod.string().describe('Approved governed channel term ID'),
+  "destinationUrl": zod.string().url().optional(),
+  "productLine": zod.string().optional(),
+  "campaignShortcode": zod.string().optional(),
+  "subcampaign": zod.string().optional(),
+  "adsSubtype": zod.string().optional(),
+  "objective": zod.string().optional(),
+  "audience": zod.string().optional(),
+  "audienceSegment": zod.string().optional(),
+  "region": zod.string().optional(),
+  "creativeType": zod.string().optional(),
+  "imageSize": zod.string().optional(),
+  "videoLength": zod.string().optional(),
+  "contentType": zod.string().optional(),
+  "creativeCta": zod.string().optional(),
+  "contentOrder": zod.string().optional(),
+  "emailType": zod.string().optional(),
+  "owner": zod.string().optional(),
+  "displayPartner": zod.string().optional(),
+  "source": zod.string().optional(),
+  "captureSource": zod.string().optional(),
+  "newsletterVersion": zod.string().optional(),
+  "linkPosition": zod.string().optional(),
+  "nurtureSequence": zod.string().optional(),
+  "keyword": zod.string().optional(),
+  "term": zod.string().optional().describe('Backward-compatible alias for keyword'),
+  "sendDate": zod.coerce.date().optional(),
+  "eventDate": zod.coerce.date().optional(),
+  "automationName": zod.string().optional(),
+  "eventName": zod.string().optional(),
+  "creativeDescription": zod.string().optional(),
+  "eventCta": zod.string().optional(),
+  "salesforceCampaignId": zod.string().regex(generateUtmLinkBodySalesforceCampaignIdRegExp).optional()
 })
 
 export const GenerateUtmLinkResponse = zod.object({
-  "id": zod.string().uuid(),
-  "destinationUrl": zod.string(),
-  "fullUrl": zod.string(),
+  "id": zod.string().uuid().nullable(),
+  "destinationUrl": zod.string().nullable(),
+  "fullUrl": zod.string().nullable(),
   "taxonomyVersion": zod.string(),
+  "parameters": zod.record(zod.string(), zod.string()),
+  "automationName": zod.string().nullable(),
   "validation": zod.string(),
-  "status": zod.string()
+  "status": zod.string(),
+  "message": zod.string().nullable()
 })
 
 
@@ -2285,6 +2318,7 @@ export const ListGovernanceTermsQueryParams = zod.object({
 export const ListGovernanceTermsResponse = zod.object({
   "version": zod.string(),
   "versionId": zod.string().uuid(),
+  "categories": zod.array(zod.string()),
   "terms": zod.array(zod.object({
   "id": zod.string().uuid(),
   "versionId": zod.string().uuid(),

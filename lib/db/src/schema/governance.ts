@@ -70,6 +70,12 @@ export const taxonomyTerms = pgTable(
   }),
 );
 
+export const taxonomyCategories = pgTable("taxonomy_categories", {
+  key: text("key").primaryKey(),
+  label: text("label").notNull(),
+  ...audit,
+});
+
 /**
  * Approvals are polymorphic.  campaign_id remains nullable for compatibility
  * with older clients and rows, while record_type/record_id are the canonical

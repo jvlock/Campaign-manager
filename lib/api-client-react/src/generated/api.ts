@@ -80,8 +80,9 @@ import type {
   TaxonomyTerm,
   TaxonomyTermMutation,
   TaxonomyTermsResponse,
+  UtmGenerationError,
+  UtmGenerationResponse,
   UtmInput,
-  UtmLink,
   WebinarEvaluation,
   WebinarInput,
   WebinarPerson,
@@ -3361,7 +3362,7 @@ export const getGenerateUtmLinkUrl = (id: string,) => {
 }
 
 export const generateUtmLink = async (id: string,
-    utmInput: UtmInput, options?: Parameters<typeof customFetch>[1]): Promise<UtmLink> => {
+    utmInput: UtmInput, options?: Parameters<typeof customFetch>[1]): Promise<UtmGenerationResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -3377,7 +3378,7 @@ export const generateUtmLink = async (id: string,
     }
     return headers;
   };
-return customFetch<UtmLink>(getGenerateUtmLinkUrl(id),
+return customFetch<UtmGenerationResponse>(getGenerateUtmLinkUrl(id),
   {
     ...options,
     method: 'POST',
@@ -3392,7 +3393,7 @@ return customFetch<UtmLink>(getGenerateUtmLinkUrl(id),
 
 export const getGenerateUtmLinkMutationKey = () => ['generateUtmLink'] as const;
 
-export const getGenerateUtmLinkMutationOptions = <TError = ErrorType<unknown>,
+export const getGenerateUtmLinkMutationOptions = <TError = ErrorType<UtmGenerationError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateUtmLink>>, TError,GenerateUtmLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof generateUtmLink>>, TError,GenerateUtmLinkMutationVariables, TContext> => {
 
@@ -3421,10 +3422,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type GenerateUtmLinkMutationResult = NonNullable<Awaited<ReturnType<typeof generateUtmLink>>>
     export type GenerateUtmLinkMutationBody = BodyType<UtmInput>
-    export type GenerateUtmLinkMutationError = ErrorType<unknown>
+    export type GenerateUtmLinkMutationError = ErrorType<UtmGenerationError>
     export type GenerateUtmLinkMutationVariables = {id: string;data: BodyType<UtmInput>}
 
-    export const useGenerateUtmLink = <TError = ErrorType<unknown>,
+    export const useGenerateUtmLink = <TError = ErrorType<UtmGenerationError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateUtmLink>>, TError,GenerateUtmLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof generateUtmLink>>,

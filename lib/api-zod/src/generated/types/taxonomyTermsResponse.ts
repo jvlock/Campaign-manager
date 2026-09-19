@@ -10,5 +10,6 @@ import type { TaxonomyTerm } from './taxonomyTerm';
 export interface TaxonomyTermsResponse {
   version: string;
   versionId: string;
+  categories: string[];
   terms: TaxonomyTerm[];
 }

@@ -20,12 +20,15 @@ export default function TaxonomyTerms({ version }: { version?: string }) {
 
   const terms = termsData?.terms || [];
 
-  // Group terms by category
+  // Registered categories remain visible before any values are approved or added.
+  const registeredCategories = Object.fromEntries(
+    (termsData?.categories ?? []).map(category => [category, [] as typeof terms])
+  );
   const categoriesMap = terms.reduce((acc, term) => {
     if (!acc[term.category]) acc[term.category] = [];
     acc[term.category].push(term);
     return acc;
-  }, {} as Record<string, typeof terms>);
+  }, registeredCategories as Record<string, typeof terms>);
 
   const categories = Object.keys(categoriesMap).map(cat => ({
     id: cat,
@@ -51,11 +54,15 @@ export default function TaxonomyTerms({ version }: { version?: string }) {
               <div className="flex items-center gap-2 capitalize">
                 {expanded[cat.id] ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                 {cat.label}
+                 <code className="text-[10px] normal-case text-muted-foreground">{cat.id}</code>
               </div>
               <span className="text-xs text-muted-foreground">{cat.current.length} terms</span>
             </button>
             {expanded[cat.id] && (
               <div className="p-3 bg-background divide-y divide-border">
+                {cat.current.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No values seeded in this category.</p>
+                )}
                 {cat.current.map(term => (
                   <div key={term.id} className="py-2 first:pt-0 last:pb-0 flex items-start justify-between">
                     <div>
