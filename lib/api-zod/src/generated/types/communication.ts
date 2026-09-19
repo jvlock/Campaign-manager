@@ -19,7 +19,11 @@ export interface Communication {
   owner: string;
   audienceBranchId: string;
   communicationType: string;
-  channel: string;
+  /**
+     * Canonical ID
+     * @nullable
+     */
+  channel: string | null;
   approvalStatus: string;
   qaAudienceConfirmed: boolean;
   qaContentApproved: boolean;

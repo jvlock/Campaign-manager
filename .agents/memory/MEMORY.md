@@ -1,3 +1,5 @@
 - [Planning audit semantics](planning-audit-semantics.md) — scheduling corrections must preserve the first calculation; governance actor attribution is not authenticated identity.
 - [Browser layout error diagnosis](browser-layout-errors.md) — unknown runtime reports can be native ResizeObserver notifications; capture ErrorEvent.message before blaming application data.
 - [UTM provenance](utm-provenance.md) — do not describe specification-based UTM logic as a verified Foundation port or treat legacy taxonomy seeds as approved conventions.
+- [Map round-trip compatibility](map-round-trip-compatibility.md) — full-map validation must accept unchanged legacy read shapes without allowing canonical activities to bypass their rules.
+- [Foundation taxonomy identity](taxonomy-source-identity.md) — repeated tag codes are real; use full stable keys and scoped parents, and preserve sourced rows outside partial imports.

@@ -68,10 +68,24 @@ export default function TaxonomyTerms({ version }: { version?: string }) {
                     <div>
                       <div className="text-sm font-medium flex items-center gap-2">
                         {term.label} <span className="px-1.5 py-0.5 bg-secondary/10 text-secondary text-[10px] rounded font-mono">{term.shortcode}</span>
+                        {term.isDeprecated && <span className="text-xs text-muted-foreground">Deprecated</span>}
                       </div>
+                      {term.stableKey && (
+                        <div className="text-xs text-muted-foreground mt-1 break-all">
+                          Stable key: <code>{term.stableKey}</code>
+                        </div>
+                      )}
+                      {term.parentId && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Parent: {(() => {
+                            const parent = terms.find(candidate => candidate.id === term.parentId);
+                            return parent ? `${parent.label} (${parent.stableKey ?? parent.shortcode})` : term.parentId;
+                          })()}
+                        </div>
+                      )}
                       {term.supersededBy && (
                         <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                          <History className="h-3 w-3" /> Replaces: {term.supersededBy}
+                          <History className="h-3 w-3" /> Superseded by: {terms.find(candidate => candidate.id === term.supersededBy)?.label ?? term.supersededBy}
                         </div>
                       )}
                       {term.legacyCodes?.length > 0 && (

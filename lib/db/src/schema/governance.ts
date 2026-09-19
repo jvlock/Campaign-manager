@@ -37,6 +37,7 @@ export const taxonomyTerms = pgTable(
     category: text("category").notNull(),
     label: text("label").notNull(),
     shortcode: text("shortcode").notNull(),
+    stableKey: text("stable_key"),
     parentId: uuid("parent_id"),
     supersededBy: uuid("superseded_by"),
     legacyCodes: jsonb("legacy_codes").$type<string[]>().default([]).notNull(),
@@ -62,13 +63,26 @@ export const taxonomyTerms = pgTable(
       foreignColumns: [table.id],
       name: "taxonomy_terms_superseded_by_fk",
     }),
-    versionShortcodeIndex: uniqueIndex("taxonomy_terms_version_shortcode_uq").on(
+    versionStableKeyIndex: uniqueIndex("taxonomy_terms_version_stable_key_uq").on(
       table.versionId,
+      table.stableKey,
+    ),
+    hierarchyLookupIndex: index("taxonomy_terms_hierarchy_lookup_idx").on(
+      table.versionId,
+      table.category,
+      table.parentId,
       table.shortcode,
     ),
     versionIndex: index("taxonomy_terms_version_idx").on(table.versionId),
   }),
 );
+
+export const governedChannels = pgTable("governed_channels", {
+  id: text("id").primaryKey(),
+  displayName: text("display_name").notNull(),
+  type: text("type").notNull(),
+  ...audit,
+});
 
 export const taxonomyCategories = pgTable("taxonomy_categories", {
   key: text("key").primaryKey(),

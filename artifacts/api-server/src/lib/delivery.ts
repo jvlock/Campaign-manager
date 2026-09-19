@@ -5,6 +5,7 @@ import { z } from "zod";
 import { assertTimezone, instanceResponse, recomputeForAnchor } from "./planning";
 import { ensureWebinarStandard } from "./webinar-standard";
 import { countTasks, implementationTaskResponse } from "./implementation-tasks";
+import { GOVERNED_CHANNELS } from "./activity-model";
 
 export class DeliveryValidationError extends Error {
   readonly status: number;
@@ -27,7 +28,7 @@ const qaFields = {
 export const communicationDetailsInputSchema = z.object({
   audienceBranchId: z.string().uuid().optional(),
   communicationType: z.string().trim().min(1).optional(),
-  channel: z.string().trim().min(1).optional(),
+  channel: z.string().trim().min(1).nullable().optional(),
   approvalStatus: z.string().trim().min(1).optional(),
   ...qaFields,
   blockingDependencyTaskIds: z.array(z.string().uuid()).optional(),
@@ -37,7 +38,7 @@ export const communicationDetailsInputSchema = z.object({
 export const communicationDetailsResponseSchema = z.object({
   audienceBranchId: z.string().uuid(),
   communicationType: z.string(),
-  channel: z.string(),
+  channel: z.string().nullable(),
   approvalStatus: z.string(),
   qaAudienceConfirmed: z.boolean(),
   qaContentApproved: z.boolean(),
@@ -167,6 +168,13 @@ export async function saveCommunicationDetails(
     .select()
     .from(communicationDetails)
     .where(eq(communicationDetails.communicationId, parent.id));
+  if (parsed.channel !== undefined && parsed.channel !== null) {
+    const isCanonical = GOVERNED_CHANNELS.some((channel) => channel.id === parsed.channel);
+    const unchangedLegacy = existing?.channel === parsed.channel;
+    if (!isCanonical && !unchangedLegacy) {
+      throw new DeliveryValidationError(`channel must be one of: ${GOVERNED_CHANNELS.map((channel) => channel.id).join(", ")}`);
+    }
+  }
   if (existing) {
     const patch: Partial<typeof communicationDetails.$inferInsert> = { updatedAt: new Date() };
     if (parsed.audienceBranchId !== undefined) patch.audienceBranchId = audienceBranchId;
@@ -193,7 +201,7 @@ export async function saveCommunicationDetails(
       campaignId: parent.campaignId,
       audienceBranchId,
       communicationType: parsed.communicationType ?? parent.type,
-      channel: parsed.channel ?? parent.type.toLowerCase(),
+      channel: parsed.channel ?? null,
       approvalStatus:
         parsed.approvalStatus ??
         (parent.status === "Confirmed" ? "Approved" : parent.status === "Decision needed" ? "Needs review" : "Not started"),

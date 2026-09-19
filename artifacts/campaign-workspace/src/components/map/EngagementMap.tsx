@@ -28,6 +28,7 @@ import {
   getGetCampaignQueryKey,
   getGetCampaignDeliveryQueryKey,
   getListWebinarsQueryKey,
+  useGetActivityModelCatalog,
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import ActivityNode from './ActivityNode';
@@ -61,6 +62,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
   const [webinarSetupDrop, setWebinarSetupDrop] = useState<{ position: any, type: string } | null>(null);
   const [webinarSetupError, setWebinarSetupError] = useState('');
   const [webinarSetupSaving, setWebinarSetupSaving] = useState(false);
+  const [pendingActivity, setPendingActivity] = useState<Node | null>(null);
   
   const { toast } = useToast();
   const search = useSearch();
@@ -83,11 +85,10 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
   const latestMap = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
   const saveGeneration = useRef(0);
+  // Every local graph mutation advances this revision. A response may only
+  // replace editable fields when no newer local revision exists.
+  const localRevision = useRef(0);
   const saveBlocked = useRef(false);
-  const saveCompletion = useRef<{
-    onSuccess?: () => void;
-    onError?: (error: unknown) => void;
-  } | null>(null);
   const connectionActionRef = useRef<(activityId: string) => void>(() => {});
   const [conflictFrozen, setConflictFrozen] = useState(false);
   const campaignVersion = useRef<number>((campaign as any).rowVersion ?? 1);
@@ -99,6 +100,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
   const { data: delivery } = useGetCampaignDelivery(campaign.id, {
     query: { enabled: !!campaign.id, queryKey: getGetCampaignDeliveryQueryKey(campaign.id) }
   });
+  const { data: activityCatalog } = useGetActivityModelCatalog();
   const dispatchConnectionAction = useCallback((activityId: string) => {
     connectionActionRef.current(activityId);
   }, []);
@@ -137,7 +139,6 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
       saveGeneration.current += 1;
       saveBlocked.current = false;
       latestMap.current = null;
-      saveCompletion.current = null;
       saveQueue.current = Promise.resolve();
       setConflictFrozen(false);
       setSaveStatus('saved');
@@ -164,8 +165,6 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
     onError?: (error: unknown) => void;
   }) => {
     if (saveBlocked.current) return;
-    if (completion) saveCompletion.current = completion;
-    latestMap.current = { nodes: newNodes, edges: newEdges };
     const generation = saveGeneration.current;
     saveQueue.current = saveQueue.current.then(() => new Promise<void>((resolve) => {
       if (saveBlocked.current || generation !== saveGeneration.current) {
@@ -173,6 +172,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
         return;
       }
       const currentMap = latestMap.current ?? { nodes: newNodes, edges: newEdges };
+      const requestRevision = localRevision.current;
       const mapData: MapInput = {
         rowVersion: campaignVersion.current,
         activities: currentMap.nodes.map(n => {
@@ -199,19 +199,56 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
             return;
           }
           campaignVersion.current = Number(saved?.rowVersion ?? campaignVersion.current + 1);
-          const savedVersions = new Map<string, number>(
-            (saved?.activities ?? []).map((activity: any) => [activity.id, activity.rowVersion]),
+          const savedActivities = new Map<string, any>(
+            (saved?.activities ?? []).map((activity: any) => [activity.id, activity]),
           );
-          setNodes((current) => current.map((node) => {
-            const rowVersion = savedVersions.get(node.id);
-            return rowVersion ? { ...node, data: { ...node.data, rowVersion } } : node;
+           const hasNewerLocalChanges = localRevision.current !== requestRevision;
+           setNodes((current) => current.map((node) => {
+            const savedAct = savedActivities.get(node.id);
+            if (!savedAct) return node;
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                 ...(hasNewerLocalChanges
+                   ? (savedAct.activityTypeId ? {
+                       name: savedAct.name,
+                       generatedName: savedAct.generatedName,
+                       effectiveInheritance: savedAct.effectiveInheritance,
+                     } : {})
+                   : savedAct),
+                rowVersion: savedAct.rowVersion,
+                communications: node.data.communications,
+                tasks: node.data.tasks,
+                connectionSourceId: node.data.connectionSourceId,
+                onConnectionAction: node.data.onConnectionAction
+              }
+            };
           }));
-          if (latestMap.current) {
+           if (latestMap.current) {
             latestMap.current = {
               ...latestMap.current,
               nodes: latestMap.current.nodes.map((node) => {
-                const rowVersion = savedVersions.get(node.id);
-                return rowVersion ? { ...node, data: { ...node.data, rowVersion } } : node;
+                const savedAct = savedActivities.get(node.id);
+                if (!savedAct) return node;
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                     ...(hasNewerLocalChanges
+                       ? (savedAct.activityTypeId ? {
+                           name: savedAct.name,
+                           generatedName: savedAct.generatedName,
+                           effectiveInheritance: savedAct.effectiveInheritance,
+                         } : {})
+                       : savedAct),
+                    rowVersion: savedAct.rowVersion,
+                    communications: node.data.communications,
+                    tasks: node.data.tasks,
+                    connectionSourceId: node.data.connectionSourceId,
+                    onConnectionAction: node.data.onConnectionAction
+                  }
+                };
               }),
             };
           }
@@ -219,9 +256,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
           queryClient.invalidateQueries({ queryKey: getGetCampaignDeliveryQueryKey(campaign.id) });
           queryClient.invalidateQueries({ queryKey: getGetCampaignQueryKey(campaign.id) });
           queryClient.invalidateQueries({ queryKey: getListWebinarsQueryKey(campaign.id) });
-          const completed = saveCompletion.current;
-          saveCompletion.current = null;
-          completed?.onSuccess?.();
+           completion?.onSuccess?.();
           resolve();
         },
         onError: (error: any) => {
@@ -230,9 +265,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
             return;
           }
           setSaveStatus('error');
-          const completed = saveCompletion.current;
-          saveCompletion.current = null;
-          completed?.onError?.(error);
+           completion?.onError?.(error);
           const status = error?.response?.status ?? error?.status;
           if (status === 409 || status === 428) {
             // Invalidate every queued snapshot. The local graph remains visible
@@ -262,9 +295,9 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
     onError?: (error: unknown) => void;
   }) => {
     if (saveBlocked.current) return;
+    localRevision.current += 1;
+    latestMap.current = { nodes: newNodes, edges: newEdges };
     setSaveStatus('saving');
-    if (completion) saveCompletion.current = completion;
-
     if (saveTimeout.current) {
       clearTimeout(saveTimeout.current);
     }
@@ -279,7 +312,6 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
     saveGeneration.current += 1;
     saveBlocked.current = false;
     latestMap.current = null;
-    saveCompletion.current = null;
     saveQueue.current = Promise.resolve();
     setConflictFrozen(false);
     setSaveStatus('saved');
@@ -415,21 +447,27 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
-  const addActivityAtPosition = useCallback((type: string, position: { x: number; y: number }) => {
-    if (type === 'Webinar') {
+  const addActivityAtPosition = useCallback((typeId: string, position: { x: number; y: number }) => {
+    if (typeId === 'Webinar' || typeId === 'webinar') {
       setWebinarSetupError('');
       setWebinarSetupSaving(false);
-      setWebinarSetupDrop({ position, type });
+      setWebinarSetupDrop({ position, type: typeId });
       return;
     }
+
+    const typeConfig = activityCatalog?.activityTypes.find(t => t.id === typeId);
 
     const newNode: Node = {
       id: uuidv4(),
       type: 'activity',
       position,
       data: {
-        name: `New ${type}`,
-        type,
+        name: '',
+        type: typeConfig ? typeConfig.displayName : typeId,
+        activityTypeId: typeConfig ? typeId : undefined,
+        namingInput: '',
+        answers: {},
+        overrides: {},
         audience: campaign.audience,
         region: campaign.region,
         timing: 'TBD',
@@ -440,16 +478,13 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
       } as unknown as Record<string, unknown>,
     };
 
-    setNodes((nds) => {
-      const nodeWithMatchingId = {
-        ...newNode,
-        data: { ...newNode.data, id: newNode.id } as unknown as Record<string, unknown>,
-      };
-      const next = nds.concat(nodeWithMatchingId);
-      triggerSave(next, edges);
-      return next;
-    });
-  }, [campaign.audience, campaign.region, edges, triggerSave]);
+    const draftNode = {
+      ...newNode,
+      data: { ...newNode.data, id: newNode.id } as unknown as Record<string, unknown>,
+    };
+    setPendingActivity(draftNode);
+    setSelectedElement({ type: 'node', id: draftNode.id });
+  }, [campaign.audience, campaign.region, activityCatalog]);
 
   const positionForLibraryAdd = useCallback(() => {
     const bounds = reactFlowWrapper.current?.getBoundingClientRect();
@@ -509,11 +544,12 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
   };
   const onEdgeClick: EdgeMouseHandler = (_, edge) => setSelectedElement({ type: 'edge', id: edge.id });
   const onPaneClick = () => {
+    if (pendingActivity?.id === selectedElement?.id) setPendingActivity(null);
     setSelectedElement(null);
     setConnectionMode(null);
   };
 
-  const updateSelectedNodeData = (key: string, value: string) => {
+  const updateSelectedNodeData = (key: string, value: any) => {
     if (selectedElement?.type !== 'node') return;
     setNodes(nds => {
       const next = nds.map(n => {
@@ -526,6 +562,61 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
       return next;
     });
   };
+
+  const saveCanonicalNode = useCallback((updates: Record<string, unknown>, isNew: boolean) => new Promise<void>((resolve, reject) => {
+    const draft = isNew ? pendingActivity : nodes.find((node) => node.id === selectedElement?.id);
+    if (!draft) {
+      reject(new Error('Activity draft is no longer available.'));
+      return;
+    }
+    const committed: Node = {
+      ...draft,
+      data: { ...draft.data, ...updates, id: draft.id } as Record<string, unknown>,
+    };
+    const nextNodes = isNew
+      ? [...nodes, committed]
+      : nodes.map((node) => node.id === committed.id ? committed : node);
+    if (saveTimeout.current) {
+      clearTimeout(saveTimeout.current);
+      saveTimeout.current = null;
+    }
+    setNodes(nextNodes);
+    localRevision.current += 1;
+    latestMap.current = { nodes: nextNodes, edges };
+    setSaveStatus('saving');
+    enqueueSave(nextNodes, edges, {
+      onSuccess: () => {
+        if (isNew) setPendingActivity(null);
+        resolve();
+      },
+      onError: (error) => {
+        setNodes((current) => {
+          const rolledBack = isNew
+            ? current.filter((node) => node.id !== committed.id)
+            : current.map((node) => node.id === committed.id
+              ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    activityTypeId: draft.data.activityTypeId,
+                    namingInput: draft.data.namingInput,
+                    answers: draft.data.answers,
+                    overrides: draft.data.overrides,
+                    audience: draft.data.audience,
+                    status: draft.data.status,
+                    name: draft.data.name,
+                    generatedName: draft.data.generatedName,
+                    effectiveInheritance: draft.data.effectiveInheritance,
+                  },
+                }
+              : node);
+          latestMap.current = { nodes: rolledBack, edges };
+          return rolledBack;
+        });
+        reject(error);
+      },
+    });
+  }), [edges, enqueueSave, nodes, pendingActivity, selectedElement?.id]);
 
   const updateSelectedEdgeData = (updates: Record<string, unknown>) => {
     if (selectedElement?.type !== 'edge') return;
@@ -549,7 +640,9 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
     setSelectedElement(null);
   };
 
-  const selectedNode = selectedElement?.type === 'node' ? nodes.find(n => n.id === selectedElement.id) : null;
+  const selectedNode = selectedElement?.type === 'node'
+    ? nodes.find(n => n.id === selectedElement.id) ?? (pendingActivity?.id === selectedElement.id ? pendingActivity : null)
+    : null;
   const selectedEdge = selectedElement?.type === 'edge' ? edges.find(e => e.id === selectedElement.id) : null;
 
   return (
@@ -565,33 +658,33 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
         </div>
         <ScrollArea className="flex-1 p-3 sm:p-4">
           <div className="space-y-2 sm:space-y-3">
-            {governance?.activityTypes.map(type => (
+            {activityCatalog?.activityTypes.map(type => (
               <div 
-                key={type}
+                key={type.id}
                 draggable
-                onDragStart={(e) => onDragStart(e as unknown as DragEvent, type)}
+                onDragStart={(e) => onDragStart(e as unknown as DragEvent, type.id)}
                 className="touch-manipulation rounded-md border border-border bg-background p-2 text-sm transition-all hover:border-primary/50 hover:shadow-sm active:cursor-grabbing sm:p-3"
               >
-                <div className="truncate font-medium" title={type}>{type}</div>
+                <div className="truncate font-medium" title={type.displayName}>{type.displayName}</div>
                 <div className="mt-1 hidden text-xs text-muted-foreground sm:block">Standard template</div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className="mt-2 h-8 w-full px-2 text-xs"
-                  data-testid={`button-add-activity-${type.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                  data-testid={`button-add-activity-${type.id.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
                   onClick={(event) => {
                     event.stopPropagation();
-                    addActivityAtPosition(type, positionForLibraryAdd());
+                    addActivityAtPosition(type.id, positionForLibraryAdd());
                   }}
                 >
                   <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
                   <span className="sm:hidden">Add</span>
-                  <span className="hidden sm:inline">Add {type}</span>
+                  <span className="hidden sm:inline">Add</span>
                 </Button>
               </div>
             ))}
-            {!governance && (
+            {!activityCatalog && (
               <div className="flex justify-center p-4"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
             )}
           </div>
@@ -714,6 +807,9 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
               data: {
                 name: `New Webinar`,
                 type: 'Webinar',
+                activityTypeId: webinarSetupDrop.type === 'webinar' ? 'webinar' : undefined,
+                answers: {},
+                overrides: {},
                 audience: campaign.audience,
                 region: campaign.region,
                 timing: 'TBD',
@@ -749,7 +845,12 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
             campaignId={campaign.id}
             node={selectedNode}
             updateNodeData={updateSelectedNodeData}
-            onClose={() => setSelectedElement(null)}
+             saveCanonicalData={(updates) => saveCanonicalNode(updates, pendingActivity?.id === selectedNode.id)}
+             isNew={pendingActivity?.id === selectedNode.id}
+             onClose={() => {
+               if (pendingActivity?.id === selectedNode.id) setPendingActivity(null);
+               setSelectedElement(null);
+             }}
             communications={delivery?.communications.filter(c => c.activityId === selectedNode.id) || []}
             tasks={delivery?.tasks.filter(t => t.activityId === selectedNode.id) || []}
           />

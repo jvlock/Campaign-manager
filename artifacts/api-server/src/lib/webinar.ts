@@ -7,6 +7,7 @@ import {
   webinarRegistrationResults,
   webinarSessions,
 } from "@workspace/db/schema/webinar";
+import { GOVERNED_CHANNELS } from "./activity-model";
 
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -48,6 +49,10 @@ export const webinarInputSchema = z.object({
   timezone: timezoneSchema,
   platform: z.string().trim().min(1),
   recruitmentLaunchAt: z.string().datetime({ offset: true }),
+  channel: z.string().refine(
+    (value) => GOVERNED_CHANNELS.some((candidate) => candidate.id === value),
+    { message: "channel must be a canonical governed channel ID" },
+  ).nullable().optional(),
   speakers: z.array(speakerSchema).default([]),
   registrationRule: registrationRuleSchema.default({
     suppressRecruitmentAfterRegistration: true,

@@ -6,7 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type TaxonomyTermSourceCodeProvenance = { [key: string]: unknown } | null;
+export type ActivityInputAnswers = { [key: string]: unknown };

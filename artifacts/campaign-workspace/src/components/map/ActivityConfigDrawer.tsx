@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Communication,
@@ -24,6 +24,8 @@ import {
   getEvaluateWebinarQueryOptions,
   getListScheduleRulesQueryOptions,
   getListScheduledInstancesQueryOptions,
+  useGetActivityModelCatalog,
+  useRenderActivityModelName,
 } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +43,9 @@ import ActivityTaskSettingsPanel from './ActivityTaskSettingsPanel';
 interface ActivityConfigDrawerProps {
   campaignId: string;
   node: { id: string; data: any };
-  updateNodeData: (key: string, value: string) => void;
+  updateNodeData: (key: string, value: any) => void;
+  saveCanonicalData: (updates: Record<string, unknown>) => Promise<void>;
+  isNew?: boolean;
   onClose: () => void;
   communications: Communication[];
   tasks: ActivityTask[];
@@ -51,6 +55,13 @@ type CommunicationUpdate = Partial<Communication>;
 type TaskUpdate = Partial<ActivityTask>;
 
 function errorMessage(error: unknown): string {
+  if (error && typeof error === 'object' && 'data' in error) {
+    const data = (error as { data?: { error?: { field?: string; code?: string; message?: string } } }).data;
+    const detail = data?.error;
+    if (detail?.message) {
+      return [detail.field, detail.code, detail.message].filter(Boolean).join(' · ');
+    }
+  }
   if (error instanceof Error) return error.message;
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message;
   return 'The change could not be saved.';
@@ -60,6 +71,8 @@ export default function ActivityConfigDrawer({
   campaignId,
   node,
   updateNodeData,
+  saveCanonicalData,
+  isNew = false,
   onClose,
   communications,
   tasks
@@ -71,7 +84,23 @@ export default function ActivityConfigDrawer({
   const updateTask = useUpdateActivityTask();
   const deleteTask = useDeleteActivityTask();
 
-  const isWebinar = node.data.type === 'Webinar';
+  const { data: activityCatalog } = useGetActivityModelCatalog();
+  const renderNameMutation = useRenderActivityModelName();
+  const [namePreview, setNamePreview] = useState<string | null>(null);
+  const [modelDraft, setModelDraft] = useState(() => ({
+    namingInput: String(node.data.namingInput ?? ''),
+    answers: { ...(node.data.answers || {}) } as Record<string, unknown>,
+    overrides: { ...(node.data.overrides || {}) } as Record<string, unknown>,
+    audience: String(node.data.audience || ''),
+    status: String(node.data.status || 'Estimated'),
+  }));
+  const [modelSaving, setModelSaving] = useState(false);
+  const [previewError, setPreviewError] = useState('');
+  const [newCommunicationChannel, setNewCommunicationChannel] = useState('');
+  const previewRevision = useRef(0);
+
+  const typeConfig = activityCatalog?.activityTypes.find(t => t.id === node.data.activityTypeId);
+  const isWebinar = node.data.type === 'Webinar' || node.data.activityTypeId === 'webinar';
   const { data: campaignData } = useGetCampaign(campaignId, { query: { ...getGetCampaignQueryOptions(campaignId), enabled: Boolean(campaignId) } });
   const { data: webinarSessions, error: webinarListError } = useListWebinars(campaignId, {
     query: { ...getListWebinarsQueryOptions(campaignId), enabled: isWebinar },
@@ -90,6 +119,60 @@ export default function ActivityConfigDrawer({
 
   const [localError, setLocalError] = useState('');
   const [hasUnsavedWebinarChanges, setHasUnsavedWebinarChanges] = useState(false);
+
+  useEffect(() => {
+    setModelDraft({
+      namingInput: String(node.data.namingInput ?? ''),
+      answers: { ...(node.data.answers || {}) },
+      overrides: { ...(node.data.overrides || {}) },
+      audience: String(node.data.audience || ''),
+      status: String(node.data.status || 'Estimated'),
+    });
+    setNamePreview(node.data.generatedName || node.data.name || null);
+    setPreviewError('');
+  }, [node.id]);
+
+  const persistedModel = useMemo(() => JSON.stringify({
+    namingInput: String(node.data.namingInput ?? ''),
+    answers: node.data.answers || {},
+    overrides: node.data.overrides || {},
+    audience: String(node.data.audience || ''),
+    status: String(node.data.status || 'Estimated'),
+  }), [node.data.answers, node.data.audience, node.data.namingInput, node.data.overrides, node.data.status]);
+  const modelDirty = Boolean(typeConfig) && JSON.stringify(modelDraft) !== persistedModel;
+
+  useEffect(() => {
+    if (!typeConfig || !campaignData) return;
+    const revision = ++previewRevision.current;
+    const timer = window.setTimeout(() => {
+      renderNameMutation.mutate({
+        data: {
+          template: typeConfig.namingTemplate,
+          builtins: {
+            campaign: campaignData.name,
+            activityType: typeConfig.id,
+            name: modelDraft.namingInput,
+          },
+          answers: modelDraft.answers,
+        },
+      }, {
+        onSuccess: (result) => {
+          if (revision !== previewRevision.current) return;
+          setNamePreview(result.name);
+          setPreviewError('');
+        },
+        onError: (error) => {
+          if (revision !== previewRevision.current) return;
+          setNamePreview(null);
+          setPreviewError(errorMessage(error));
+        },
+      });
+    }, 250);
+    return () => {
+      previewRevision.current += 1;
+      window.clearTimeout(timer);
+    };
+  }, [campaignData, modelDraft.answers, modelDraft.namingInput, typeConfig]);
 
   const mutationError = [createComm.error, updateComm.error, createTask.error, updateTask.error, updateWebinarInfo.error, webinarListError, webinarLoadError].find(Boolean);
   const visibleError = localError || (mutationError ? errorMessage(mutationError) : '');
@@ -129,6 +212,8 @@ export default function ActivityConfigDrawer({
         timing: 'TBD',
         sortOrder: communications.length + 1,
         owner: 'Unassigned'
+        ,
+        channel: newCommunicationChannel || undefined,
       }
     }, {
       onSuccess: () => {
@@ -229,7 +314,29 @@ export default function ActivityConfigDrawer({
       const discard = window.confirm('This webinar has unsaved standard drafts. Close and discard them?');
       if (!discard) return;
     }
+    if (modelDirty && !window.confirm('Discard unsaved activity configuration changes?')) return;
     onClose();
+  };
+
+  const saveModelDraft = async () => {
+    if (!typeConfig) return;
+    setLocalError('');
+    setModelSaving(true);
+    try {
+      await saveCanonicalData({
+        activityTypeId: typeConfig.id,
+        namingInput: typeConfig.id === 'mcp' ? null : modelDraft.namingInput,
+        answers: modelDraft.answers,
+        overrides: modelDraft.overrides,
+        audience: modelDraft.audience,
+        status: modelDraft.status,
+      });
+      setLocalError('');
+    } catch (error) {
+      setLocalError(errorMessage(error));
+    } finally {
+      setModelSaving(false);
+    }
   };
 
   return (
@@ -251,28 +358,173 @@ export default function ActivityConfigDrawer({
 
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-foreground border-b border-border pb-2">General</h4>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Activity Name</Label>
-              <Input
-                value={String(node.data.name || '')}
-                onChange={(e) => updateNodeData('name', e.target.value)}
-                className="h-8 text-sm font-medium"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+
+            {(!typeConfig || typeConfig.id !== 'mcp') && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Activity Name</Label>
+                <Input
+                  value={typeConfig ? modelDraft.namingInput : String(node.data.name || '')}
+                  onChange={(e) => typeConfig
+                    ? setModelDraft((draft) => ({ ...draft, namingInput: e.target.value }))
+                    : updateNodeData('name', e.target.value)}
+                  className="h-8 text-sm font-medium"
+                />
+              </div>
+            )}
+
+            {typeConfig && (
+              <div className="space-y-3 pt-2">
+                <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Required Fields</h5>
+                {typeConfig.requiredFields.map(field => (
+                  <div key={field.key} className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground capitalize">{field.key}</Label>
+                    {field.options ? (
+                      <Select
+                         value={String(modelDraft.answers[field.key] ?? '')}
+                        onValueChange={(val) => {
+                           setModelDraft((draft) => ({
+                             ...draft,
+                             answers: { ...draft.answers, [field.key]: val },
+                           }));
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-sm"><SelectValue placeholder={`Select ${field.key}`} /></SelectTrigger>
+                        <SelectContent>
+                          {field.options.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                         value={String(modelDraft.answers[field.key] ?? '')}
+                        onChange={(e) => {
+                           setModelDraft((draft) => ({
+                             ...draft,
+                             answers: { ...draft.answers, [field.key]: e.target.value },
+                           }));
+                        }}
+                        className="h-8 text-sm"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {typeConfig && typeConfig.allowedOverrides.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Overrides</h5>
+                {typeConfig.allowedOverrides.map(overrideKey => {
+                  const effectiveVal = node.data.effectiveInheritance?.[overrideKey];
+                   const hasOverride = overrideKey in modelDraft.overrides;
+                   const overrideVal = hasOverride ? modelDraft.overrides[overrideKey] : null;
+                   const isProductList = overrideKey === 'productValueIds';
+                   const isDate = overrideKey === 'deliveryStartDate' || overrideKey === 'deliveryEndDate';
+
+                  return (
+                    <div key={overrideKey} className="space-y-1.5 p-2 bg-muted/20 border border-border rounded-md">
+                      <Label className="text-xs text-muted-foreground capitalize flex justify-between">
+                        {overrideKey}
+                        {effectiveVal && !hasOverride && <span className="text-[10px] text-primary">Inherited: {effectiveVal}</span>}
+                      </Label>
+                      <div className="flex gap-2">
+                         <Input
+                           type={isDate ? 'date' : 'text'}
+                           value={hasOverride
+                             ? (isProductList && Array.isArray(overrideVal) ? overrideVal.join(', ') : String(overrideVal ?? ''))
+                             : ''}
+                           placeholder={effectiveVal ? `Override (${Array.isArray(effectiveVal) ? effectiveVal.join(', ') : effectiveVal})` : 'No default'}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                             const nextOverrides = { ...modelDraft.overrides };
+                            if (!val) {
+                              nextOverrides[overrideKey] = null;
+                             } else if (isProductList) {
+                               nextOverrides[overrideKey] = val.split(/[,\n]/).map((entry) => entry.trim()).filter(Boolean);
+                            } else {
+                              nextOverrides[overrideKey] = val;
+                            }
+                             setModelDraft((draft) => ({ ...draft, overrides: nextOverrides }));
+                          }}
+                          className="h-8 text-sm flex-1"
+                        />
+                        {hasOverride && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => {
+                              const nextOverrides = { ...modelDraft.overrides };
+                             delete nextOverrides[overrideKey];
+                              setModelDraft((draft) => ({ ...draft, overrides: nextOverrides }));
+                          }}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {typeConfig && (
+              <div className="p-3 bg-muted/30 rounded-md border border-border mt-4">
+                <div className="text-xs text-muted-foreground font-semibold mb-1">Generated Name Preview</div>
+                 <div className="text-sm font-mono break-all">
+                   {renderNameMutation.isPending ? 'Rendering…' : namePreview || '—'}
+                 </div>
+                 {previewError && <p className="mt-1 text-xs text-destructive">{previewError}</p>}
+              </div>
+            )}
+
+             {typeConfig && (
+               <div className="flex items-center justify-end gap-2 rounded-md border border-border p-3">
+                 <Button
+                   type="button"
+                   variant="outline"
+                   disabled={modelSaving || (!modelDirty && !isNew)}
+                   onClick={() => {
+                     if (isNew) {
+                       onClose();
+                       return;
+                     }
+                     setModelDraft({
+                       namingInput: String(node.data.namingInput ?? ''),
+                       answers: { ...(node.data.answers || {}) },
+                       overrides: { ...(node.data.overrides || {}) },
+                       audience: String(node.data.audience || ''),
+                       status: String(node.data.status || 'Estimated'),
+                     });
+                     setLocalError('');
+                   }}
+                 >
+                   {isNew ? 'Cancel creation' : 'Cancel changes'}
+                 </Button>
+                 <Button
+                   type="button"
+                   disabled={modelSaving || renderNameMutation.isPending || Boolean(previewError) || (!modelDirty && !isNew)}
+                   onClick={saveModelDraft}
+                 >
+                   {modelSaving && <span className="mr-2">Saving…</span>}
+                   {!modelSaving && (isNew ? 'Create activity' : 'Save activity')}
+                 </Button>
+               </div>
+             )}
+
+            <div className="grid grid-cols-2 gap-4 pt-2">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Audience</Label>
                 <Input
-                  value={String(node.data.audience || '')}
-                  onChange={(e) => updateNodeData('audience', e.target.value)}
+                   value={typeConfig ? modelDraft.audience : String(node.data.audience || '')}
+                   onChange={(e) => typeConfig
+                     ? setModelDraft((draft) => ({ ...draft, audience: e.target.value }))
+                     : updateNodeData('audience', e.target.value)}
                   className="h-8 text-sm"
                 />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Status</Label>
                 <Select
-                  value={String(node.data.status || 'Estimated')}
-                  onValueChange={(val) => updateNodeData('status', val)}
+                   value={typeConfig ? modelDraft.status : String(node.data.status || 'Estimated')}
+                   onValueChange={(val) => typeConfig
+                     ? setModelDraft((draft) => ({ ...draft, status: val }))
+                     : updateNodeData('status', val)}
                 >
                   <SelectTrigger className="h-8 text-sm">
                     <SelectValue />
@@ -299,10 +551,10 @@ export default function ActivityConfigDrawer({
             )}
           </div>
 
-          <ActivityTaskSettingsPanel campaignId={campaignId} node={node} />
+           {!isNew && <ActivityTaskSettingsPanel campaignId={campaignId} node={node} />}
 
           {/* Webinar Specifics */}
-          {isWebinar && (
+           {!isNew && isWebinar && (
             <div className="space-y-4 pt-4 border-t border-border">
               <h4 className="text-sm font-medium text-foreground border-b border-border pb-2 flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -429,7 +681,7 @@ export default function ActivityConfigDrawer({
             </div>
           )}
 
-          {isWebinar ? (
+           {!isNew && (isWebinar ? (
              <WebinarStandardPanel
                campaignId={campaignId}
                sessionId={sessionId}
@@ -443,9 +695,27 @@ export default function ActivityConfigDrawer({
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 Communications
               </h4>
-              <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={handleAddCommunication}>
-                <Plus className="h-3 w-3 mr-1" /> Add
-              </Button>
+              <div className="flex items-center gap-2">
+                <Select value={newCommunicationChannel} onValueChange={setNewCommunicationChannel}>
+                  <SelectTrigger className="h-7 w-40 text-xs">
+                    <SelectValue placeholder="Choose channel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activityCatalog?.channels.map((channel) => (
+                      <SelectItem key={channel.id} value={channel.id}>{channel.displayName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs px-2"
+                  disabled={!newCommunicationChannel || createComm.isPending}
+                  onClick={handleAddCommunication}
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Add
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -557,11 +827,12 @@ export default function ActivityConfigDrawer({
                                 <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Select channel" /></SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="none">Select channel</SelectItem>
-                                  <SelectItem value="marketo">Marketo</SelectItem>
-                                  <SelectItem value="braze">Braze</SelectItem>
-                                  <SelectItem value="salesforce">Salesforce</SelectItem>
-                                  <SelectItem value="hubspot">HubSpot</SelectItem>
-                                  <SelectItem value="adobe_journey">Adobe Journey</SelectItem>
+                                   {comm.channel && !activityCatalog?.channels.some((channel) => channel.id === comm.channel) && (
+                                     <SelectItem value={comm.channel}>Legacy: {comm.channel}</SelectItem>
+                                   )}
+                                  {activityCatalog?.channels.map(ch => (
+                                    <SelectItem key={ch.id} value={ch.id}>{ch.displayName}</SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -574,16 +845,16 @@ export default function ActivityConfigDrawer({
               )}
             </div>
           </div>
-          )}
+          ))}
 
-          <ActivityTasksPanel
+           {!isNew && <ActivityTasksPanel
             campaignId={campaignId}
             activityId={node.id}
             tasks={sortedTasks}
             onCreate={handleAddTask}
             onUpdate={handleUpdateTask}
             onDelete={handleDeleteTask}
-          />
+           />}
         </div>
       </ScrollArea>
     </div>

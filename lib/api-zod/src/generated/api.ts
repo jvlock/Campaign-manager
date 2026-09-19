@@ -8,6 +8,36 @@
 import * as zod from 'zod';
 
 
+export const GetActivityModelCatalogResponse = zod.object({
+  "channels": zod.array(zod.object({
+  "id": zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),
+  "displayName": zod.string(),
+  "type": zod.enum(['paid', 'organic', 'email', 'event', 'app'])
+})),
+  "activityTypes": zod.array(zod.object({
+  "id": zod.string(),
+  "displayName": zod.string(),
+  "namingTemplate": zod.string(),
+  "requiredFields": zod.array(zod.object({
+  "key": zod.string(),
+  "options": zod.array(zod.string()).optional()
+})),
+  "allowedOverrides": zod.array(zod.string())
+}))
+})
+
+
+export const RenderActivityModelNameBody = zod.object({
+  "template": zod.string(),
+  "builtins": zod.record(zod.string(), zod.unknown()),
+  "answers": zod.record(zod.string(), zod.unknown())
+})
+
+export const RenderActivityModelNameResponse = zod.object({
+  "name": zod.string()
+})
+
+
 export const getTaskDefaultsResponseOffsetDaysMin = -36500;
 export const getTaskDefaultsResponseOffsetDaysMax = 36500;
 
@@ -222,8 +252,15 @@ export const CreateCampaignResponse = zod.object({
   "role": zod.string().optional(),
   "organization": zod.string().optional()
 })).default(createCampaignResponseTwoMapActivitiesItemWebinarSetupSpeakersDefault),
-  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
-}).optional().describe('Required only when creating or converting a Webinar activity.')
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant'),
+  "channel": zod.union([zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),zod.null()]).optional().describe('Optional explicit canonical channel; omission leaves generated communications unassigned')
+}).optional().describe('Required only when creating or converting a Webinar activity.'),
+  "activityTypeId": zod.string().nullish(),
+  "answers": zod.record(zod.string(), zod.unknown()).optional(),
+  "overrides": zod.record(zod.string(), zod.unknown()).optional(),
+  "generatedName": zod.string().nullish(),
+  "namingInput": zod.string().nullish(),
+  "effectiveInheritance": zod.record(zod.string(), zod.unknown()).optional()
 })),
   "connections": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -247,7 +284,16 @@ export const CreateCampaignResponse = zod.object({
   "validation": zod.string(),
   "status": zod.string()
 })),
-  "inheritance": zod.record(zod.string(), zod.string()),
+  "inheritance": zod.object({
+  "deliveryStartDate": zod.coerce.date().nullish(),
+  "deliveryEndDate": zod.coerce.date().nullish(),
+  "productValueIds": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "owner": zod.string().nullish(),
+  "region": zod.string().nullish(),
+  "language": zod.string().nullish(),
+  "primaryCta": zod.string().nullish(),
+  "landingDestination": zod.string().nullish()
+}),
   "communications": zod.array(zod.object({
   "id": zod.string().uuid(),
   "campaignId": zod.string().uuid(),
@@ -260,7 +306,7 @@ export const CreateCampaignResponse = zod.object({
   "owner": zod.string().default(createCampaignResponseTwoCommunicationsItemOwnerDefault),
   "audienceBranchId": zod.string().uuid(),
   "communicationType": zod.string(),
-  "channel": zod.string(),
+  "channel": zod.string().nullable().describe('Canonical ID'),
   "approvalStatus": zod.string(),
   "qaAudienceConfirmed": zod.boolean(),
   "qaContentApproved": zod.boolean(),
@@ -369,8 +415,15 @@ export const GetCampaignResponse = zod.object({
   "role": zod.string().optional(),
   "organization": zod.string().optional()
 })).default(getCampaignResponseTwoMapActivitiesItemWebinarSetupSpeakersDefault),
-  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
-}).optional().describe('Required only when creating or converting a Webinar activity.')
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant'),
+  "channel": zod.union([zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),zod.null()]).optional().describe('Optional explicit canonical channel; omission leaves generated communications unassigned')
+}).optional().describe('Required only when creating or converting a Webinar activity.'),
+  "activityTypeId": zod.string().nullish(),
+  "answers": zod.record(zod.string(), zod.unknown()).optional(),
+  "overrides": zod.record(zod.string(), zod.unknown()).optional(),
+  "generatedName": zod.string().nullish(),
+  "namingInput": zod.string().nullish(),
+  "effectiveInheritance": zod.record(zod.string(), zod.unknown()).optional()
 })),
   "connections": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -394,7 +447,16 @@ export const GetCampaignResponse = zod.object({
   "validation": zod.string(),
   "status": zod.string()
 })),
-  "inheritance": zod.record(zod.string(), zod.string()),
+  "inheritance": zod.object({
+  "deliveryStartDate": zod.coerce.date().nullish(),
+  "deliveryEndDate": zod.coerce.date().nullish(),
+  "productValueIds": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "owner": zod.string().nullish(),
+  "region": zod.string().nullish(),
+  "language": zod.string().nullish(),
+  "primaryCta": zod.string().nullish(),
+  "landingDestination": zod.string().nullish()
+}),
   "communications": zod.array(zod.object({
   "id": zod.string().uuid(),
   "campaignId": zod.string().uuid(),
@@ -407,7 +469,7 @@ export const GetCampaignResponse = zod.object({
   "owner": zod.string().default(getCampaignResponseTwoCommunicationsItemOwnerDefault),
   "audienceBranchId": zod.string().uuid(),
   "communicationType": zod.string(),
-  "channel": zod.string(),
+  "channel": zod.string().nullable().describe('Canonical ID'),
   "approvalStatus": zod.string(),
   "qaAudienceConfirmed": zod.boolean(),
   "qaContentApproved": zod.boolean(),
@@ -458,6 +520,16 @@ export const UpdateCampaignBody = zod.object({
   "name": zod.string().optional(),
   "lifecycle": zod.string().optional(),
   "strategy": zod.record(zod.string(), zod.unknown()).optional(),
+  "inheritance": zod.object({
+  "deliveryStartDate": zod.coerce.date().nullish(),
+  "deliveryEndDate": zod.coerce.date().nullish(),
+  "productValueIds": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "owner": zod.string().nullish(),
+  "region": zod.string().nullish(),
+  "language": zod.string().nullish(),
+  "primaryCta": zod.string().nullish(),
+  "landingDestination": zod.string().nullish()
+}).optional(),
   "rowVersion": zod.number().int().min(1)
 })
 
@@ -526,8 +598,15 @@ export const UpdateCampaignResponse = zod.object({
   "role": zod.string().optional(),
   "organization": zod.string().optional()
 })).default(updateCampaignResponseTwoMapActivitiesItemWebinarSetupSpeakersDefault),
-  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
-}).optional().describe('Required only when creating or converting a Webinar activity.')
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant'),
+  "channel": zod.union([zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),zod.null()]).optional().describe('Optional explicit canonical channel; omission leaves generated communications unassigned')
+}).optional().describe('Required only when creating or converting a Webinar activity.'),
+  "activityTypeId": zod.string().nullish(),
+  "answers": zod.record(zod.string(), zod.unknown()).optional(),
+  "overrides": zod.record(zod.string(), zod.unknown()).optional(),
+  "generatedName": zod.string().nullish(),
+  "namingInput": zod.string().nullish(),
+  "effectiveInheritance": zod.record(zod.string(), zod.unknown()).optional()
 })),
   "connections": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -551,7 +630,16 @@ export const UpdateCampaignResponse = zod.object({
   "validation": zod.string(),
   "status": zod.string()
 })),
-  "inheritance": zod.record(zod.string(), zod.string()),
+  "inheritance": zod.object({
+  "deliveryStartDate": zod.coerce.date().nullish(),
+  "deliveryEndDate": zod.coerce.date().nullish(),
+  "productValueIds": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "owner": zod.string().nullish(),
+  "region": zod.string().nullish(),
+  "language": zod.string().nullish(),
+  "primaryCta": zod.string().nullish(),
+  "landingDestination": zod.string().nullish()
+}),
   "communications": zod.array(zod.object({
   "id": zod.string().uuid(),
   "campaignId": zod.string().uuid(),
@@ -564,7 +652,7 @@ export const UpdateCampaignResponse = zod.object({
   "owner": zod.string().default(updateCampaignResponseTwoCommunicationsItemOwnerDefault),
   "audienceBranchId": zod.string().uuid(),
   "communicationType": zod.string(),
-  "channel": zod.string(),
+  "channel": zod.string().nullable().describe('Canonical ID'),
   "approvalStatus": zod.string(),
   "qaAudienceConfirmed": zod.boolean(),
   "qaContentApproved": zod.boolean(),
@@ -646,8 +734,15 @@ export const SaveCampaignMapBody = zod.object({
   "role": zod.string().optional(),
   "organization": zod.string().optional()
 })).default(saveCampaignMapBodyOneActivitiesItemWebinarSetupSpeakersDefault),
-  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
-}).optional().describe('Required only when creating or converting a Webinar activity.')
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant'),
+  "channel": zod.union([zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),zod.null()]).optional().describe('Optional explicit canonical channel; omission leaves generated communications unassigned')
+}).optional().describe('Required only when creating or converting a Webinar activity.'),
+  "activityTypeId": zod.string().nullish(),
+  "answers": zod.record(zod.string(), zod.unknown()).optional(),
+  "overrides": zod.record(zod.string(), zod.unknown()).optional(),
+  "generatedName": zod.string().nullish(),
+  "namingInput": zod.string().nullish(),
+  "effectiveInheritance": zod.record(zod.string(), zod.unknown()).optional()
 })),
   "connections": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -703,8 +798,15 @@ export const SaveCampaignMapResponse = zod.object({
   "role": zod.string().optional(),
   "organization": zod.string().optional()
 })).default(saveCampaignMapResponseActivitiesItemWebinarSetupSpeakersDefault),
-  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
-}).optional().describe('Required only when creating or converting a Webinar activity.')
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant'),
+  "channel": zod.union([zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),zod.null()]).optional().describe('Optional explicit canonical channel; omission leaves generated communications unassigned')
+}).optional().describe('Required only when creating or converting a Webinar activity.'),
+  "activityTypeId": zod.string().nullish(),
+  "answers": zod.record(zod.string(), zod.unknown()).optional(),
+  "overrides": zod.record(zod.string(), zod.unknown()).optional(),
+  "generatedName": zod.string().nullish(),
+  "namingInput": zod.string().nullish(),
+  "effectiveInheritance": zod.record(zod.string(), zod.unknown()).optional()
 })),
   "connections": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -735,8 +837,10 @@ export const createActivityBodyWebinarSetupDurationMinutesMax = 1440;
 export const createActivityBodyWebinarSetupSpeakersDefault = [];
 
 export const CreateActivityBody = zod.object({
-  "name": zod.string(),
-  "type": zod.string(),
+  "name": zod.string().optional(),
+  "activityTypeId": zod.string(),
+  "answers": zod.record(zod.string(), zod.unknown()),
+  "overrides": zod.record(zod.string(), zod.unknown()).optional(),
   "audience": zod.string(),
   "region": zod.string(),
   "timing": zod.string(),
@@ -758,7 +862,8 @@ export const CreateActivityBody = zod.object({
   "role": zod.string().optional(),
   "organization": zod.string().optional()
 })).default(createActivityBodyWebinarSetupSpeakersDefault),
-  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant'),
+  "channel": zod.union([zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),zod.null()]).optional().describe('Optional explicit canonical channel; omission leaves generated communications unassigned')
 }).optional().describe('Required only when creating or converting a Webinar activity.')
 })
 
@@ -797,8 +902,15 @@ export const CreateActivityResponse = zod.object({
   "role": zod.string().optional(),
   "organization": zod.string().optional()
 })).default(createActivityResponseWebinarSetupSpeakersDefault),
-  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant')
-}).optional().describe('Required only when creating or converting a Webinar activity.')
+  "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant'),
+  "channel": zod.union([zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),zod.null()]).optional().describe('Optional explicit canonical channel; omission leaves generated communications unassigned')
+}).optional().describe('Required only when creating or converting a Webinar activity.'),
+  "activityTypeId": zod.string().nullish(),
+  "answers": zod.record(zod.string(), zod.unknown()).optional(),
+  "overrides": zod.record(zod.string(), zod.unknown()).optional(),
+  "generatedName": zod.string().nullish(),
+  "namingInput": zod.string().nullish(),
+  "effectiveInheritance": zod.record(zod.string(), zod.unknown()).optional()
 })
 
 
@@ -836,7 +948,7 @@ export const GetCampaignDeliveryResponse = zod.object({
   "owner": zod.string().default(getCampaignDeliveryResponseCommunicationsItemOwnerDefault),
   "audienceBranchId": zod.string().uuid(),
   "communicationType": zod.string(),
-  "channel": zod.string(),
+  "channel": zod.string().nullable().describe('Canonical ID'),
   "approvalStatus": zod.string(),
   "qaAudienceConfirmed": zod.boolean(),
   "qaContentApproved": zod.boolean(),
@@ -897,7 +1009,7 @@ export const CreateCommunicationBody = zod.object({
   "owner": zod.string().default(createCommunicationBodyOwnerDefault),
   "audienceBranchId": zod.string().uuid().optional(),
   "communicationType": zod.string().optional(),
-  "channel": zod.string().optional(),
+  "channel": zod.string().nullish().describe('Canonical governed channel ID or unassigned; validated by the backend'),
   "approvalStatus": zod.string().optional(),
   "qaAudienceConfirmed": zod.boolean().optional(),
   "qaContentApproved": zod.boolean().optional(),
@@ -925,7 +1037,7 @@ export const CreateCommunicationResponse = zod.object({
   "owner": zod.string().default(createCommunicationResponseOwnerDefault),
   "audienceBranchId": zod.string().uuid(),
   "communicationType": zod.string(),
-  "channel": zod.string(),
+  "channel": zod.string().nullable().describe('Canonical ID'),
   "approvalStatus": zod.string(),
   "qaAudienceConfirmed": zod.boolean(),
   "qaContentApproved": zod.boolean(),
@@ -955,7 +1067,7 @@ export const UpdateCommunicationBody = zod.object({
   "owner": zod.string().optional(),
   "audienceBranchId": zod.string().uuid().optional(),
   "communicationType": zod.string().optional(),
-  "channel": zod.string().optional(),
+  "channel": zod.string().nullish().describe('Canonical governed channel ID or unassigned; validated by the backend'),
   "approvalStatus": zod.string().optional(),
   "qaAudienceConfirmed": zod.boolean().optional(),
   "qaContentApproved": zod.boolean().optional(),
@@ -983,7 +1095,7 @@ export const UpdateCommunicationResponse = zod.object({
   "owner": zod.string().default(updateCommunicationResponseOwnerDefault),
   "audienceBranchId": zod.string().uuid(),
   "communicationType": zod.string(),
-  "channel": zod.string(),
+  "channel": zod.string().nullable().describe('Canonical ID'),
   "approvalStatus": zod.string(),
   "qaAudienceConfirmed": zod.boolean(),
   "qaContentApproved": zod.boolean(),
@@ -1508,7 +1620,8 @@ export const CreateWebinarBody = zod.object({
   "attendedBranch": zod.string().default(createWebinarBodyRegistrationRuleAttendedBranchDefault),
   "noShowBranch": zod.string().default(createWebinarBodyRegistrationRuleNoShowBranchDefault)
 }).optional(),
-  "recruitmentLaunchAt": zod.coerce.date()
+  "recruitmentLaunchAt": zod.coerce.date(),
+  "channel": zod.union([zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),zod.null()]).optional().describe('Optional explicit canonical channel; omission leaves generated communications unassigned')
 })
 
 
@@ -1624,7 +1737,8 @@ export const UpdateWebinarBody = zod.object({
   "attendedBranch": zod.string().default(updateWebinarBodyRegistrationRuleAttendedBranchDefault),
   "noShowBranch": zod.string().default(updateWebinarBodyRegistrationRuleNoShowBranchDefault)
 }).optional(),
-  "recruitmentLaunchAt": zod.coerce.date().optional()
+  "recruitmentLaunchAt": zod.coerce.date().optional(),
+  "channel": zod.union([zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),zod.null()]).optional()
 }).describe('Partial update; every property is optional.')
 
 
@@ -2325,11 +2439,11 @@ export const ListGovernanceTermsResponse = zod.object({
   "category": zod.string(),
   "label": zod.string(),
   "shortcode": zod.string(),
+  "stableKey": zod.string().nullable(),
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
-  "source": zod.string().nullish(),
-  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
+  "sourceMetadata": zod.record(zod.string(), zod.unknown()),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -2352,6 +2466,7 @@ export const CreateGovernanceTermBody = zod.object({
   "category": zod.string().optional(),
   "label": zod.string().optional(),
   "shortcode": zod.string().optional(),
+  "stableKey": zod.string().nullish(),
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()).optional(),
@@ -2364,11 +2479,11 @@ export const CreateGovernanceTermResponse = zod.object({
   "category": zod.string(),
   "label": zod.string(),
   "shortcode": zod.string(),
+  "stableKey": zod.string().nullable(),
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
-  "source": zod.string().nullish(),
-  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
+  "sourceMetadata": zod.record(zod.string(), zod.unknown()),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -2392,11 +2507,11 @@ export const ResolveGovernanceTermResponse = zod.object({
   "category": zod.string(),
   "label": zod.string(),
   "shortcode": zod.string(),
+  "stableKey": zod.string().nullable(),
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
-  "source": zod.string().nullish(),
-  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
+  "sourceMetadata": zod.record(zod.string(), zod.unknown()),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -2409,11 +2524,11 @@ export const ResolveGovernanceTermResponse = zod.object({
   "category": zod.string(),
   "label": zod.string(),
   "shortcode": zod.string(),
+  "stableKey": zod.string().nullable(),
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
-  "source": zod.string().nullish(),
-  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
+  "sourceMetadata": zod.record(zod.string(), zod.unknown()),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -2440,11 +2555,11 @@ export const ResolveGovernanceTermPostResponse = zod.object({
   "category": zod.string(),
   "label": zod.string(),
   "shortcode": zod.string(),
+  "stableKey": zod.string().nullable(),
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
-  "source": zod.string().nullish(),
-  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
+  "sourceMetadata": zod.record(zod.string(), zod.unknown()),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -2457,11 +2572,11 @@ export const ResolveGovernanceTermPostResponse = zod.object({
   "category": zod.string(),
   "label": zod.string(),
   "shortcode": zod.string(),
+  "stableKey": zod.string().nullable(),
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
-  "source": zod.string().nullish(),
-  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
+  "sourceMetadata": zod.record(zod.string(), zod.unknown()),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -2488,6 +2603,7 @@ export const UpdateGovernanceTermBody = zod.object({
   "category": zod.string().optional(),
   "label": zod.string().optional(),
   "shortcode": zod.string().optional(),
+  "stableKey": zod.string().nullish(),
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()).optional(),
@@ -2500,11 +2616,11 @@ export const UpdateGovernanceTermResponse = zod.object({
   "category": zod.string(),
   "label": zod.string(),
   "shortcode": zod.string(),
+  "stableKey": zod.string().nullable(),
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
-  "source": zod.string().nullish(),
-  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
+  "sourceMetadata": zod.record(zod.string(), zod.unknown()),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -2532,11 +2648,11 @@ export const DeprecateGovernanceTermResponse = zod.object({
   "category": zod.string(),
   "label": zod.string(),
   "shortcode": zod.string(),
+  "stableKey": zod.string().nullable(),
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
-  "source": zod.string().nullish(),
-  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
+  "sourceMetadata": zod.record(zod.string(), zod.unknown()),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -2562,6 +2678,7 @@ export const RenameGovernanceTermBody = zod.object({
   "category": zod.string().optional(),
   "label": zod.string().optional(),
   "shortcode": zod.string().optional(),
+  "stableKey": zod.string().nullish(),
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()).optional(),
@@ -2574,11 +2691,11 @@ export const RenameGovernanceTermResponse = zod.object({
   "category": zod.string(),
   "label": zod.string(),
   "shortcode": zod.string(),
+  "stableKey": zod.string().nullable(),
   "parentId": zod.string().uuid().nullish(),
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
-  "source": zod.string().nullish(),
-  "sourceCodeProvenance": zod.record(zod.string(), zod.unknown()).nullish(),
+  "sourceMetadata": zod.record(zod.string(), zod.unknown()),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),

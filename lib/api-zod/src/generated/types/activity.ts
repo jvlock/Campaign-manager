@@ -5,6 +5,9 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { ActivityAnswers } from './activityAnswers';
+import type { ActivityEffectiveInheritance } from './activityEffectiveInheritance';
+import type { ActivityOverrides } from './activityOverrides';
 import type { Position } from './position';
 import type { WebinarSetup } from './webinarSetup';
 
@@ -23,4 +26,13 @@ export interface Activity {
   rowVersion?: number;
   position: Position;
   webinarSetup?: WebinarSetup;
+  /** @nullable */
+  activityTypeId?: string | null;
+  answers?: ActivityAnswers;
+  overrides?: ActivityOverrides;
+  /** @nullable */
+  generatedName?: string | null;
+  /** @nullable */
+  namingInput?: string | null;
+  effectiveInheritance?: ActivityEffectiveInheritance;
 }

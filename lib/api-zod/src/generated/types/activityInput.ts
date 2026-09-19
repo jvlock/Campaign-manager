@@ -5,12 +5,16 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { ActivityInputAnswers } from './activityInputAnswers';
+import type { ActivityInputOverrides } from './activityInputOverrides';
 import type { Position } from './position';
 import type { WebinarSetup } from './webinarSetup';
 
 export interface ActivityInput {
-  name: string;
-  type: string;
+  name?: string;
+  activityTypeId: string;
+  answers: ActivityInputAnswers;
+  overrides?: ActivityInputOverrides;
   audience: string;
   region: string;
   timing: string;

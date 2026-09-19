@@ -14,6 +14,7 @@ export type TaxonomyTermMutation = GovernanceActorReason & ({
   category?: string;
   label?: string;
   shortcode?: string;
+  stableKey?: string | null;
   parentId?: string | null;
   supersededBy?: string | null;
   legacyCodes?: string[];

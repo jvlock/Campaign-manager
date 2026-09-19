@@ -47,17 +47,34 @@ export interface CampaignInput {
 
 export type CampaignUpdateStrategy = { [key: string]: unknown };
 
+export interface CampaignInheritance {
+  /** @nullable */
+  deliveryStartDate?: string | null;
+  /** @nullable */
+  deliveryEndDate?: string | null;
+  productValueIds?: string[] | null;
+  /** @nullable */
+  owner?: string | null;
+  /** @nullable */
+  region?: string | null;
+  /** @nullable */
+  language?: string | null;
+  /** @nullable */
+  primaryCta?: string | null;
+  /** @nullable */
+  landingDestination?: string | null;
+}
+
 export interface CampaignUpdate {
   name?: string;
   lifecycle?: string;
   strategy?: CampaignUpdateStrategy;
+  inheritance?: CampaignInheritance;
   /** @minimum 1 */
   rowVersion: number;
 }
 
 export type CampaignDetailStrategy = { [key: string]: unknown };
-
-export type CampaignDetailInheritance = {[key: string]: string};
 
 export interface Position {
   x: number;
@@ -70,6 +87,25 @@ export interface Speaker {
   role?: string;
   organization?: string;
 }
+
+export type GovernedChannelId = typeof GovernedChannelId[keyof typeof GovernedChannelId];
+
+
+export const GovernedChannelId = {
+  psg: 'psg',
+  psl: 'psl',
+  disp: 'disp',
+  orglin: 'orglin',
+  adv: 'adv',
+  eml: 'eml',
+  emlc: 'emlc',
+  emlp: 'emlp',
+  evlv: 'evlv',
+  evind: 'evind',
+  evvrt: 'evvrt',
+  app: 'app',
+  mcp: 'mcp',
+} as const;
 
 /**
  * Required only when creating or converting a Webinar activity.
@@ -90,7 +126,15 @@ export interface WebinarSetup {
   speakers?: Speaker[];
   /** Webinar campaign launch instant */
   recruitmentLaunchAt: string;
+  /** Optional explicit canonical channel; omission leaves generated communications unassigned */
+  channel?: GovernedChannelId | null;
 }
+
+export type ActivityAnswers = { [key: string]: unknown };
+
+export type ActivityOverrides = { [key: string]: unknown };
+
+export type ActivityEffectiveInheritance = { [key: string]: unknown };
 
 export interface Activity {
   id: string;
@@ -107,6 +151,15 @@ export interface Activity {
   rowVersion?: number;
   position: Position;
   webinarSetup?: WebinarSetup;
+  /** @nullable */
+  activityTypeId?: string | null;
+  answers?: ActivityAnswers;
+  overrides?: ActivityOverrides;
+  /** @nullable */
+  generatedName?: string | null;
+  /** @nullable */
+  namingInput?: string | null;
+  effectiveInheritance?: ActivityEffectiveInheritance;
 }
 
 export type ConnectionEntryCondition = { [key: string]: unknown };
@@ -166,7 +219,11 @@ export interface Communication {
   owner: string;
   audienceBranchId: string;
   communicationType: string;
-  channel: string;
+  /**
+     * Canonical ID
+     * @nullable
+     */
+  channel: string | null;
   approvalStatus: string;
   qaAudienceConfirmed: boolean;
   qaContentApproved: boolean;
@@ -275,14 +332,20 @@ export type CampaignDetail = CampaignSummary & {
   strategy: CampaignDetailStrategy;
   map: MapData;
   utmLinks: UtmLink[];
-  inheritance: CampaignDetailInheritance;
+  inheritance: CampaignInheritance;
   communications: Communication[];
   tasks: ActivityTask[];
 };
 
+export type ActivityInputAnswers = { [key: string]: unknown };
+
+export type ActivityInputOverrides = { [key: string]: unknown };
+
 export interface ActivityInput {
-  name: string;
-  type: string;
+  name?: string;
+  activityTypeId: string;
+  answers: ActivityInputAnswers;
+  overrides?: ActivityInputOverrides;
   audience: string;
   region: string;
   timing: string;
@@ -292,6 +355,55 @@ export interface ActivityInput {
   rowVersion?: number;
   position: Position;
   webinarSetup?: WebinarSetup;
+}
+
+export type GovernedChannelType = typeof GovernedChannelType[keyof typeof GovernedChannelType];
+
+
+export const GovernedChannelType = {
+  paid: 'paid',
+  organic: 'organic',
+  email: 'email',
+  event: 'event',
+  app: 'app',
+} as const;
+
+export interface GovernedChannel {
+  id: GovernedChannelId;
+  displayName: string;
+  type: GovernedChannelType;
+}
+
+export interface ActivityRequiredField {
+  key: string;
+  options?: string[];
+}
+
+export interface ActivityTypeConfiguration {
+  id: string;
+  displayName: string;
+  namingTemplate: string;
+  requiredFields: ActivityRequiredField[];
+  allowedOverrides: string[];
+}
+
+export interface ActivityModelCatalog {
+  channels: GovernedChannel[];
+  activityTypes: ActivityTypeConfiguration[];
+}
+
+export type ActivityNameRenderInputBuiltins = { [key: string]: unknown };
+
+export type ActivityNameRenderInputAnswers = { [key: string]: unknown };
+
+export interface ActivityNameRenderInput {
+  template: string;
+  builtins: ActivityNameRenderInputBuiltins;
+  answers: ActivityNameRenderInputAnswers;
+}
+
+export interface ActivityNameRenderResponse {
+  name: string;
 }
 
 export interface CommunicationInput {
@@ -305,7 +417,11 @@ export interface CommunicationInput {
   owner?: string;
   audienceBranchId?: string;
   communicationType?: string;
-  channel?: string;
+  /**
+     * Canonical governed channel ID or unassigned; validated by the backend
+     * @nullable
+     */
+  channel?: string | null;
   approvalStatus?: string;
   qaAudienceConfirmed?: boolean;
   qaContentApproved?: boolean;
@@ -327,7 +443,11 @@ export interface CommunicationUpdate {
   owner?: string;
   audienceBranchId?: string;
   communicationType?: string;
-  channel?: string;
+  /**
+     * Canonical governed channel ID or unassigned; validated by the backend
+     * @nullable
+     */
+  channel?: string | null;
   approvalStatus?: string;
   qaAudienceConfirmed?: boolean;
   qaContentApproved?: boolean;
@@ -430,7 +550,11 @@ export interface OwnerCapacitiesUpdate {
 export interface CommunicationDetails {
   audienceBranchId: string;
   communicationType: string;
-  channel: string;
+  /**
+     * Canonical governed channel ID or unassigned
+     * @nullable
+     */
+  channel: string | null;
   approvalStatus: string;
   qaAudienceConfirmed: boolean;
   qaContentApproved: boolean;
@@ -447,7 +571,11 @@ export interface CommunicationDetails {
 export interface CommunicationInputExtension {
   audienceBranchId?: string;
   communicationType?: string;
-  channel?: string;
+  /**
+     * Canonical governed channel ID or unassigned; validated by the backend
+     * @nullable
+     */
+  channel?: string | null;
   approvalStatus?: string;
   qaAudienceConfirmed?: boolean;
   qaContentApproved?: boolean;
@@ -780,6 +908,8 @@ export interface WebinarInput {
   speakers?: Speaker[];
   registrationRule?: RegistrationRule;
   recruitmentLaunchAt: string;
+  /** Optional explicit canonical channel; omission leaves generated communications unassigned */
+  channel?: GovernedChannelId | null;
 }
 
 /**
@@ -802,6 +932,7 @@ export interface WebinarUpdate {
   speakers?: Speaker[];
   registrationRule?: RegistrationRule;
   recruitmentLaunchAt?: string;
+  channel?: GovernedChannelId | null;
 }
 
 export interface WebinarPerson {
@@ -1202,10 +1333,7 @@ export interface GovernanceActorReason {
   reason: string;
 }
 
-/**
- * @nullable
- */
-export type TaxonomyTermSourceCodeProvenance = { [key: string]: unknown } | null;
+export type TaxonomyTermSourceMetadata = { [key: string]: unknown };
 
 export interface TaxonomyTerm {
   id: string;
@@ -1213,12 +1341,11 @@ export interface TaxonomyTerm {
   category: string;
   label: string;
   shortcode: string;
+  stableKey: string | null;
   parentId?: string | null;
   supersededBy?: string | null;
   legacyCodes: string[];
-  source?: string | null;
-  /** @nullable */
-  sourceCodeProvenance?: TaxonomyTermSourceCodeProvenance;
+  sourceMetadata: TaxonomyTermSourceMetadata;
   isDeprecated: boolean;
   deprecatedAt?: string | null;
   deprecationReason?: string | null;
@@ -1249,6 +1376,7 @@ export type TaxonomyTermMutation = GovernanceActorReason & ({
   category?: string;
   label?: string;
   shortcode?: string;
+  stableKey?: string | null;
   parentId?: string | null;
   supersededBy?: string | null;
   legacyCodes?: string[];

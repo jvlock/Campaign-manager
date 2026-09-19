@@ -128,6 +128,30 @@ test("delivery validates input, persists children, and returns sort order", asyn
   assert.equal(communicationResponse.status, 201);
   const communication = await communicationResponse.json();
   assert.equal(communication.campaignId, campaignId);
+  assert.equal(communication.channel, null);
+
+  const rejectedLegacyChannel = await fetch(
+    `${baseUrl}/campaigns/${campaignId}/communications/${communication.id}`,
+    {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ channel: "Email" }),
+    },
+  );
+  assert.equal(rejectedLegacyChannel.status, 400);
+  const canonicalChannel = await fetch(
+    `${baseUrl}/campaigns/${campaignId}/communications/${communication.id}`,
+    {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ channel: "eml" }),
+    },
+  );
+  assert.equal(canonicalChannel.status, 200);
+  assert.equal((await canonicalChannel.json()).channel, "eml");
+
+  await db.update(communicationDetails).set({ channel: "Email" })
+    .where(eq(communicationDetails.communicationId, communication.id));
 
   const taskResponse = await fetch(`${baseUrl}/campaigns/${campaignId}/tasks`, {
     method: "POST",
@@ -165,6 +189,17 @@ test("delivery validates input, persists children, and returns sort order", asyn
   const patched = await patchResponse.json();
   assert.equal(patched.sortOrder, 5);
   assert.equal(patched.status, "Known");
+  assert.equal(patched.channel, "Email");
+
+  const changedLegacyChannel = await fetch(
+    `${baseUrl}/campaigns/${campaignId}/communications/${communication.id}`,
+    {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ channel: "Webinar" }),
+    },
+  );
+  assert.equal(changedLegacyChannel.status, 400);
 
   const [beforeInvalidPatch] = await db
     .select()

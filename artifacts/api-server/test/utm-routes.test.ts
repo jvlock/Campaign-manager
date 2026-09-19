@@ -11,6 +11,11 @@ import campaignsRouter from "../src/routes/campaigns";
 const marker = randomUUID().slice(0, 8);
 const termIds: string[] = [];
 let campaignId = "";
+let canonicalChannelId = "";
+let canonicalChannelMetadata: Record<string, unknown> = {};
+let productStableKey = "";
+let campaignStableKey = "";
+let subcampaignStableKey = "";
 let server: ReturnType<ReturnType<typeof express>["listen"]>;
 let base = "";
 
@@ -29,10 +34,17 @@ before(async () => {
   }).returning();
   campaignId = campaign.id;
 
-  const create = async (category: string, name: string, parentId?: string, sourceMetadata: Record<string, unknown> = {}) => {
+  const create = async (
+    category: string,
+    name: string,
+    parentId?: string,
+    sourceMetadata: Record<string, unknown> = {},
+    stableKey?: string,
+    shortcode = `${name}_${marker}`,
+  ) => {
     const [term] = await db.insert(taxonomyTerms).values({
       versionId: version.id, category, label: `${name} ${marker}`,
-      shortcode: `${name}_${marker}`, parentId, sourceMetadata,
+      shortcode, stableKey, parentId, sourceMetadata,
     }).returning();
     termIds.push(term.id);
     await db.insert(approvals).values({
@@ -41,9 +53,14 @@ before(async () => {
     });
     return term;
   };
-  const product = await create("product_line", "Product");
-  const campaignCode = await create("campaign_shortcode", "Campaign", product.id);
-  await create("subcampaign", "Subcampaign", campaignCode.id);
+  productStableKey = `test:${marker}:product`;
+  campaignStableKey = `test:${marker}:campaign`;
+  subcampaignStableKey = `test:${marker}:subcampaign`;
+  const product = await create("product_line", "Product", undefined, {}, productStableKey);
+  const campaignCode = await create("campaign_shortcode", "Campaign", product.id, {}, campaignStableKey);
+  await create("subcampaign", "Subcampaign", campaignCode.id, {}, subcampaignStableKey);
+  const otherProduct = await create("product_line", "OtherProduct");
+  await create("campaign_shortcode", "OtherCampaign", otherProduct.id, {}, undefined, `Campaign_${marker}`);
   await create("subcampaign", "WrongSubcampaign", product.id);
   await create("ads_subtype", "Ads");
   await create("utm_objective", "Objective");
@@ -51,8 +68,16 @@ before(async () => {
   await create("audience_segment", "Segment");
   await create("source", "Override");
   await create("display_partner", "Partner");
-  await create("channel", "PaidSearch", undefined, {
-    formulaKey: "paid_search", utmSource: "Google Ads", utmMedium: "Paid Search",
+  const [canonicalChannel] = await db.select().from(taxonomyTerms).where(eq(taxonomyTerms.shortcode, "psg"));
+  assert.ok(canonicalChannel);
+  canonicalChannelId = canonicalChannel.id;
+  canonicalChannelMetadata = canonicalChannel.sourceMetadata;
+  await db.update(taxonomyTerms).set({
+    sourceMetadata: { ...canonicalChannel.sourceMetadata, utmSource: "Google Ads", utmMedium: "Paid Search" },
+  }).where(eq(taxonomyTerms.id, canonicalChannel.id));
+  await db.insert(approvals).values({
+    recordType: "taxonomyTerm", recordId: canonicalChannel.id, stage: "Governance",
+    status: "approved", approver: "test:declared",
   });
   for (const [name, isDeprecated] of [["Unapproved", false], ["Inactive", true]] as const) {
     const [term] = await db.insert(taxonomyTerms).values({
@@ -74,13 +99,15 @@ before(async () => {
 after(async () => {
   await db.delete(utmLinks).where(eq(utmLinks.campaignId, campaignId));
   await db.delete(approvals).where(inArray(approvals.recordId, termIds));
+  await db.delete(approvals).where(eq(approvals.recordId, canonicalChannelId));
+  await db.update(taxonomyTerms).set({ sourceMetadata: canonicalChannelMetadata }).where(eq(taxonomyTerms.id, canonicalChannelId));
   await db.delete(taxonomyTerms).where(inArray(taxonomyTerms.id, termIds.reverse()));
   await db.delete(campaigns).where(eq(campaigns.id, campaignId));
   await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
 const governedRequest = () => ({
-  channel: `PaidSearch_${marker}`,
+  channel: "psg",
   productLine: `Product_${marker}`,
   campaignShortcode: `Campaign_${marker}`,
   subcampaign: `Subcampaign_${marker}`,
@@ -127,6 +154,19 @@ test("returns parameters without destination and does not persist", async () => 
   assert.equal(result.body.parameters.utm_term, "{keyword}");
   assert.equal(JSON.stringify(result.body).includes("undefined"), false);
   assert.equal((await db.select().from(utmLinks).where(eq(utmLinks.campaignId, campaignId))).length, 0);
+});
+
+test("resolves stable keys and parent-scopes repeated campaign shortcodes", async () => {
+  const stable = await post({
+    ...governedRequest(),
+    productLine: productStableKey,
+    campaignShortcode: campaignStableKey,
+    subcampaign: subcampaignStableKey,
+  });
+  assert.equal(stable.status, 200);
+
+  const repeatedBareCode = await post(governedRequest());
+  assert.equal(repeatedBareCode.status, 200);
 });
 
 test("persists a full link, uses approved source override, and passes Salesforce ID", async () => {

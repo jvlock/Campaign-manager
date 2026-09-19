@@ -12,7 +12,11 @@
 export interface CommunicationInputExtension {
   audienceBranchId?: string;
   communicationType?: string;
-  channel?: string;
+  /**
+     * Canonical governed channel ID or unassigned; validated by the backend
+     * @nullable
+     */
+  channel?: string | null;
   approvalStatus?: string;
   qaAudienceConfirmed?: boolean;
   qaContentApproved?: boolean;

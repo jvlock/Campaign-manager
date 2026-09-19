@@ -6,8 +6,10 @@ compiler because that source and its parity fixtures were not available here.
 
 ## Governance contract
 
-The exact category registry is stored in `taxonomy_categories`. Migration 0013
-registers category keys but deliberately seeds no taxonomy terms or approvals.
+The exact category registry is stored in `taxonomy_categories`. Migration 0016
+registers the user-supplied 7 product lines, 51 campaign shortcodes, and 40
+subcampaigns in the current effective version. It deliberately creates no
+approvals; registration and provenance are not governance approval.
 Terms belong to a currently effective taxonomy version, must be non-deprecated
 and non-superseded, and require an explicit latest approval:
 
@@ -16,9 +18,10 @@ record_type = taxonomyTerm
 status = approved
 ```
 
-The legacy record type alias `taxonomy_term` is also read. IDs are unambiguous;
-an ambiguous label or shortcode is rejected and callers are asked to supply the
-term ID.
+The legacy record type alias `taxonomy_term` is also read. Governed references
+resolve in this order: UUID, immutable stable key, then parent-scoped shortcode
+or label. Bare duplicate codes without enough hierarchy are rejected as
+ambiguous. UTM output always uses the governed shortcode, never the stable key.
 
 An approved `channel` term selects the formula and supplies source/medium via
 metadata such as:

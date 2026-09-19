@@ -5,7 +5,7 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
-import type { TaxonomyTermSourceCodeProvenance } from './taxonomyTermSourceCodeProvenance';
+import type { TaxonomyTermSourceMetadata } from './taxonomyTermSourceMetadata';
 
 export interface TaxonomyTerm {
   id: string;
@@ -13,12 +13,11 @@ export interface TaxonomyTerm {
   category: string;
   label: string;
   shortcode: string;
+  stableKey: string | null;
   parentId?: string | null;
   supersededBy?: string | null;
   legacyCodes: string[];
-  source?: string | null;
-  /** @nullable */
-  sourceCodeProvenance?: TaxonomyTermSourceCodeProvenance;
+  sourceMetadata: TaxonomyTermSourceMetadata;
   isDeprecated: boolean;
   deprecatedAt?: Date | null;
   deprecationReason?: string | null;

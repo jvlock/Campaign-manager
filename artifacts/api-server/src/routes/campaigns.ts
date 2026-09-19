@@ -16,6 +16,16 @@ import {
   type UtmCategoryKey,
   type UtmFormula,
 } from "../lib/utm-compiler";
+import {
+  ACTIVITY_TYPE_CONFIGURATIONS,
+  ActivityModelError,
+  GOVERNED_CHANNELS,
+  assertMcpSafe,
+  activityConfiguration,
+  normalizeCampaignInheritance,
+  validateActivityModel,
+  renderActivityName,
+} from "../lib/activity-model";
 
 const router: IRouter = Router();
 
@@ -49,15 +59,82 @@ const summary = (c: typeof campaigns.$inferSelect) => ({
 });
 
 async function mapFor(campaignId: string) {
-  const [nodes, edges] = await Promise.all([
+  const [nodes, edges, campaignRows, strategyRows] = await Promise.all([
     db.select().from(activities).where(eq(activities.campaignId, campaignId)),
     db.select().from(activityConnections).where(eq(activityConnections.campaignId, campaignId)),
+    db.select().from(campaigns).where(eq(campaigns.id, campaignId)),
+    db.select().from(campaignStrategy).where(eq(campaignStrategy.campaignId, campaignId)),
   ]);
+  const campaign = campaignRows[0];
+  const inherited = campaign ? inheritedFor(campaign, strategyRows[0]) : {};
   return {
-    activities: nodes.map((a) => ({ id: a.id, name: a.name, type: a.type, audience: a.audience, region: a.region, timing: a.timing, status: a.status, owner: a.owner, conflict: a.conflict, decisionStatus: a.decisionStatus, rowVersion: a.rowVersion, position: { x: Number(a.x), y: Number(a.y) } })),
+    activities: nodes.map((a) => activityResponse(
+      a,
+      a.activityTypeId
+        ? Object.fromEntries(activityConfiguration(a.activityTypeId).allowedOverrides.map((key) => [
+            key,
+            Object.prototype.hasOwnProperty.call(a.activityOverrides, key) ? a.activityOverrides[key] : inherited[key as keyof typeof inherited],
+          ]))
+        : a.effectiveInheritance,
+    )),
     connections: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, trigger: e.trigger, timing: e.timing, exclusions: e.exclusions as string[], sentence: e.sentence, parentBranchId: e.parentBranchId, entryCondition: e.entryCondition, suppressionRule: e.suppressionRule })),
   };
 }
+
+function inheritedFor(
+  campaign: typeof campaigns.$inferSelect,
+  strategy: typeof campaignStrategy.$inferSelect | undefined,
+): Record<string, unknown> {
+  const inheritance = (strategy?.inheritance ?? {}) as Record<string, unknown>;
+  return {
+    deliveryStartDate: inheritance.deliveryStartDate,
+    deliveryEndDate: inheritance.deliveryEndDate,
+    productValueIds: inheritance.productValueIds,
+    owner: Object.prototype.hasOwnProperty.call(inheritance, "owner") ? inheritance.owner : campaign.owner,
+    region: Object.prototype.hasOwnProperty.call(inheritance, "region") ? inheritance.region : campaign.region,
+    language: inheritance.language,
+    primaryCta: inheritance.primaryCta,
+    landingDestination: inheritance.landingDestination,
+  };
+}
+
+function activityModelError(res: any, error: ActivityModelError) {
+  res.status(400).json({ error: { field: error.field, code: error.code, message: error.message } });
+}
+
+function activityResponse(
+  activity: typeof activities.$inferSelect,
+  effectiveInheritance: Record<string, unknown> = activity.effectiveInheritance,
+) {
+  return {
+    id: activity.id, name: activity.name, type: activity.type, audience: activity.audience,
+    region: activity.region, timing: activity.timing, status: activity.status,
+    owner: activity.owner, conflict: activity.conflict, decisionStatus: activity.decisionStatus,
+    rowVersion: activity.rowVersion, activityTypeId: activity.activityTypeId,
+    answers: activity.activityAnswers, overrides: activity.activityOverrides,
+    generatedName: activity.generatedName, namingInput: activity.namingInput,
+    effectiveInheritance, position: { x: Number(activity.x), y: Number(activity.y) },
+  };
+}
+
+router.get("/activity-model/catalog", (_req, res) => {
+  res.json({ channels: GOVERNED_CHANNELS, activityTypes: ACTIVITY_TYPE_CONFIGURATIONS });
+});
+
+router.post("/activity-model/render-name", (req, res) => {
+  try {
+    const template = req.body?.template;
+    if (typeof template !== "string") throw new ActivityModelError("template", "required", "template is required");
+    const builtins = req.body?.builtins;
+    const answers = req.body?.answers;
+    if (!builtins || typeof builtins !== "object" || Array.isArray(builtins)) throw new ActivityModelError("builtins", "invalid_type", "builtins must be an object");
+    if (!answers || typeof answers !== "object" || Array.isArray(answers)) throw new ActivityModelError("answers", "invalid_type", "answers must be an object");
+    res.json({ name: renderActivityName(template, builtins, answers) });
+  } catch (error) {
+    if (error instanceof ActivityModelError) { activityModelError(res, error); return; }
+    throw error;
+  }
+});
 
 async function detail(c: typeof campaigns.$inferSelect) {
   const [strategy] = await db.select().from(campaignStrategy).where(eq(campaignStrategy.campaignId, c.id));
@@ -65,7 +142,7 @@ async function detail(c: typeof campaigns.$inferSelect) {
   const delivery = await deliveryFor(c.id);
   return {
     ...summary(c), strategy: (strategy?.data ?? {}) as Record<string, unknown>,
-    inheritance: (strategy?.inheritance ?? {}) as Record<string, string>,
+    inheritance: (strategy?.inheritance ?? {}) as Record<string, unknown>,
     map: await mapFor(c.id),
     utmLinks: links.map((u) => ({ id: u.id, destinationUrl: u.destinationUrl, fullUrl: u.fullUrl, taxonomyVersion: u.taxonomyVersion, validation: u.validation, status: u.status })),
     communications: delivery.communications,
@@ -93,7 +170,10 @@ router.post("/campaigns", async (req, res, next) => {
     ]).returning();
     await db.insert(activityConnections).values({ campaignId: c.id, source: entry.id, target: outcome.id, trigger: "engaged", timing: "when ready", exclusions: [], sentence: `When the audience is engaged, guide them toward ${req.body.outcome}.` });
     res.status(201).json(await detail(c));
-  } catch (e) { next(e); }
+  } catch (e) {
+    if (e instanceof ActivityModelError) { activityModelError(res, e); return; }
+    next(e);
+  }
 });
 
 router.get("/campaigns/:id", async (req, res, next) => {
@@ -101,7 +181,10 @@ router.get("/campaigns/:id", async (req, res, next) => {
     const [c] = await db.select().from(campaigns).where(eq(campaigns.id, req.params.id));
     if (!c) { res.status(404).json({ error: "Campaign not found" }); return; }
     res.json(await detail(c));
-  } catch (e) { next(e); }
+  } catch (e) {
+    if (e instanceof ActivityModelError) { activityModelError(res, e); return; }
+    next(e);
+  }
 });
 
 router.patch("/campaigns/:id", async (req, res, next) => {
@@ -120,6 +203,11 @@ router.patch("/campaigns/:id", async (req, res, next) => {
       res.status(404).json({ error: "Campaign not found" });
       return;
     }
+    const [currentStrategy] = await db.select().from(campaignStrategy).where(eq(campaignStrategy.campaignId, req.params.id));
+    const currentInheritance = (currentStrategy?.inheritance ?? {}) as Record<string, unknown>;
+    const proposedInheritance = req.body.inheritance !== undefined
+      ? normalizeCampaignInheritance(currentInheritance, req.body.inheritance)
+      : currentInheritance;
     const patch: Partial<typeof campaigns.$inferInsert> = { updatedAt: new Date() };
     if (req.body.name !== undefined) {
       const normalizedName = normalizeCampaignName(String(req.body.name));
@@ -134,6 +222,35 @@ router.patch("/campaigns/:id", async (req, res, next) => {
       patch.name = req.body.name;
     }
     if (req.body.lifecycle) patch.lifecycle = req.body.lifecycle;
+    const proposedCampaign = { ...current, name: patch.name ?? current.name };
+    const canonicalActivities = await db.select().from(activities).where(and(
+      eq(activities.campaignId, req.params.id),
+      sql`${activities.activityTypeId} IS NOT NULL`,
+    ));
+    const hasMcp = canonicalActivities.some((activity) => activity.activityTypeId === "mcp");
+    if (hasMcp) assertMcpSafe(req.body, "campaignUpdate");
+    const refreshedActivities = canonicalActivities.map((activity) => {
+      if (req.body.lifecycle === "Live" && activity.activityTypeId === "mcp") {
+        assertMcpSafe({
+          persisted: activity,
+          effectiveInheritance: activity.effectiveInheritance,
+          campaignName: proposedCampaign.name,
+          generatedName: activity.generatedName,
+        }, `activity.${activity.id}`);
+      }
+      const model = validateActivityModel({
+        activityTypeId: activity.activityTypeId,
+        name: activity.namingInput,
+        answers: activity.activityAnswers,
+        overrides: activity.activityOverrides,
+        campaignName: proposedCampaign.name,
+        inherited: inheritedFor(proposedCampaign, {
+          ...currentStrategy,
+          inheritance: proposedInheritance,
+        } as typeof campaignStrategy.$inferSelect),
+      });
+      return { activity, model };
+    });
     const c = await db.transaction(async (tx) => {
       const [updated] = await tx.update(campaigns).set({
         ...patch,
@@ -142,11 +259,23 @@ router.patch("/campaigns/:id", async (req, res, next) => {
       if (!updated) {
         return null;
       }
-      if (req.body.strategy !== undefined) {
+      if (req.body.strategy !== undefined || req.body.inheritance !== undefined) {
         await tx.update(campaignStrategy).set({
-          data: req.body.strategy,
+          ...(req.body.strategy !== undefined ? { data: req.body.strategy } : {}),
+          ...(req.body.inheritance !== undefined ? { inheritance: proposedInheritance } : {}),
           updatedAt: new Date(),
         }).where(eq(campaignStrategy.campaignId, req.params.id));
+      }
+      if (req.body.name !== undefined || req.body.inheritance !== undefined) {
+        for (const { activity, model } of refreshedActivities) {
+          await tx.update(activities).set({
+            name: model.generatedName,
+            generatedName: model.generatedName,
+            effectiveInheritance: model.effectiveInheritance,
+            rowVersion: sql`${activities.rowVersion} + 1`,
+            updatedAt: new Date(),
+          }).where(and(eq(activities.id, activity.id), eq(activities.campaignId, req.params.id)));
+        }
       }
       return updated;
     });
@@ -155,7 +284,10 @@ router.patch("/campaigns/:id", async (req, res, next) => {
       return;
     }
     res.json(await detail(c));
-  } catch (e) { next(e); }
+  } catch (e) {
+    if (e instanceof ActivityModelError) { activityModelError(res, e); return; }
+    next(e);
+  }
 });
 
 router.put("/campaigns/:id/map", async (req, res, next) => {
@@ -169,7 +301,7 @@ router.put("/campaigns/:id/map", async (req, res, next) => {
       res.status(400).json({ error: "rowVersion must be a positive integer" });
       return;
     }
-    const [existingCampaign] = await db.select({ id: campaigns.id }).from(campaigns).where(eq(campaigns.id, req.params.id));
+    const [existingCampaign] = await db.select().from(campaigns).where(eq(campaigns.id, req.params.id));
     if (!existingCampaign) {
       res.status(404).json({ error: "Campaign not found" });
       return;
@@ -184,6 +316,8 @@ router.put("/campaigns/:id/map", async (req, res, next) => {
       res.status(400).json({ error: "Activity and branch IDs must be UUIDs" });
       return;
     }
+    const [activityStrategy] = await db.select().from(campaignStrategy).where(eq(campaignStrategy.campaignId, req.params.id));
+    const inherited = inheritedFor(existingCampaign, activityStrategy);
     const activityIds = new Set<string>(submittedActivities.map((n: any) => String(n.id)));
     const connectionIds = new Set<string>();
     for (const edge of submittedConnections) {
@@ -302,10 +436,53 @@ router.put("/campaigns/:id/map", async (req, res, next) => {
 
       for (const n of submittedActivities) {
         const [existing] = await tx.select().from(activities).where(and(eq(activities.id, n.id), eq(activities.campaignId, req.params.id)));
+        const activityTypeSupplied = Object.prototype.hasOwnProperty.call(n, "activityTypeId");
+        const unchangedLegacyNull = activityTypeSupplied
+          && n.activityTypeId === null
+          && existing?.activityTypeId === null;
+        if (activityTypeSupplied && !unchangedLegacyNull) {
+          if (typeof n.activityTypeId !== "string" || n.activityTypeId === "") {
+            throw new ActivityModelError("activityTypeId", "invalid_activity_type", "activityTypeId must be a non-empty canonical activity type ID");
+          }
+          activityConfiguration(n.activityTypeId);
+          if (existing?.activityTypeId && n.activityTypeId !== existing.activityTypeId) {
+            throw new ActivityModelError("activityTypeId", "activity_type_immutable", "A governed activity type cannot be changed");
+          }
+        }
+        const activityTypeId = unchangedLegacyNull
+          ? null
+          : activityTypeSupplied ? n.activityTypeId : existing?.activityTypeId;
+        let modelValues: Partial<typeof activities.$inferInsert> = {};
+        if (activityTypeId) {
+          if (activityTypeId === "mcp") assertMcpSafe(n, "activity");
+          const namingInput = n.namingInput !== undefined ? n.namingInput : existing?.namingInput;
+          const model = validateActivityModel({
+            activityTypeId,
+            name: namingInput,
+            answers: n.answers ?? existing?.activityAnswers ?? {},
+            overrides: n.overrides ?? existing?.activityOverrides ?? {},
+            campaignName: existingCampaign.name,
+            inherited,
+          });
+          modelValues = {
+            name: model.generatedName,
+            type: model.configuration.id,
+            activityTypeId: model.configuration.id,
+            activityAnswers: model.answers,
+            activityOverrides: model.overrides,
+            generatedName: model.generatedName,
+            namingInput: namingInput === undefined || namingInput === null ? null : String(namingInput),
+            effectiveInheritance: model.effectiveInheritance,
+          };
+        } else if (!existing) {
+          throw new ActivityModelError("activityTypeId", "required", "New activities require a governed activityTypeId");
+        } else if (n.type !== existing.type) {
+          throw new ActivityModelError("type", "legacy_type_immutable", "A legacy activity type cannot be changed; create a governed activity instead");
+        }
         const values = {
           name: n.name, type: n.type, audience: n.audience, region: n.region, timing: n.timing,
           status: n.status, owner: n.owner, conflict: n.conflict, decisionStatus: n.decisionStatus ?? "Estimated",
-          x: String(n.position?.x ?? 0), y: String(n.position?.y ?? 0), updatedAt: new Date(),
+          x: String(n.position?.x ?? 0), y: String(n.position?.y ?? 0), updatedAt: new Date(), ...modelValues,
         };
         if (!existing) {
           const [createdActivity] = await tx.insert(activities).values({ id: n.id, campaignId: req.params.id, ...values }).returning();
@@ -368,6 +545,7 @@ router.put("/campaigns/:id/map", async (req, res, next) => {
     const [campaign] = await db.select().from(campaigns).where(eq(campaigns.id, req.params.id));
     res.json({ ...(await mapFor(req.params.id)), rowVersion: campaign.rowVersion });
   } catch (e) {
+    if (e instanceof ActivityModelError) { activityModelError(res, e); return; }
     if (e && typeof e === "object" && "statusCode" in e && typeof e.statusCode === "number") {
       res.status(e.statusCode).json({ error: e instanceof Error ? e.message : "Map update rejected" });
       return;
@@ -387,11 +565,22 @@ router.post("/campaigns/:id/activities", async (req, res, next) => {
       res.status(400).json({ error: "rowVersion must be a positive integer" });
       return;
     }
-    const [existingCampaign] = await db.select({ id: campaigns.id }).from(campaigns).where(eq(campaigns.id, req.params.id));
+    const [existingCampaign] = await db.select().from(campaigns).where(eq(campaigns.id, req.params.id));
     if (!existingCampaign) {
       res.status(404).json({ error: "Campaign not found" });
       return;
     }
+    const [activityStrategy] = await db.select().from(campaignStrategy).where(eq(campaignStrategy.campaignId, req.params.id));
+    if (req.body.activityTypeId === "mcp") assertMcpSafe(req.body, "activity");
+    const legacyWebinar = req.body.activityTypeId === undefined && String(req.body.type).toLowerCase() === "webinar" && req.body.webinarSetup !== undefined;
+    const model = legacyWebinar ? null : validateActivityModel({
+        activityTypeId: req.body.activityTypeId,
+        name: req.body.name,
+        answers: req.body.answers ?? {},
+        overrides: req.body.overrides ?? {},
+        campaignName: existingCampaign.name,
+        inherited: inheritedFor(existingCampaign, activityStrategy),
+      });
     const [a] = await db.transaction(async (tx) => {
       const [campaign] = await tx.update(campaigns).set({
         rowVersion: sql`${campaigns.rowVersion} + 1`,
@@ -399,16 +588,21 @@ router.post("/campaigns/:id/activities", async (req, res, next) => {
       }).where(and(eq(campaigns.id, req.params.id), eq(campaigns.rowVersion, version as number))).returning();
       if (!campaign) throw versionError(409, "Campaign has changed");
       const [activity] = await tx.insert(activities).values({
-        name: req.body.name, type: req.body.type, audience: req.body.audience, region: req.body.region,
+        name: model?.generatedName ?? req.body.name, type: model?.configuration.id ?? "Webinar", audience: req.body.audience, region: req.body.region,
         timing: req.body.timing, status: req.body.status, owner: req.body.owner,
         conflict: req.body.conflict ?? false, decisionStatus: req.body.decisionStatus ?? "Estimated",
         campaignId: req.params.id, x: String(req.body.position?.x ?? 0), y: String(req.body.position?.y ?? 0),
+        activityTypeId: model?.configuration.id ?? null, activityAnswers: model?.answers ?? {},
+        activityOverrides: model?.overrides ?? {}, generatedName: model?.generatedName ?? null,
+        namingInput: model && req.body.name !== undefined && req.body.name !== null ? String(req.body.name) : null,
+        effectiveInheritance: model?.effectiveInheritance ?? {},
       }).returning();
       await ensureWebinarForActivity(req.params.id, activity, req.body.webinarSetup, tx);
       return [activity];
     });
-    res.status(201).json({ ...a, position: { x: Number(a.x), y: Number(a.y) } });
+    res.status(201).json(activityResponse(a, model?.effectiveInheritance ?? {}));
   } catch (e) {
+    if (e instanceof ActivityModelError) { activityModelError(res, e); return; }
     if (e && typeof e === "object" && "statusCode" in e && typeof e.statusCode === "number") {
       res.status(e.statusCode).json({ error: e instanceof Error ? e.message : "Activity update rejected" });
       return;
@@ -491,13 +685,22 @@ router.post("/campaigns/:id/utm-links", async (req, res, next) => {
       if (!latestApproval.has(approval.recordId)) latestApproval.set(approval.recordId, approval.status.toLowerCase());
     }
     const approvedTerms = activeTerms.filter((term) => latestApproval.get(term.id) === "approved");
-    const findApproved = (field: string, category: UtmCategoryKey, reference: string) => {
+    const findApproved = (field: string, category: UtmCategoryKey, reference: string, expectedParentId?: string) => {
       const normalized = reference.trim().toLowerCase();
       const subject = field === "channel" ? `channel ${JSON.stringify(reference)}` : field;
       const categoryTerms = versionTerms.filter((term) => term.category === category);
       const idMatch = categoryTerms.find((term) => term.id.toLowerCase() === normalized);
-      const matches = idMatch ? [idMatch] : categoryTerms.filter((term) =>
+      const stableKeyMatch = categoryTerms.find((term) => term.stableKey?.toLowerCase() === normalized);
+      const identityMatch = idMatch ?? stableKeyMatch;
+      const unscopedMatches = identityMatch ? [identityMatch] : categoryTerms.filter((term) =>
         term.shortcode.toLowerCase() === normalized || term.label.toLowerCase() === normalized);
+      const matches = identityMatch || expectedParentId === undefined
+        ? unscopedMatches
+        : unscopedMatches.filter((term) => term.parentId === expectedParentId);
+      if (!matches.length && expectedParentId !== undefined && unscopedMatches.length) {
+        const expectedParent = field === "campaignShortcode" ? "productLine" : "campaignShortcode";
+        throw new UtmGovernanceError(field, "invalid_hierarchy", `${field} must be a child of ${expectedParent}`);
+      }
       if (!matches.length) throw new UtmGovernanceError(field, "not_governed", `${subject} is not a governed ${category} value`);
       const activeMatches = matches.filter((term) => activeTerms.some((active) => active.id === term.id));
       if (!activeMatches.length) throw new UtmGovernanceError(field, "inactive", `${subject} is not an active ${category} value`);
@@ -514,10 +717,26 @@ router.post("/campaigns/:id/utm-links", async (req, res, next) => {
     const channel = findApproved("channel", "channel", channelReference);
     const metadata = channel.sourceMetadata && typeof channel.sourceMetadata === "object"
       ? channel.sourceMetadata as Record<string, unknown> : {};
-    const formula = metadata.formulaKey;
-    const supportedFormulas: UtmFormula[] = ["paid_search", "paid_social", "display", "newsletter_email", "nurture_email", "pre_event_email", "post_event_email", "events"];
-    if (typeof formula !== "string" || !supportedFormulas.includes(formula as UtmFormula)) {
-      throw new UtmGovernanceError("channel", "missing_formula_metadata", "channel is missing supported formulaKey metadata");
+    const channelId = channel.shortcode.toLowerCase();
+    const directFormula: Partial<Record<string, UtmFormula>> = {
+      psg: "paid_search", psl: "paid_social", disp: "display",
+      evlv: "events", evind: "events", evvrt: "events",
+    };
+    let formula = directFormula[channelId];
+    let resolvedEmailType: typeof taxonomyTerms.$inferSelect | undefined;
+    if (["eml", "emlc", "emlp"].includes(channelId)) {
+      const emailReference = optionalString(body, "emailType");
+      if (!emailReference) throw new UtmGovernanceError("emailType", "required", `emailType is required for ${channel.label}`);
+      resolvedEmailType = findApproved("emailType", "email_type", emailReference);
+      const emailKind = `${resolvedEmailType.shortcode} ${resolvedEmailType.label}`.toLowerCase();
+      formula = emailKind.includes("newsletter") ? "newsletter_email"
+        : emailKind.includes("nurture") ? "nurture_email"
+        : emailKind.includes("post-event") || emailKind.includes("post event") ? "post_event_email"
+        : emailKind.includes("event invitation") ? "pre_event_email"
+        : undefined;
+    }
+    if (!formula) {
+      throw new UtmGovernanceError("channel", "unsupported_formula", `channel ${JSON.stringify(channelReference)} does not have a specified UTM formula`);
     }
     if (typeof metadata.utmSource !== "string" || !metadata.utmSource.trim()) {
       throw new UtmGovernanceError("channel", "missing_source_metadata", "channel is missing utmSource metadata");
@@ -527,11 +746,30 @@ router.post("/campaigns/:id/utm-links", async (req, res, next) => {
     }
 
     const governedTerms = new Map<string, typeof taxonomyTerms.$inferSelect>();
+    if (resolvedEmailType) governedTerms.set("emailType", resolvedEmailType);
     for (const [field, category] of Object.entries(utmFieldCategories)) {
+      if (field === "productLine" || field === "campaignShortcode" || field === "subcampaign") continue;
       const reference = optionalString(body, field);
       if (reference) governedTerms.set(field, findApproved(field, category, reference));
     }
-    for (const field of formulaRequiredFields[formula as UtmFormula]) {
+    const productLineReference = optionalString(body, "productLine");
+    if (productLineReference) {
+      const product = findApproved("productLine", "product_line", productLineReference);
+      governedTerms.set("productLine", product);
+      const campaignReference = optionalString(body, "campaignShortcode");
+      if (campaignReference) {
+        const campaignTerm = findApproved("campaignShortcode", "campaign_shortcode", campaignReference, product.id);
+        governedTerms.set("campaignShortcode", campaignTerm);
+        const subcampaignReference = optionalString(body, "subcampaign");
+        if (subcampaignReference) {
+          governedTerms.set(
+            "subcampaign",
+            findApproved("subcampaign", "subcampaign", subcampaignReference, campaignTerm.id),
+          );
+        }
+      }
+    }
+    for (const field of formulaRequiredFields[formula]) {
       if (!governedTerms.has(field)) {
         throw new UtmGovernanceError(field, "required", `${field} is required for ${channel.label}`);
       }
@@ -562,7 +800,7 @@ router.post("/campaigns/:id/utm-links", async (req, res, next) => {
       throw new UtmInputError("salesforceCampaignId", "invalid_format", "salesforceCampaignId must be a 15 or 18 character Salesforce Campaign ID beginning with 701");
     }
     const compiled = compileUtm({
-      formula: formula as UtmFormula,
+      formula,
       values,
       keyword: optionalString(body, "keyword") ?? optionalString(body, "term"),
       sendDate: optionalString(body, "sendDate"),
@@ -657,7 +895,12 @@ router.get("/governance", async (_req, res, next) => {
   try {
     const [v] = await db.select().from(taxonomyVersions);
     const terms = v ? await db.select().from(taxonomyTerms).where(eq(taxonomyTerms.versionId, v.id)) : [];
-    res.json({ version: v?.version ?? "2026.1", activityTypes: ["Email", "Content", "Webinar", "Event", "Paid social", "Paid search", "Display", "Video", "Landing page", "Sales handoff", "Custom"], taxonomyTerms: terms.map((t) => ({ category: t.category, label: t.label, shortcode: t.shortcode })), namingExamples: [] });
+    res.json({
+      version: v?.version ?? "2026.1",
+      activityTypes: ACTIVITY_TYPE_CONFIGURATIONS.map((configuration) => configuration.id),
+      taxonomyTerms: terms.map((t) => ({ category: t.category, label: t.label, shortcode: t.shortcode })),
+      namingExamples: [],
+    });
   } catch (e) { next(e); }
 });
 

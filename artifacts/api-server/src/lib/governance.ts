@@ -145,6 +145,7 @@ function termResponse(term: any) {
     category: term.category,
     label: term.label,
     shortcode: term.shortcode,
+    stableKey: term.stableKey ?? null,
     parentId: term.parentId,
     supersededBy: term.supersededBy,
     legacyCodes: Array.isArray(term.legacyCodes) ? term.legacyCodes : [],
@@ -155,6 +156,26 @@ function termResponse(term: any) {
     createdAt: term.createdAt,
     updatedAt: term.updatedAt,
   };
+}
+
+function termSemanticState(term: any) {
+  return {
+    category: term.category,
+    label: term.label,
+    shortcode: term.shortcode,
+    stableKey: term.stableKey ?? null,
+    parentId: term.parentId ?? null,
+    supersededBy: term.supersededBy ?? null,
+    legacyCodes: Array.isArray(term.legacyCodes) ? term.legacyCodes : [],
+    sourceMetadata: sourceMetadataResponse(term.sourceMetadata),
+    isDeprecated: Boolean(term.isDeprecated),
+    deprecatedAt: term.deprecatedAt ?? null,
+    deprecationReason: term.deprecationReason ?? null,
+  };
+}
+
+function semanticTermChanged(before: any, after: any) {
+  return JSON.stringify(termSemanticState(before)) !== JSON.stringify(termSemanticState(after));
 }
 
 async function findVersion(tx: Executor, input: { versionId?: unknown; version?: unknown }) {
@@ -206,12 +227,18 @@ async function importNamespaceTerms(
   return [
     ...terms,
     ...candidates
-      .filter((candidate: any) => candidate.status !== "rejected")
+      // A committed candidate is represented by its taxonomy term and must not
+      // remain as a second namespace owner during stable-key replay.
+      .filter((candidate: any) => candidate.status !== "rejected" && candidate.status !== "committed")
       .map((candidate: any) => ({
         id: candidate.id,
         shortcode: typeof candidate.payload?.shortcode === "string" ? candidate.payload.shortcode : "",
         label: typeof candidate.payload?.label === "string" ? candidate.payload.label : "",
         category: typeof candidate.payload?.category === "string" ? candidate.payload.category : "",
+        stableKey: typeof candidate.payload?.stableKey === "string" ? candidate.payload.stableKey : null,
+        parentId: typeof candidate.payload?.parentStableKey === "string"
+          ? candidate.payload.parentStableKey
+          : typeof candidate.payload?.parentId === "string" ? candidate.payload.parentId : null,
         legacyCodes: Array.isArray(candidate.payload?.legacyCodes) ? candidate.payload.legacyCodes : [],
       })),
   ];
@@ -229,6 +256,29 @@ async function assertTermInVersion(
     .where(and(eq(taxonomyTerms.id, termId), eq(taxonomyTerms.versionId, versionId)));
   if (!term) throw new GovernanceError(`${field} must belong to the same taxonomy version`, 400);
   return term;
+}
+
+async function assertTaxonomyHierarchy(
+  tx: Executor,
+  versionId: string,
+  category: string,
+  parentId: string | null,
+) {
+  const expectedParentCategory = category === "campaign_shortcode"
+    ? "product_line"
+    : category === "subcampaign" ? "campaign_shortcode" : null;
+  if (category === "product_line" && parentId) {
+    throw new GovernanceError("product_line cannot have a taxonomy parent");
+  }
+  if (expectedParentCategory && !parentId) {
+    throw new GovernanceError(`${category} requires a ${expectedParentCategory} parent`);
+  }
+  if (expectedParentCategory && parentId) {
+    const parent = await assertTermInVersion(tx, parentId, versionId, "parentId");
+    if (parent.category !== expectedParentCategory) {
+      throw new GovernanceError(`${category} parent must be a ${expectedParentCategory}`);
+    }
+  }
 }
 
 async function assertNoTermCycle(
@@ -383,6 +433,7 @@ export async function createTerm(input: {
   category: unknown;
   label: unknown;
   shortcode: unknown;
+  stableKey?: unknown;
   parentId?: unknown;
   supersededBy?: unknown;
   legacyCodes?: unknown;
@@ -402,21 +453,29 @@ export async function createTerm(input: {
   }
   const version = await findVersion(db, input);
   const shortcode = input.shortcode.trim();
+  const stableKey = input.stableKey === undefined || input.stableKey === null
+    ? null
+    : typeof input.stableKey === "string" && input.stableKey.trim()
+      ? input.stableKey.trim()
+      : (() => { throw new GovernanceError("stableKey must be a non-empty string"); })();
   const legacyCodes = Array.isArray(input.legacyCodes)
     ? [...new Set(input.legacyCodes.filter((code): code is string => typeof code === "string" && Boolean(code.trim())).map((code) => code.trim()))]
     : [];
   return db.transaction(async (tx) => {
     await lockTaxonomyVersion(tx, version.id);
-    const existing = await tx
-      .select()
-      .from(taxonomyTerms)
-      .where(and(eq(taxonomyTerms.versionId, version.id), eq(taxonomyTerms.shortcode, shortcode)));
-    if (existing.length) throw new GovernanceError("A term with this shortcode already exists in the taxonomy version", 409);
     const parentId = input.parentId === undefined || input.parentId === null ? null : uuid(input.parentId, "parentId");
     const supersededBy = input.supersededBy === undefined || input.supersededBy === null ? null : uuid(input.supersededBy, "supersededBy");
     if (parentId) await assertTermInVersion(tx, parentId, version.id, "parentId");
+    await assertTaxonomyHierarchy(tx, version.id, category, parentId);
     if (supersededBy) await assertTermInVersion(tx, supersededBy, version.id, "supersededBy");
-    await assertNamespaceAvailable(tx, version.id, [shortcode, ...legacyCodes]);
+    const existing = (await termsForVersion(tx, version.id)).find((term: any) =>
+      term.category === category && term.parentId === parentId && term.shortcode === shortcode);
+    if (existing) throw new GovernanceError("A term with this shortcode already exists under this taxonomy parent", 409);
+    if (stableKey) {
+      const stableCollision = (await termsForVersion(tx, version.id)).find((term: any) => term.stableKey === stableKey);
+      if (stableCollision) throw new GovernanceError("A term with this stableKey already exists in the taxonomy version", 409);
+    }
+    await assertNamespaceAvailable(tx, version.id, legacyCodes);
     const [created] = await tx
       .insert(taxonomyTerms)
       .values({
@@ -424,6 +483,7 @@ export async function createTerm(input: {
         category,
         label,
         shortcode,
+        stableKey,
         parentId,
         supersededBy,
         legacyCodes,
@@ -451,6 +511,7 @@ export async function updateTerm(
     category?: unknown;
     label?: unknown;
     shortcode?: unknown;
+    stableKey?: unknown;
     parentId?: unknown;
     supersededBy?: unknown;
     legacyCodes?: unknown;
@@ -469,8 +530,14 @@ export async function updateTerm(
     if (!current) throw new GovernanceError("Taxonomy term not found", 404);
     const action = typeof input.action === "string" ? input.action : "update";
     const patch: Record<string, unknown> = { updatedAt: new Date() };
+    if (input.stableKey !== undefined && input.stableKey !== current.stableKey) {
+      throw new GovernanceError("stableKey is immutable", 409);
+    }
     if (input.category !== undefined) {
       if (typeof input.category !== "string" || !input.category.trim()) throw new GovernanceError("category must be non-empty");
+      if (current.stableKey && input.category.trim() !== current.category) {
+        throw new GovernanceError("category is immutable for stable-keyed terms", 409);
+      }
       patch.category = input.category.trim();
     }
     if (input.label !== undefined) {
@@ -480,11 +547,6 @@ export async function updateTerm(
     if (input.shortcode !== undefined) {
       if (typeof input.shortcode !== "string" || !input.shortcode.trim()) throw new GovernanceError("shortcode must be non-empty");
       const shortcode = input.shortcode.trim();
-      const [collision] = await tx
-        .select()
-        .from(taxonomyTerms)
-        .where(and(eq(taxonomyTerms.versionId, current.versionId), eq(taxonomyTerms.shortcode, shortcode)));
-      if (collision && collision.id !== current.id) throw new GovernanceError("A term with this shortcode already exists in the taxonomy version", 409);
       patch.shortcode = shortcode;
       if (shortcode !== current.shortcode) {
         const oldCodes = Array.isArray(current.legacyCodes) ? current.legacyCodes : [];
@@ -493,6 +555,9 @@ export async function updateTerm(
     }
     if (input.parentId !== undefined) {
       const parentId = input.parentId === null ? null : uuid(input.parentId, "parentId");
+      if (current.stableKey && parentId !== current.parentId) {
+        throw new GovernanceError("parentId is immutable for stable-keyed terms", 409);
+      }
       if (parentId) await assertTermInVersion(tx, parentId, current.versionId, "parentId");
       await assertNoTermCycle(tx, current.versionId, parentId, current.id, "parent");
       patch.parentId = parentId;
@@ -510,6 +575,15 @@ export async function updateTerm(
       patch.legacyCodes = [...new Set(input.legacyCodes.map((code) => code.trim()))];
     }
     const nextShortcode = typeof patch.shortcode === "string" ? patch.shortcode : current.shortcode;
+    const nextCategory = typeof patch.category === "string" ? patch.category : current.category;
+    const nextParentId = Object.prototype.hasOwnProperty.call(patch, "parentId") ? patch.parentId : current.parentId;
+    await assertTaxonomyHierarchy(tx, current.versionId, nextCategory, nextParentId as string | null);
+    const scopedCollision = (await termsForVersion(tx, current.versionId)).find((term: any) =>
+      term.id !== current.id
+      && term.category === nextCategory
+      && term.parentId === nextParentId
+      && term.shortcode === nextShortcode);
+    if (scopedCollision) throw new GovernanceError("A term with this shortcode already exists under this taxonomy parent", 409);
     let nextLegacyCodes = Array.isArray(patch.legacyCodes)
       ? patch.legacyCodes as string[]
       : Array.isArray(current.legacyCodes) ? current.legacyCodes : [];
@@ -519,7 +593,7 @@ export async function updateTerm(
       nextLegacyCodes = [...nextLegacyCodes, current.shortcode];
       patch.legacyCodes = nextLegacyCodes;
     }
-    await assertNamespaceAvailable(tx, current.versionId, [nextShortcode, ...nextLegacyCodes], current.id);
+    await assertNamespaceAvailable(tx, current.versionId, nextLegacyCodes, current.id);
     if (action === "deprecate") {
       patch.isDeprecated = true;
       patch.deprecatedAt = new Date();
@@ -536,6 +610,12 @@ export async function updateTerm(
       .set(patch as any)
       .where(eq(taxonomyTerms.id, termId))
       .returning();
+    const invalidatedApprovals = semanticTermChanged(current, updated)
+      ? await tx.delete(approvals).where(and(
+        inArray(approvals.recordType, ["taxonomyTerm", "taxonomy_term"]),
+        eq(approvals.recordId, termId),
+      )).returning({ id: approvals.id })
+      : [];
     await insertAudit(tx, {
       entityType: "taxonomyTerm",
       entityId: termId,
@@ -544,6 +624,7 @@ export async function updateTerm(
       reason,
       before: termResponse(current),
       after: termResponse(updated),
+      metadata: { invalidatedApprovalCount: invalidatedApprovals.length },
     });
     return termResponse(updated);
   });
@@ -558,7 +639,10 @@ export async function resolveTerm(input: {
   const version = await findVersion(db, input);
   const terms = await termsForVersion(db, version.id);
   const code = input.code.trim();
-  const matches = terms.filter((term: any) => term.shortcode === code || (Array.isArray(term.legacyCodes) && term.legacyCodes.includes(code)));
+  const stableMatches = terms.filter((term: any) => term.stableKey === code);
+  const matches = stableMatches.length
+    ? stableMatches
+    : terms.filter((term: any) => term.shortcode === code || (Array.isArray(term.legacyCodes) && term.legacyCodes.includes(code)));
   if (!matches.length) throw new GovernanceError("Taxonomy code not found", 404);
   if (matches.length > 1) throw new GovernanceError("Taxonomy code is ambiguous in this taxonomy version", 409);
   const chain: any[] = [];
@@ -580,6 +664,9 @@ export type ImportCandidateInput = {
   category?: unknown;
   label?: unknown;
   shortcode?: unknown;
+  stableKey?: unknown;
+  parentStableKey?: unknown;
+  sourceMetadata?: unknown;
   parentId?: unknown;
   parentShortcode?: unknown;
   legacyCodes?: unknown;
@@ -606,6 +693,8 @@ export function detectImportConflicts(
     category: string;
     legacyCodes?: unknown;
     id?: string;
+    stableKey?: string | null;
+    parentId?: string | null;
   }>,
 ): ImportConflictResult[] {
   const candidateCodes = (candidate: ImportCandidateInput) => {
@@ -617,18 +706,28 @@ export function detectImportConflicts(
       : [];
     return [...new Set([shortcode, ...legacyCodes].filter(Boolean))];
   };
-  const owners = new Map<string, Array<{ kind: "term" | "candidate"; index: number; primary: boolean }>>();
-  const addOwner = (code: string, owner: { kind: "term" | "candidate"; index: number; primary: boolean }) => {
+  type CodeOwner = {
+    kind: "term" | "candidate";
+    index: number;
+    primary: boolean;
+    category: string;
+    parentScope: string | null;
+  };
+  const owners = new Map<string, CodeOwner[]>();
+  const addOwner = (code: string, owner: CodeOwner) => {
     const current = owners.get(code) ?? [];
     current.push(owner);
     owners.set(code, current);
   };
   existingTerms.forEach((term, index) => {
-    if (term.shortcode) addOwner(term.shortcode.trim(), { kind: "term", index, primary: true });
+    const parentScope = term.parentId
+      ? existingTerms.find((candidate) => candidate.id === term.parentId)?.stableKey ?? term.parentId
+      : null;
+    if (term.shortcode) addOwner(term.shortcode.trim(), { kind: "term", index, primary: true, category: term.category, parentScope });
     if (Array.isArray(term.legacyCodes)) {
       term.legacyCodes
         .filter((code): code is string => typeof code === "string" && Boolean(code.trim()))
-        .forEach((code) => addOwner(code.trim(), { kind: "term", index, primary: false }));
+        .forEach((code) => addOwner(code.trim(), { kind: "term", index, primary: false, category: term.category, parentScope }));
     }
   });
   candidates.forEach((candidate, index) => {
@@ -637,6 +736,10 @@ export function detectImportConflicts(
       kind: "candidate",
       index,
       primary: code === shortcode,
+      category: typeof candidate.category === "string" ? candidate.category.trim() : "",
+      parentScope: typeof candidate.parentStableKey === "string"
+        ? candidate.parentStableKey.trim()
+        : typeof candidate.parentId === "string" ? candidate.parentId : null,
     }));
   });
   return candidates.map((candidate, index) => {
@@ -649,6 +752,27 @@ export function detectImportConflicts(
     if (typeof candidate.label !== "string" || !candidate.label.trim()) conflicts.push("missing_label");
     if (typeof candidate.shortcode !== "string" || !candidate.shortcode.trim()) conflicts.push("missing_shortcode");
     const shortcode = typeof candidate.shortcode === "string" ? candidate.shortcode.trim() : "";
+    const stableKey = typeof candidate.stableKey === "string" ? candidate.stableKey.trim() : "";
+    const existingStableIndex = stableKey
+      ? existingTerms.findIndex((term) => term.stableKey === stableKey)
+      : -1;
+    if (stableKey && candidates.some((other, otherIndex) =>
+      otherIndex !== index
+      && typeof other.stableKey === "string"
+      && other.stableKey.trim() === stableKey)) {
+      conflicts.push("duplicate_candidate_stable_key");
+    }
+    if (existingStableIndex >= 0) {
+      const existingStable = existingTerms[existingStableIndex];
+      const candidateParentScope = typeof candidate.parentStableKey === "string"
+        ? candidate.parentStableKey.trim()
+        : typeof candidate.parentId === "string" ? candidate.parentId : null;
+      const existingParentScope = existingStable.parentId
+        ? existingTerms.find((term) => term.id === existingStable.parentId)?.stableKey ?? existingStable.parentId
+        : null;
+      if (existingStable.category !== String(candidate.category ?? "").trim()) conflicts.push("stable_key_category_mismatch");
+      if (existingParentScope !== candidateParentScope) conflicts.push("stable_key_parent_mismatch");
+    }
     const codes = candidateCodes(candidate);
     const rawCodes = [
       shortcode,
@@ -661,23 +785,35 @@ export function detectImportConflicts(
     }
     for (const code of codes) {
       const codeOwners = owners.get(code) ?? [];
-      if (codeOwners.some((owner) => owner.kind === "term")) {
+      const stableScoped = typeof candidate.stableKey === "string" && Boolean(candidate.stableKey.trim());
+      const candidateParentScope = typeof candidate.parentStableKey === "string"
+        ? candidate.parentStableKey.trim()
+        : typeof candidate.parentId === "string" ? candidate.parentId : null;
+      const relevantOwners = codeOwners.filter((owner) => {
+        if (owner.kind === "term" && owner.index === existingStableIndex) return false;
+        if (!stableScoped || code !== shortcode || !owner.primary) return true;
+        return owner.category === String(candidate.category ?? "").trim() && owner.parentScope === candidateParentScope;
+      });
+      if (relevantOwners.some((owner) => owner.kind === "term")) {
         conflicts.push(
           code === shortcode
-          && codeOwners.some((owner) => owner.kind === "term" && owner.primary)
+          && relevantOwners.some((owner) => owner.kind === "term" && owner.primary)
             ? "existing_shortcode"
             : "existing_code",
         );
       }
-      if (codeOwners.some((owner) => owner.kind === "candidate" && owner.index !== index)) {
+      if (relevantOwners.some((owner) => owner.kind === "candidate" && owner.index !== index)) {
         conflicts.push("duplicate_candidate_code");
-        if (code === shortcode && codeOwners.some((owner) => owner.kind === "candidate" && owner.index !== index && owner.primary)) {
+        if (code === shortcode && relevantOwners.some((owner) => owner.kind === "candidate" && owner.index !== index && owner.primary)) {
           conflicts.push("duplicate_candidate_shortcode");
         }
       }
     }
     const label = typeof candidate.label === "string" ? candidate.label.trim() : "";
-    if (label && existingTerms.some((term) => term.label === label && term.category === String(candidate.category ?? "").trim())) {
+    if (label && existingTerms.some((term, termIndex) =>
+      termIndex !== existingStableIndex
+      && term.label === label
+      && term.category === String(candidate.category ?? "").trim())) {
       conflicts.push("existing_category_label");
     }
     const uniqueConflicts = [...new Set(conflicts)];
@@ -885,28 +1021,95 @@ async function validateImportPayload(
   if (typeof payload.label !== "string" || !payload.label.trim()) throw new GovernanceError("Candidate label is required");
   if (typeof payload.shortcode !== "string" || !payload.shortcode.trim()) throw new GovernanceError("Candidate shortcode is required");
   const shortcode = payload.shortcode.trim();
+  const stableKey = payload.stableKey === undefined || payload.stableKey === null || payload.stableKey === ""
+    ? null
+    : typeof payload.stableKey === "string" && payload.stableKey.trim()
+      ? payload.stableKey.trim()
+      : (() => { throw new GovernanceError("Candidate stableKey must be a non-empty string"); })();
   let parentId = payload.parentId === undefined || payload.parentId === null || payload.parentId === "" ? null : uuid(payload.parentId, "parentId");
+  if (!parentId && typeof payload.parentStableKey === "string" && payload.parentStableKey.trim()) {
+    const matches = await tx.select().from(taxonomyTerms).where(and(
+      eq(taxonomyTerms.versionId, versionId),
+      eq(taxonomyTerms.stableKey, payload.parentStableKey.trim()),
+    ));
+    if (matches.length !== 1) throw new GovernanceError(`Parent stableKey ${payload.parentStableKey} was not found uniquely`);
+    parentId = matches[0].id;
+  }
   if (!parentId && typeof payload.parentShortcode === "string" && payload.parentShortcode.trim()) {
-    const [parent] = await tx.select().from(taxonomyTerms).where(and(eq(taxonomyTerms.versionId, versionId), eq(taxonomyTerms.shortcode, payload.parentShortcode.trim())));
-    if (!parent) throw new GovernanceError(`Parent shortcode ${payload.parentShortcode} was not found`);
-    parentId = parent.id;
+    const parentShortcode = payload.parentShortcode.trim();
+    const expectedParentCategory = payload.category.trim() === "campaign_shortcode"
+      ? "product_line"
+      : payload.category.trim() === "subcampaign" ? "campaign_shortcode" : null;
+    const matches = (await tx.select().from(taxonomyTerms).where(and(
+      eq(taxonomyTerms.versionId, versionId),
+      eq(taxonomyTerms.shortcode, parentShortcode),
+    ))).filter((term: any) => !expectedParentCategory || term.category === expectedParentCategory);
+    if (!matches.length) {
+      throw new GovernanceError(
+        expectedParentCategory
+          ? `Parent shortcode ${parentShortcode} was not found in category ${expectedParentCategory}`
+          : `Parent shortcode ${parentShortcode} was not found`,
+      );
+    }
+    if (matches.length > 1) {
+      throw new GovernanceError(
+        `Parent shortcode ${parentShortcode} is ambiguous; supply parentStableKey or parentId`,
+        409,
+      );
+    }
+    parentId = matches[0].id;
   }
   if (parentId) await assertTermInVersion(tx, parentId, versionId, "parentId");
   const legacyCodes = Array.isArray(payload.legacyCodes)
     ? payload.legacyCodes.filter((value): value is string => typeof value === "string").map((value) => value.trim()).filter(Boolean)
     : [];
-  await assertNamespaceAvailable(tx, versionId, [shortcode, ...legacyCodes], undefined, candidateId);
+  const category = payload.category.trim();
+  await assertTaxonomyHierarchy(tx, versionId, category, parentId);
+  let existingStableTerm: typeof taxonomyTerms.$inferSelect | null = null;
+  if (stableKey) {
+    const matches = await tx.select().from(taxonomyTerms).where(and(
+      eq(taxonomyTerms.versionId, versionId),
+      eq(taxonomyTerms.stableKey, stableKey),
+    ));
+    existingStableTerm = matches[0] ?? null;
+    if (existingStableTerm && existingStableTerm.category !== category) {
+      throw new GovernanceError("A stableKey cannot change taxonomy category", 409);
+    }
+    if (existingStableTerm && existingStableTerm.parentId !== parentId) {
+      throw new GovernanceError("A stableKey cannot change taxonomy parent", 409);
+    }
+    const scopedCollision = (await termsForVersion(tx, versionId)).find((term: any) =>
+      term.id !== existingStableTerm?.id
+      && term.category === category
+      && term.parentId === parentId
+      && term.shortcode === shortcode);
+    if (scopedCollision) throw new GovernanceError("Candidate shortcode already exists under this taxonomy parent", 409);
+    await assertNamespaceAvailable(tx, versionId, legacyCodes, existingStableTerm?.id, candidateId);
+  } else {
+    await assertNamespaceAvailable(tx, versionId, [shortcode, ...legacyCodes], undefined, candidateId);
+  }
   const supersededBy = payload.supersededBy === undefined || payload.supersededBy === null || payload.supersededBy === ""
     ? null
     : uuid(payload.supersededBy, "supersededBy");
   if (supersededBy) await assertTermInVersion(tx, supersededBy, versionId, "supersededBy");
+  if (
+    payload.sourceMetadata !== undefined
+    && (!payload.sourceMetadata || typeof payload.sourceMetadata !== "object" || Array.isArray(payload.sourceMetadata))
+  ) {
+    throw new GovernanceError("Candidate sourceMetadata must be an object when supplied");
+  }
   return {
-    category: payload.category.trim(),
+    category,
     label: payload.label.trim(),
     shortcode,
+    stableKey,
     parentId,
     supersededBy,
     legacyCodes: [...new Set(legacyCodes)],
+    sourceMetadata: payload.sourceMetadata === undefined
+      ? undefined
+      : payload.sourceMetadata as Record<string, unknown>,
+    existingStableTerm,
   };
 }
 
@@ -930,18 +1133,48 @@ export async function commitImportBatch(
       }
       if (candidate.status !== "approved") continue;
       const validated = await validateImportPayload(tx, batch.versionId, candidate.payload, candidate.id);
-      const [term] = await tx
-        .insert(taxonomyTerms)
-        .values({
-          versionId: batch.versionId,
-          category: validated.category,
+      const beforeTerm = validated.existingStableTerm;
+      let term: typeof taxonomyTerms.$inferSelect;
+      let invalidatedApprovalCount = 0;
+      if (beforeTerm) {
+        const updateValues: Record<string, unknown> = {
           label: validated.label,
           shortcode: validated.shortcode,
-          parentId: validated.parentId,
           supersededBy: validated.supersededBy,
           legacyCodes: validated.legacyCodes,
-        })
-        .returning();
+          updatedAt: new Date(),
+        };
+        if (validated.sourceMetadata !== undefined) {
+          updateValues.sourceMetadata = validated.sourceMetadata;
+        }
+        [term] = await tx
+          .update(taxonomyTerms)
+          .set(updateValues)
+          .where(eq(taxonomyTerms.id, beforeTerm.id))
+          .returning();
+        const invalidatedApprovals = semanticTermChanged(beforeTerm, term)
+          ? await tx.delete(approvals).where(and(
+            inArray(approvals.recordType, ["taxonomyTerm", "taxonomy_term"]),
+            eq(approvals.recordId, term.id),
+          )).returning({ id: approvals.id })
+          : [];
+        invalidatedApprovalCount = invalidatedApprovals.length;
+      } else {
+        [term] = await tx
+          .insert(taxonomyTerms)
+          .values({
+            versionId: batch.versionId,
+            category: validated.category,
+            label: validated.label,
+            shortcode: validated.shortcode,
+            stableKey: validated.stableKey,
+            parentId: validated.parentId,
+            supersededBy: validated.supersededBy,
+            legacyCodes: validated.legacyCodes,
+            sourceMetadata: validated.sourceMetadata ?? {},
+          })
+          .returning();
+      }
       const [committedCandidate] = await tx
         .update(taxonomyImportCandidates)
         .set({ status: "committed", committedTermId: term.id, updatedAt: new Date() })
@@ -960,12 +1193,17 @@ export async function commitImportBatch(
       await insertAudit(tx, {
         entityType: "taxonomyTerm",
         entityId: term.id,
-        action: "import_commit",
+        action: beforeTerm ? "import_update" : "import_commit",
         actor,
         reason,
-        before: null,
+        before: beforeTerm ? termResponse(beforeTerm) : null,
         after: termResponse(term),
-        metadata: { batchId, candidateId: candidate.id, sourceKey: candidate.sourceKey },
+        metadata: {
+          batchId,
+          candidateId: candidate.id,
+          sourceKey: candidate.sourceKey,
+          invalidatedApprovalCount,
+        },
       });
       committed.push(term.id);
     }

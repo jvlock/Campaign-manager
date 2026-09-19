@@ -26,6 +26,7 @@ import {
   WebinarStandardValidationError,
   eligibilityForSession,
   ensureWebinarStandard,
+  setWebinarCommunicationChannel,
   patchStandard,
   standardForSession,
   triggerRegistrationConfirmation,
@@ -149,10 +150,11 @@ router.post("/campaigns/:id/webinars", async (req, res, next): Promise<void> => 
       return;
     }
     const row = await db.transaction(async (tx) => {
+      const { channel, ...sessionInput } = body;
       const [created] = await tx
         .insert(webinarSessions)
         .values({
-          ...body,
+          ...sessionInput,
           campaignId,
           recruitmentLaunchAt: new Date(body.recruitmentLaunchAt),
           templateVersion: DEFAULT_NEW_WEBINAR_TEMPLATE_VERSION,
@@ -160,6 +162,7 @@ router.post("/campaigns/:id/webinars", async (req, res, next): Promise<void> => 
         .returning();
       if (!created) throw new WebinarValidationError("Unable to create webinar session", 500);
        await ensureWebinarStandard(created, tx);
+      if (channel !== undefined) await setWebinarCommunicationChannel(created.id, channel, tx);
       await recomputeWebinarDeliveryAnchor({
         campaignId,
         activityId: created.activityId,
@@ -247,6 +250,7 @@ router.patch("/campaigns/:id/webinars/:sessionId", async (req, res, next): Promi
         });
       }
        await ensureWebinarStandard(updated, tx);
+      if (body.channel !== undefined) await setWebinarCommunicationChannel(updated.id, body.channel, tx);
       return updated;
     });
     res.json(sessionResponse(row));

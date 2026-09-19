@@ -22,6 +22,9 @@ import type {
 import type {
   Activity,
   ActivityInput,
+  ActivityModelCatalog,
+  ActivityNameRenderInput,
+  ActivityNameRenderResponse,
   ActivityTask,
   ActivityTaskInput,
   ActivityTaskSettings,
@@ -122,6 +125,159 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetActivityModelCatalogUrl = () => {
+
+
+
+
+  return `/api/activity-model/catalog`
+}
+
+export const getActivityModelCatalog = async ( options?: Parameters<typeof customFetch>[1]): Promise<ActivityModelCatalog> => {
+
+  return customFetch<ActivityModelCatalog>(getGetActivityModelCatalogUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetActivityModelCatalogQueryKey = () => {
+    return [
+    `/api/activity-model/catalog`
+    ] as const;
+    }
+
+
+export const getGetActivityModelCatalogQueryOptions = <TData = Awaited<ReturnType<typeof getActivityModelCatalog>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActivityModelCatalog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetActivityModelCatalogQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivityModelCatalog>>> = ({ signal }) => getActivityModelCatalog({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getActivityModelCatalog>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetActivityModelCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof getActivityModelCatalog>>>
+export type GetActivityModelCatalogQueryError = ErrorType<unknown>
+
+
+
+export function useGetActivityModelCatalog<TData = Awaited<ReturnType<typeof getActivityModelCatalog>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActivityModelCatalog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetActivityModelCatalogQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRenderActivityModelNameUrl = () => {
+
+
+
+
+  return `/api/activity-model/render-name`
+}
+
+export const renderActivityModelName = async (activityNameRenderInput: ActivityNameRenderInput, options?: Parameters<typeof customFetch>[1]): Promise<ActivityNameRenderResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ActivityNameRenderResponse>(getRenderActivityModelNameUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(activityNameRenderInput)
+  }
+);}
+
+
+
+
+
+export const getRenderActivityModelNameMutationKey = () => ['renderActivityModelName'] as const;
+
+export const getRenderActivityModelNameMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renderActivityModelName>>, TError,RenderActivityModelNameMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renderActivityModelName>>, TError,RenderActivityModelNameMutationVariables, TContext> => {
+
+const mutationKey = getRenderActivityModelNameMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renderActivityModelName>>, RenderActivityModelNameMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  renderActivityModelName(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenderActivityModelNameMutationResult = NonNullable<Awaited<ReturnType<typeof renderActivityModelName>>>
+    export type RenderActivityModelNameMutationBody = BodyType<ActivityNameRenderInput>
+    export type RenderActivityModelNameMutationError = ErrorType<unknown>
+    export type RenderActivityModelNameMutationVariables = {data: BodyType<ActivityNameRenderInput>}
+
+    export const useRenderActivityModelName = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renderActivityModelName>>, TError,RenderActivityModelNameMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renderActivityModelName>>,
+        TError,
+        RenderActivityModelNameMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRenderActivityModelNameMutationOptions(options));
+    }
 
 export const getGetTaskDefaultsUrl = () => {
 

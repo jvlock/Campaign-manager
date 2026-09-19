@@ -35,8 +35,21 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS taxonomy_terms_version_idx
   ON taxonomy_terms (version_id);
-CREATE UNIQUE INDEX IF NOT EXISTS taxonomy_terms_version_shortcode_uq
-  ON taxonomy_terms (version_id, shortcode);
+-- 0016 replaces this legacy global namespace with hierarchy-scoped indexes.
+-- The development migration runner replays every migration, so do not recreate
+-- the obsolete index after stable-key support has been installed.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'taxonomy_terms'
+      AND column_name = 'stable_key'
+  ) THEN
+    CREATE UNIQUE INDEX IF NOT EXISTS taxonomy_terms_version_shortcode_uq
+      ON taxonomy_terms (version_id, shortcode);
+  END IF;
+END $$;
 
 -- Approvals are one polymorphic table.  campaign_id is retained nullable as
 -- a compatibility column for old clients, but record_type/record_id are the

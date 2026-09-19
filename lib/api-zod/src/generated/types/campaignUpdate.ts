@@ -5,12 +5,14 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { CampaignInheritance } from './campaignInheritance';
 import type { CampaignUpdateStrategy } from './campaignUpdateStrategy';
 
 export interface CampaignUpdate {
   name?: string;
   lifecycle?: string;
   strategy?: CampaignUpdateStrategy;
+  inheritance?: CampaignInheritance;
   /** @minimum 1 */
   rowVersion: number;
 }

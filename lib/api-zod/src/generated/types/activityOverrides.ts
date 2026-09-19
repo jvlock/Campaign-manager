@@ -6,4 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type CampaignDetailInheritance = {[key: string]: string};
+export type ActivityOverrides = { [key: string]: unknown };

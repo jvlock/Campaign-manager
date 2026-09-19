@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import {
   activities,
@@ -28,6 +28,7 @@ import {
   type WebinarStandardVariant,
   type WebinarStandardVariantContent,
 } from "@workspace/db";
+import { GOVERNED_CHANNELS } from "./activity-model";
 
 export const standardKeys = STANDARD_WEBINAR_KEYS;
 
@@ -126,6 +127,10 @@ export const webinarSetupSchema = z.object({
     organization: z.string().optional(),
   })).default([]),
   recruitmentLaunchAt: z.string().datetime({ offset: true }),
+  channel: z.string().refine(
+    (value) => GOVERNED_CHANNELS.some((candidate) => candidate.id === value),
+    { message: "channel must be a canonical governed channel ID" },
+  ).nullable().optional(),
 }).strict();
 
 const variantSchema = z.object({
@@ -573,7 +578,7 @@ export async function ensureWebinarStandard(session: WebinarSession, executor: a
         campaignId: session.campaignId,
         audienceBranchId: audience.id,
         communicationType: "Email",
-        channel: "email",
+        channel: null,
         approvalStatus: "Not started",
         blockingDependencyTaskIds: [],
       }).onConflictDoNothing();
@@ -816,26 +821,29 @@ export async function ensureWebinarForActivity(
   setup: unknown,
   executor: any,
 ) {
-  if (activity.type.toLowerCase() !== "webinar") return null;
+  const activityType = activity.type.toLowerCase();
+  if (activityType !== "webinar" && activityType !== "events") return null;
   const [existing] = await executor.select().from(webinarSessions).where(and(eq(webinarSessions.campaignId, campaignId), eq(webinarSessions.activityId, activity.id)));
   if (!existing && setup === undefined) {
+    if (activityType === "events") return null;
     throw new WebinarStandardValidationError("webinarSetup with event date, time, timezone, and recruitmentLaunchAt is required when creating a Webinar activity");
   }
   let session = existing;
+  const parsedSetup = setup === undefined ? null : webinarSetupSchema.safeParse(setup);
+  if (parsedSetup && !parsedSetup.success) throw new WebinarStandardValidationError(parsedSetup.error.message);
   if (!session) {
-    const parsed = webinarSetupSchema.safeParse(setup);
-    if (!parsed.success) throw new WebinarStandardValidationError(parsed.error.message);
+    if (!parsedSetup || !parsedSetup.success) throw new WebinarStandardValidationError("webinarSetup is required");
     const [created] = await executor.insert(webinarSessions).values({
       campaignId,
       activityId: activity.id,
       name: activity.name,
-      sessionDate: parsed.data.eventDate,
-      startTime: parsed.data.eventTime,
-      durationMinutes: parsed.data.durationMinutes,
-      timezone: parsed.data.timezone,
-      platform: parsed.data.platform,
-      speakers: parsed.data.speakers,
-       recruitmentLaunchAt: new Date(parsed.data.recruitmentLaunchAt),
+      sessionDate: parsedSetup.data.eventDate,
+      startTime: parsedSetup.data.eventTime,
+      durationMinutes: parsedSetup.data.durationMinutes,
+      timezone: parsedSetup.data.timezone,
+      platform: parsedSetup.data.platform,
+      speakers: parsedSetup.data.speakers,
+       recruitmentLaunchAt: new Date(parsedSetup.data.recruitmentLaunchAt),
        templateVersion: DEFAULT_NEW_WEBINAR_TEMPLATE_VERSION,
       registrationRule: { suppressRecruitmentAfterRegistration: true, registeredBranch: "registered", attendedBranch: "attended", noShowBranch: "no_show" },
     }).returning();
@@ -843,7 +851,31 @@ export async function ensureWebinarForActivity(
   }
   if (!session) throw new WebinarStandardValidationError("Unable to initialize webinar session", 500);
   await ensureWebinarStandard(session, executor);
+  if (parsedSetup?.success && parsedSetup.data.channel !== undefined) {
+    await setWebinarCommunicationChannel(session.id, parsedSetup.data.channel, executor);
+  }
   return session;
+}
+
+export async function setWebinarCommunicationChannel(
+  sessionId: string,
+  channel: string | null,
+  executor: any = db,
+) {
+  if (channel !== null && !GOVERNED_CHANNELS.some((candidate) => candidate.id === channel)) {
+    throw new WebinarStandardValidationError("channel must be a canonical governed channel ID");
+  }
+  const standardRows = await executor.select({ communicationId: webinarStandardCommunications.communicationId })
+    .from(webinarStandardCommunications)
+    .where(eq(webinarStandardCommunications.sessionId, sessionId));
+  const communicationIds = standardRows.flatMap((row: { communicationId: string | null }) =>
+    row.communicationId ? [row.communicationId] : []);
+  if (communicationIds.length) {
+    await executor.update(communicationDetails).set({
+      channel,
+      updatedAt: new Date(),
+    }).where(inArray(communicationDetails.communicationId, communicationIds));
+  }
 }
 
 export function contentValidation(

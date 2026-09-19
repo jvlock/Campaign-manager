@@ -127,6 +127,10 @@ test("activity POST provisions exactly five standard rows and replay map is idem
    assert.equal(new Set(standardRows.map((row) => row.key)).size, 5);
    assert.equal(new Set(standardRows.map((row) => row.communicationId)).size, 5);
    assert.equal((await db.select().from(communications).where(eq(communications.campaignId, createdCampaign.id))).length, 5);
+  const automaticDetails = await db.select().from(communicationDetails)
+    .where(eq(communicationDetails.campaignId, createdCampaign.id));
+  assert.equal(automaticDetails.length, 5);
+  assert.ok(automaticDetails.every((detail) => detail.channel === null));
   const standardConfig = await db.select().from(webinarStandardConfigs).where(eq(webinarStandardConfigs.sessionId, session.id));
   assert.equal(standardConfig.length, 1);
 
@@ -188,6 +192,7 @@ test("session POST persists the five-message default and draft copy", async () =
       speakers: setup.speakers,
       recruitmentLaunchAt: setup.recruitmentLaunchAt,
       registrationRule: { suppressRecruitmentAfterRegistration: true },
+       channel: "eml",
     }),
   });
   assert.equal(response.status, 201);
@@ -196,6 +201,9 @@ test("session POST persists the five-message default and draft copy", async () =
    const [sessionRecord] = await db.select().from(webinarSessions).where(eq(webinarSessions.id, session.id));
    assert.equal(sessionRecord.templateVersion, "default_5");
    assert.equal(rows.length, 5);
+  const explicitDetails = await db.select().from(communicationDetails)
+    .where(eq(communicationDetails.campaignId, createdCampaign.id));
+  assert.ok(explicitDetails.every((detail) => detail.channel === "eml"));
   assert.ok(rows.every((row) => row.status === "DRAFT"));
    assert.deepEqual(rows.map((row) => row.key), defaultFiveKeys);
 

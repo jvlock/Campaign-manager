@@ -9,6 +9,12 @@ Do not claim verified parity with the Campaign Governance Foundation compiler or
 
 **How to apply:** Describe the implementation as specification-based. If authentic Foundation files arrive later, compare behavior and tests before making a parity claim.
 
+The same provenance boundary applies to the channel and activity configuration catalog, including the activity naming renderer.
+
+**Why:** The user supplied exact IDs, templates, options, and inheritance rules but the Foundation source/schema remained unavailable. Exact conformance tests against those supplied definitions are not proof of a source-code migration.
+
+**How to apply:** Distinguish verified local behavior from external source parity in reports and future migrations.
+
 Legacy category labels and locally assigned seed codes are not evidence of approved UTM conventions.
 
 **Why:** The user requires exact category keys distinct from similarly named legacy categories, and explicitly separated category registration from later value population.

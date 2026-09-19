@@ -1,13 +1,16 @@
 import { useRoute, useLocation, useSearch } from 'wouter';
-import { useGetCampaign, getGetCampaignQueryKey } from '@workspace/api-client-react';
+import { useGetCampaign, useUpdateCampaign, getGetCampaignQueryKey } from '@workspace/api-client-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, Share, Download, Settings, Play } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, ArrowLeft, Share, Download, Play, Save, CheckCircle2 } from 'lucide-react';
 import { Link } from 'wouter';
 import EngagementMap from '@/components/map/EngagementMap';
 import CampaignDeliveryTab from './CampaignDeliveryTab';
-import { format } from 'date-fns';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function CampaignDetail() {
   const [match, params] = useRoute('/campaigns/:id');
@@ -23,6 +26,32 @@ export default function CampaignDetail() {
   const activityFromUrl = searchParams.get('activity');
 
   const [activeTab, setActiveTab] = useState(tabFromUrl);
+  const updateCampaign = useUpdateCampaign();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const [strategyDraft, setStrategyDraft] = useState<Record<string, string>>({});
+  const [inheritanceDraft, setInheritanceDraft] = useState<Record<string, string>>({});
+  const [isSavingStrategy, setIsSavingStrategy] = useState(false);
+  const strategyInitializedForId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (campaign && campaign.id !== strategyInitializedForId.current) {
+      setStrategyDraft(campaign.strategy as Record<string, string> || {});
+      const inherited = (campaign.inheritance || {}) as Record<string, unknown>;
+      setInheritanceDraft({
+        deliveryStartDate: String(inherited.deliveryStartDate ?? ''),
+        deliveryEndDate: String(inherited.deliveryEndDate ?? ''),
+        productValueIds: Array.isArray(inherited.productValueIds) ? inherited.productValueIds.join(', ') : '',
+        owner: String(inherited.owner ?? ''),
+        region: String(inherited.region ?? ''),
+        language: String(inherited.language ?? ''),
+        primaryCta: String(inherited.primaryCta ?? ''),
+        landingDestination: String(inherited.landingDestination ?? ''),
+      });
+      strategyInitializedForId.current = campaign.id;
+    }
+  }, [campaign]);
 
   useEffect(() => {
     if (tabFromUrl && tabFromUrl !== activeTab) {
@@ -35,6 +64,40 @@ export default function CampaignDetail() {
     const params = new URLSearchParams(search);
     params.set('tab', val);
     setLocation(`/campaigns/${id}?${params.toString()}`);
+  };
+
+  const saveStrategy = () => {
+    if (!campaign) return;
+    setIsSavingStrategy(true);
+    updateCampaign.mutate({
+      id: campaign.id,
+      data: {
+        rowVersion: Number((campaign as any).rowVersion ?? 1),
+        strategy: strategyDraft,
+        inheritance: {
+          deliveryStartDate: inheritanceDraft.deliveryStartDate || null,
+          deliveryEndDate: inheritanceDraft.deliveryEndDate || null,
+          productValueIds: inheritanceDraft.productValueIds
+            ? inheritanceDraft.productValueIds.split(/[,\n]/).map((value) => value.trim()).filter(Boolean)
+            : null,
+          owner: inheritanceDraft.owner || null,
+          region: inheritanceDraft.region || null,
+          language: inheritanceDraft.language || null,
+          primaryCta: inheritanceDraft.primaryCta || null,
+          landingDestination: inheritanceDraft.landingDestination || null,
+        }
+      }
+    }, {
+      onSuccess: () => {
+        setIsSavingStrategy(false);
+        queryClient.invalidateQueries({ queryKey: getGetCampaignQueryKey(campaign.id) });
+        toast({ title: 'Strategy saved' });
+      },
+      onError: (err) => {
+        setIsSavingStrategy(false);
+        toast({ title: 'Failed to save strategy', variant: 'destructive' });
+      }
+    });
   };
 
   if (!id || id === 'new') return null;
@@ -129,9 +192,16 @@ export default function CampaignDetail() {
         </div>
 
         <div className="flex-1 overflow-auto bg-muted/20 relative">
-          <TabsContent value="strategy" className="m-0 h-full p-6 max-w-4xl mx-auto space-y-8">
+          <TabsContent value="strategy" className="m-0 h-full p-6 max-w-4xl mx-auto space-y-8 overflow-y-auto pb-20">
             <div className="space-y-6">
-               <h2 className="text-xl font-semibold">Strategic Brief</h2>
+               <div className="flex items-center justify-between">
+                 <h2 className="text-xl font-semibold">Strategic Brief</h2>
+                 <Button onClick={saveStrategy} disabled={isSavingStrategy || !campaign}>
+                   {isSavingStrategy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                   Save Strategy
+                 </Button>
+               </div>
+
                <div className="grid gap-6 md:grid-cols-2">
                  <div className="space-y-1">
                    <h3 className="text-sm font-medium text-muted-foreground">Outcome</h3>
@@ -140,6 +210,61 @@ export default function CampaignDetail() {
                  <div className="space-y-1">
                    <h3 className="text-sm font-medium text-muted-foreground">Target Audience</h3>
                    <p className="text-base">{campaign.audience}</p>
+                 </div>
+               </div>
+
+               <div className="pt-6 border-t border-border space-y-6">
+                 <h3 className="text-lg font-medium">Campaign Defaults</h3>
+                 <p className="text-sm text-muted-foreground">
+                    Activities inherit these governed defaults unless an activity explicitly overrides or clears a value.
+                 </p>
+
+                 <div className="grid gap-4 sm:grid-cols-2">
+                   <div className="space-y-2">
+                      <Label>Delivery start date</Label>
+                      <Input
+                        type="date"
+                        value={inheritanceDraft.deliveryStartDate || ''}
+                        onChange={(e) => setInheritanceDraft((draft) => ({ ...draft, deliveryStartDate: e.target.value }))}
+                     />
+                   </div>
+                   <div className="space-y-2">
+                      <Label>Delivery end date</Label>
+                      <Input
+                        type="date"
+                        value={inheritanceDraft.deliveryEndDate || ''}
+                        onChange={(e) => setInheritanceDraft((draft) => ({ ...draft, deliveryEndDate: e.target.value }))}
+                     />
+                   </div>
+                   <div className="space-y-2">
+                      <Label>Product value IDs</Label>
+                      <Input
+                        value={inheritanceDraft.productValueIds || ''}
+                        onChange={(e) => setInheritanceDraft((draft) => ({ ...draft, productValueIds: e.target.value }))}
+                        placeholder="Comma-separated IDs"
+                     />
+                   </div>
+                   <div className="space-y-2">
+                      <Label>Owner</Label>
+                      <Input
+                        value={inheritanceDraft.owner || ''}
+                        onChange={(e) => setInheritanceDraft((draft) => ({ ...draft, owner: e.target.value }))}
+                     />
+                   </div>
+                    {[
+                      ['region', 'Region'],
+                      ['language', 'Language'],
+                      ['primaryCta', 'Primary CTA'],
+                      ['landingDestination', 'Landing destination'],
+                    ].map(([key, label]) => (
+                      <div key={key} className="space-y-2">
+                        <Label>{label}</Label>
+                        <Input
+                          value={inheritanceDraft[key] || ''}
+                          onChange={(event) => setInheritanceDraft((draft) => ({ ...draft, [key]: event.target.value }))}
+                        />
+                      </div>
+                    ))}
                  </div>
                </div>
             </div>

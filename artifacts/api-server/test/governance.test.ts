@@ -43,7 +43,6 @@ before(async () => {
 
 after(async () => {
   server.close();
-  await db.delete(governanceAuditEvents).where(eq(governanceAuditEvents.entityId, versionId));
   const batches = await db.select({ id: taxonomyImportBatches.id }).from(taxonomyImportBatches).where(eq(taxonomyImportBatches.versionId, versionId));
   if (batches.length) {
     const batchIds = batches.map((batch) => batch.id);
@@ -53,13 +52,21 @@ after(async () => {
   const terms = await db.select({ id: taxonomyTerms.id }).from(taxonomyTerms).where(eq(taxonomyTerms.versionId, versionId));
   if (terms.length) {
     const termIds = terms.map((term) => term.id);
-    await db.update(taxonomyTerms).set({ parentId: null, supersededBy: null }).where(inArray(taxonomyTerms.id, termIds));
+    await db.delete(approvals).where(inArray(approvals.recordId, termIds));
+    await db.update(taxonomyTerms).set({ supersededBy: null }).where(inArray(taxonomyTerms.id, termIds));
     await db.delete(governanceAuditEvents).where(inArray(governanceAuditEvents.entityId, termIds));
-    await db.delete(taxonomyTerms).where(inArray(taxonomyTerms.id, termIds));
+    for (const category of ["subcampaign", "campaign_shortcode", "product_line"]) {
+      await db.delete(taxonomyTerms).where(and(
+        eq(taxonomyTerms.versionId, versionId),
+        eq(taxonomyTerms.category, category),
+      ));
+    }
+    await db.delete(taxonomyTerms).where(eq(taxonomyTerms.versionId, versionId));
   }
   await db.delete(approvals).where(and(eq(approvals.recordType, "campaign"), eq(approvals.recordId, campaignId)));
   await db.delete(campaigns).where(eq(campaigns.id, campaignId));
   await db.delete(taxonomyVersions).where(eq(taxonomyVersions.id, versionId));
+  await db.delete(governanceAuditEvents).where(eq(governanceAuditEvents.actor, "governance-test"));
 });
 
 test("legacy shortcode resolution follows a rename and records snapshots", async () => {
@@ -77,6 +84,13 @@ test("legacy shortcode resolution follows a rename and records snapshots", async
   });
   assert.equal(create.status, 201);
   const term = await create.json();
+  await db.insert(approvals).values({
+    recordType: "taxonomyTerm",
+    recordId: term.id,
+    stage: "Governance",
+    status: "approved",
+    approver: "governance-test",
+  });
   const rename = await fetch(`${baseUrl}/governance/terms/${term.id}/rename`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -88,6 +102,7 @@ test("legacy shortcode resolution follows a rename and records snapshots", async
     }),
   });
   assert.equal(rename.status, 200);
+  assert.equal((await db.select().from(approvals).where(eq(approvals.recordId, term.id))).length, 0);
   const resolved = await fetch(`${baseUrl}/governance/terms/resolve?versionId=${versionId}&code=EMAIL_OLD`);
   assert.equal(resolved.status, 200);
   assert.equal((await resolved.json()).resolved.shortcode, "EMAIL_CURRENT");
@@ -127,6 +142,20 @@ test("import staging exposes conflicts and committed candidates are idempotent",
   );
   assert.ok(namespaceConflicts[1].conflicts.includes("duplicate_candidate_code"));
   assert.ok(namespaceConflicts[2].conflicts.includes("existing_code"));
+  const hierarchyScoped = detectImportConflicts(
+    [
+      {
+        category: "campaign_shortcode", label: "Business as Usual", shortcode: "bau",
+        stableKey: "campaign_shortcode:a:bau", parentStableKey: "product_line:a",
+      },
+      {
+        category: "campaign_shortcode", label: "Business as Usual", shortcode: "bau",
+        stableKey: "campaign_shortcode:b:bau", parentStableKey: "product_line:b",
+      },
+    ],
+    [],
+  );
+  assert.ok(hierarchyScoped.every((candidate) => candidate.status === "staged"));
 
   const firstBatch = await fetch(`${baseUrl}/governance/imports`, {
     method: "POST",
@@ -208,6 +237,146 @@ test("import staging exposes conflicts and committed candidates are idempotent",
   const candidateAudits = await db.select().from(governanceAuditEvents).where(eq(governanceAuditEvents.entityId, candidate.id));
   assert.ok(candidateAudits.some((event) => event.action === "review"));
   assert.ok(candidateAudits.some((event) => event.action === "commit"));
+});
+
+test("stable-key import replay preserves UUID and stable identity", async () => {
+  const stableKey = `test:channel:${Date.now()}`;
+  const importAndCommit = async (suffix: string, label: string, extra: Record<string, unknown> = {}) => {
+    const staged = await fetch(`${baseUrl}/governance/imports`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        actor: "governance-test",
+        reason: `Stage stable-key replay ${suffix}`,
+        versionId,
+        sourceName: `stable-key-${suffix}`,
+        idempotencyKey: `governance-stable-${stableKey}-${suffix}`,
+        candidates: [{
+          sourceKey: stableKey,
+          stableKey,
+          category: "channel",
+          label,
+          shortcode: "STABLE_CHANNEL",
+          ...extra,
+        }],
+      }),
+    });
+    assert.equal(staged.status, 201);
+    const body = await staged.json();
+    assert.equal(body.candidates[0].status, "staged");
+    const reviewed = await fetch(`${baseUrl}/governance/imports/${body.batch.id}/candidates/${body.candidates[0].id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ actor: "governance-test", reason: "Approve isolated stable-key fixture", status: "approved" }),
+    });
+    assert.equal(reviewed.status, 200);
+    const committed = await fetch(`${baseUrl}/governance/imports/${body.batch.id}/commit`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ actor: "governance-test", reason: "Commit isolated stable-key fixture" }),
+    });
+    assert.equal(committed.status, 200);
+    return (await committed.json()).committedTermIds[0] as string;
+  };
+
+  const firstId = await importAndCommit("first", "Stable Channel", {
+    sourceMetadata: { suppliedBy: "governance-test" },
+  });
+  const replayId = await importAndCommit("replay", "Stable Channel Updated");
+  assert.equal(replayId, firstId);
+  const [term] = await db.select().from(taxonomyTerms).where(eq(taxonomyTerms.id, firstId));
+  assert.equal(term.stableKey, stableKey);
+  assert.equal(term.label, "Stable Channel Updated");
+  assert.deepEqual(term.sourceMetadata, { suppliedBy: "governance-test" });
+
+  await db.insert(approvals).values({
+    recordType: "taxonomyTerm",
+    recordId: firstId,
+    stage: "Governance",
+    status: "approved",
+    approver: "governance-test",
+  });
+  await importAndCommit("legacy-alias", "Stable Channel Updated", { legacyCodes: ["STABLE_CHANNEL_OLD"] });
+  assert.equal((await db.select().from(approvals).where(eq(approvals.recordId, firstId))).length, 0);
+
+  const [supersessionTarget] = await db.insert(taxonomyTerms).values({
+    versionId,
+    category: "channel",
+    label: "Stable Channel Replacement",
+    shortcode: "STABLE_CHANNEL_REPLACEMENT",
+  }).returning();
+  await db.insert(approvals).values({
+    recordType: "taxonomyTerm",
+    recordId: firstId,
+    stage: "Governance",
+    status: "approved",
+    approver: "governance-test",
+  });
+  await importAndCommit("supersession", "Stable Channel Updated", {
+    legacyCodes: ["STABLE_CHANNEL_OLD"],
+    supersededBy: supersessionTarget.id,
+  });
+  assert.equal((await db.select().from(approvals).where(eq(approvals.recordId, firstId))).length, 0);
+
+  const resolution = await fetch(`${baseUrl}/governance/terms/resolve?versionId=${versionId}&code=${encodeURIComponent(stableKey)}`);
+  assert.equal(resolution.status, 200);
+  const resolutionBody = await resolution.json();
+  assert.equal(resolutionBody.chain[0].id, firstId);
+  assert.equal(resolutionBody.resolved.id, supersessionTarget.id);
+
+  const identityChange = await fetch(`${baseUrl}/governance/terms/${firstId}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      actor: "governance-test",
+      reason: "Verify stable identity cannot change",
+      stableKey: `${stableKey}:changed`,
+    }),
+  });
+  assert.equal(identityChange.status, 409);
+});
+
+test("import rejects an ambiguous parent shortcode instead of choosing arbitrarily", async () => {
+  const [productA, productB] = await db.insert(taxonomyTerms).values([
+    { versionId, category: "product_line", label: "Product A", shortcode: "PRODUCT_A" },
+    { versionId, category: "product_line", label: "Product B", shortcode: "PRODUCT_B" },
+  ]).returning();
+  await db.insert(taxonomyTerms).values([
+    { versionId, category: "campaign_shortcode", label: "BAU A", shortcode: "AMBIGUOUS_BAU", parentId: productA.id },
+    { versionId, category: "campaign_shortcode", label: "BAU B", shortcode: "AMBIGUOUS_BAU", parentId: productB.id },
+  ]);
+  const staged = await fetch(`${baseUrl}/governance/imports`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      actor: "governance-test",
+      reason: "Verify ambiguous parent rejection",
+      versionId,
+      sourceName: "ambiguous-parent-test",
+      candidates: [{
+        sourceKey: "ambiguous-child",
+        stableKey: "test:ambiguous-child",
+        category: "subcampaign",
+        label: "Ambiguous Child",
+        shortcode: "AMBIGUOUS_CHILD",
+        parentShortcode: "AMBIGUOUS_BAU",
+      }],
+    }),
+  });
+  assert.equal(staged.status, 201);
+  const body = await staged.json();
+  await fetch(`${baseUrl}/governance/imports/${body.batch.id}/candidates/${body.candidates[0].id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ actor: "governance-test", reason: "Approve ambiguity fixture", status: "approved" }),
+  });
+  const committed = await fetch(`${baseUrl}/governance/imports/${body.batch.id}/commit`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ actor: "governance-test", reason: "Parent resolution must reject ambiguity" }),
+  });
+  assert.equal(committed.status, 409);
+  assert.match((await committed.json()).error, /ambiguous.*parentStableKey or parentId/i);
 });
 
 test("polymorphic approvals validate target record types", async () => {

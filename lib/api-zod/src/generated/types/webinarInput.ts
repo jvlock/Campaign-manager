@@ -5,6 +5,7 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { GovernedChannelId } from './governedChannelId';
 import type { RegistrationRule } from './registrationRule';
 import type { Speaker } from './speaker';
 
@@ -24,4 +25,6 @@ export interface WebinarInput {
   speakers?: Speaker[];
   registrationRule?: RegistrationRule;
   recruitmentLaunchAt: Date;
+  /** Optional explicit canonical channel; omission leaves generated communications unassigned */
+  channel?: GovernedChannelId | null;
 }

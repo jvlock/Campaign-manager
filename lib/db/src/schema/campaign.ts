@@ -32,6 +32,12 @@ export const activities = pgTable("activities", {
   audience: text("audience").notNull(), region: text("region").notNull(), timing: text("timing").notNull(),
   status: text("status").notNull(), owner: text("owner").notNull(), conflict: boolean("conflict").default(false).notNull(),
   decisionStatus: text("decision_status").default("Estimated").notNull(), x: numeric("x").notNull(), y: numeric("y").notNull(),
+  activityTypeId: text("activity_type_id"),
+  activityAnswers: jsonb("activity_answers").$type<Record<string, unknown>>().default({}).notNull(),
+  activityOverrides: jsonb("activity_overrides").$type<Record<string, unknown>>().default({}).notNull(),
+  generatedName: text("generated_name"),
+  namingInput: text("naming_input"),
+  effectiveInheritance: jsonb("effective_inheritance").$type<Record<string, unknown>>().default({}).notNull(),
   rowVersion: integer("row_version").default(1).notNull(), ...audit,
 }, (table) => ({
   idCampaignUnique: unique("activities_id_campaign_unique").on(table.id, table.campaignId),

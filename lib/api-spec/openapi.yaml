@@ -14,6 +14,31 @@ tags:
   - name: portfolio
   - name: governance
 paths:
+  /activity-model/catalog:
+    get:
+      operationId: getActivityModelCatalog
+      tags: [governance]
+      responses:
+        "200":
+          description: Canonical governed channel and activity-type catalog
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ActivityModelCatalog"}
+  /activity-model/render-name:
+    post:
+      operationId: renderActivityModelName
+      tags: [governance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ActivityNameRenderInput"}
+      responses:
+        "200":
+          description: Exact rendered activity name
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ActivityNameRenderResponse"}
   /task-defaults:
     get:
       operationId: getTaskDefaults
@@ -1124,7 +1149,24 @@ components:
         name: {type: string}
         lifecycle: {type: string}
         strategy: {type: object, additionalProperties: true}
+        inheritance: {$ref: "#/components/schemas/CampaignInheritance"}
         rowVersion: {type: integer, minimum: 1}
+    CampaignInheritance:
+      type: object
+      additionalProperties: false
+      properties:
+        deliveryStartDate: {type: [string, "null"], format: date}
+        deliveryEndDate: {type: [string, "null"], format: date}
+        productValueIds:
+          oneOf:
+            - type: array
+              items: {type: string}
+            - type: "null"
+        owner: {type: [string, "null"]}
+        region: {type: [string, "null"]}
+        language: {type: [string, "null"]}
+        primaryCta: {type: [string, "null"]}
+        landingDestination: {type: [string, "null"]}
     CampaignDetail:
       allOf:
         - {$ref: "#/components/schemas/CampaignSummary"}
@@ -1136,7 +1178,7 @@ components:
             utmLinks:
               type: array
               items: {$ref: "#/components/schemas/UtmLink"}
-            inheritance: {type: object, additionalProperties: {type: string}}
+            inheritance: {$ref: "#/components/schemas/CampaignInheritance"}
             communications:
               type: array
               items: {$ref: "#/components/schemas/Communication"}
@@ -1166,12 +1208,21 @@ components:
         rowVersion: {type: integer, minimum: 1}
         position: {$ref: "#/components/schemas/Position"}
         webinarSetup: {$ref: "#/components/schemas/WebinarSetup"}
+        activityTypeId: {type: [string, "null"]}
+        answers: {type: object, additionalProperties: true}
+        overrides: {type: object, additionalProperties: true}
+        generatedName: {type: [string, "null"]}
+        namingInput: {type: [string, "null"]}
+        effectiveInheritance: {type: object, additionalProperties: true}
     ActivityInput:
       type: object
-      required: [name, type, audience, region, timing, status, owner, position]
+      required: [activityTypeId, answers, audience, region, timing, status, owner, position]
+      additionalProperties: false
       properties:
         name: {type: string}
-        type: {type: string}
+        activityTypeId: {type: string}
+        answers: {type: object, additionalProperties: true}
+        overrides: {type: object, additionalProperties: true}
         audience: {type: string}
         region: {type: string}
         timing: {type: string}
@@ -1180,6 +1231,50 @@ components:
         rowVersion: {type: integer, minimum: 1}
         position: {$ref: "#/components/schemas/Position"}
         webinarSetup: {$ref: "#/components/schemas/WebinarSetup"}
+    GovernedChannel:
+      type: object
+      required: [id, displayName, type]
+      properties:
+        id: {$ref: "#/components/schemas/GovernedChannelId"}
+        displayName: {type: string}
+        type: {type: string, enum: [paid, organic, email, event, app]}
+    GovernedChannelId:
+      type: string
+      enum: [psg, psl, disp, orglin, adv, eml, emlc, emlp, evlv, evind, evvrt, app, mcp]
+    ActivityRequiredField:
+      type: object
+      required: [key]
+      properties:
+        key: {type: string}
+        options: {type: array, items: {type: string}}
+    ActivityTypeConfiguration:
+      type: object
+      required: [id, displayName, namingTemplate, requiredFields, allowedOverrides]
+      properties:
+        id: {type: string}
+        displayName: {type: string}
+        namingTemplate: {type: string}
+        requiredFields: {type: array, items: {$ref: "#/components/schemas/ActivityRequiredField"}}
+        allowedOverrides: {type: array, items: {type: string}}
+    ActivityModelCatalog:
+      type: object
+      required: [channels, activityTypes]
+      properties:
+        channels: {type: array, items: {$ref: "#/components/schemas/GovernedChannel"}}
+        activityTypes: {type: array, items: {$ref: "#/components/schemas/ActivityTypeConfiguration"}}
+    ActivityNameRenderInput:
+      type: object
+      required: [template, builtins, answers]
+      additionalProperties: false
+      properties:
+        template: {type: string}
+        builtins: {type: object, additionalProperties: true}
+        answers: {type: object, additionalProperties: true}
+    ActivityNameRenderResponse:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
     DeliveryStatus:
       type: string
       enum: [Known, Estimated, Decision needed, Not applicable, Confirmed]
@@ -1201,7 +1296,7 @@ components:
         owner: {type: string, default: Campaign team}
         audienceBranchId: {type: string, format: uuid}
         communicationType: {type: string}
-        channel: {type: string}
+        channel: {type: [string, "null"], description: Canonical ID, unassigned, or preserved historical value}
         approvalStatus: {type: string}
         qaAudienceConfirmed: {type: boolean}
         qaContentApproved: {type: boolean}
@@ -1242,7 +1337,7 @@ components:
         owner: {type: string, default: Campaign team}
         audienceBranchId: {type: string, format: uuid}
         communicationType: {type: string}
-        channel: {type: string}
+        channel: {type: [string, "null"], description: Canonical governed channel ID or unassigned; validated by the backend}
         approvalStatus: {type: string}
         qaAudienceConfirmed: {type: boolean}
         qaContentApproved: {type: boolean}
@@ -1267,7 +1362,7 @@ components:
         owner: {type: string}
         audienceBranchId: {type: string, format: uuid}
         communicationType: {type: string}
-        channel: {type: string}
+        channel: {type: [string, "null"], description: Canonical governed channel ID or unassigned; validated by the backend}
         approvalStatus: {type: string}
         qaAudienceConfirmed: {type: boolean}
         qaContentApproved: {type: boolean}
@@ -1391,7 +1486,7 @@ components:
       properties:
         audienceBranchId: {type: string, format: uuid}
         communicationType: {type: string}
-        channel: {type: string}
+        channel: {type: [string, "null"], description: Canonical governed channel ID or unassigned}
         approvalStatus: {type: string}
         qaAudienceConfirmed: {type: boolean}
         qaContentApproved: {type: boolean}
@@ -1410,7 +1505,7 @@ components:
       properties:
         audienceBranchId: {type: string, format: uuid}
         communicationType: {type: string}
-        channel: {type: string}
+        channel: {type: [string, "null"], description: Canonical governed channel ID or unassigned; validated by the backend}
         approvalStatus: {type: string}
         qaAudienceConfirmed: {type: boolean}
         qaContentApproved: {type: boolean}
@@ -1764,6 +1859,11 @@ components:
           default: []
         registrationRule: {$ref: "#/components/schemas/RegistrationRule"}
         recruitmentLaunchAt: {type: string, format: date-time}
+        channel:
+          oneOf:
+            - {$ref: "#/components/schemas/GovernedChannelId"}
+            - type: "null"
+          description: Optional explicit canonical channel; omission leaves generated communications unassigned
     WebinarSetup:
       type: object
       description: Required only when creating or converting a Webinar activity.
@@ -1779,6 +1879,11 @@ components:
           items: {$ref: "#/components/schemas/Speaker"}
           default: []
         recruitmentLaunchAt: {type: string, format: date-time, description: Webinar campaign launch instant}
+        channel:
+          oneOf:
+            - {$ref: "#/components/schemas/GovernedChannelId"}
+            - type: "null"
+          description: Optional explicit canonical channel; omission leaves generated communications unassigned
     WebinarUpdate:
       type: object
       description: Partial update; every property is optional.
@@ -1795,6 +1900,10 @@ components:
           items: {$ref: "#/components/schemas/Speaker"}
         registrationRule: {$ref: "#/components/schemas/RegistrationRule"}
         recruitmentLaunchAt: {type: string, format: date-time}
+        channel:
+          oneOf:
+            - {$ref: "#/components/schemas/GovernedChannelId"}
+            - type: "null"
     WebinarPerson:
       type: object
       required: [id, campaignId, audienceBranchId, name, isSynthetic]
@@ -2068,21 +2177,21 @@ components:
         reason: {type: string, minLength: 1}
     TaxonomyTerm:
       type: object
-      required: [id, versionId, category, label, shortcode, legacyCodes, isDeprecated]
+      required: [id, versionId, category, label, shortcode, stableKey, legacyCodes, sourceMetadata, isDeprecated]
       properties:
         id: {type: string, format: uuid}
         versionId: {type: string, format: uuid}
         category: {type: string}
         label: {type: string}
         shortcode: {type: string}
+        stableKey: {type: string, nullable: true}
         parentId: {type: string, format: uuid, nullable: true}
         supersededBy: {type: string, format: uuid, nullable: true}
         legacyCodes:
           type: array
           items: {type: string}
-        source: {type: string, nullable: true}
-        sourceCodeProvenance:
-          type: [object, "null"]
+        sourceMetadata:
+          type: object
           additionalProperties: true
         isDeprecated: {type: boolean}
         deprecatedAt: {type: string, format: date-time, nullable: true}
@@ -2111,6 +2220,7 @@ components:
             category: {type: string}
             label: {type: string}
             shortcode: {type: string}
+            stableKey: {type: string, nullable: true}
             parentId: {type: string, format: uuid, nullable: true}
             supersededBy: {type: string, format: uuid, nullable: true}
             legacyCodes:

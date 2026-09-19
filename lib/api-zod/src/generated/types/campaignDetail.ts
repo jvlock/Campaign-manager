@@ -6,8 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ActivityTask } from './activityTask';
-import type { CampaignDetailInheritance } from './campaignDetailInheritance';
 import type { CampaignDetailStrategy } from './campaignDetailStrategy';
+import type { CampaignInheritance } from './campaignInheritance';
 import type { CampaignSummary } from './campaignSummary';
 import type { Communication } from './communication';
 import type { MapData } from './mapData';
@@ -17,7 +17,7 @@ export type CampaignDetail = CampaignSummary & {
   strategy: CampaignDetailStrategy;
   map: MapData;
   utmLinks: UtmLink[];
-  inheritance: CampaignDetailInheritance;
+  inheritance: CampaignInheritance;
   communications: Communication[];
   tasks: ActivityTask[];
 };

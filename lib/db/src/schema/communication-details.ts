@@ -13,7 +13,7 @@ export const communicationDetails = pgTable("communication_details", {
   campaignId: uuid("campaign_id").notNull().references(() => campaigns.id, { onDelete: "cascade" }),
   audienceBranchId: uuid("audience_branch_id").notNull().references(() => audiences.id, { onDelete: "cascade" }),
   communicationType: text("communication_type").notNull().default("Other"),
-  channel: text("channel").notNull().default("other"),
+  channel: text("channel"),
   approvalStatus: text("approval_status").notNull().default("Not started"),
   qaAudienceConfirmed: boolean("qa_audience_confirmed").notNull().default(false),
   qaContentApproved: boolean("qa_content_approved").notNull().default(false),

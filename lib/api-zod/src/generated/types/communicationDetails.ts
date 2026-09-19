@@ -9,7 +9,11 @@
 export interface CommunicationDetails {
   audienceBranchId: string;
   communicationType: string;
-  channel: string;
+  /**
+     * Canonical governed channel ID or unassigned
+     * @nullable
+     */
+  channel: string | null;
   approvalStatus: string;
   qaAudienceConfirmed: boolean;
   qaContentApproved: boolean;
