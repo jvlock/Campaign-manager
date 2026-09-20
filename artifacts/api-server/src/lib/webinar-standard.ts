@@ -870,6 +870,11 @@ export async function ensureWebinarForActivity(
 ) {
   const activityType = activity.type.toLowerCase();
   if (activityType !== "webinar" && activityType !== "events") return null;
+  if (setup !== undefined && (!activity.activityTypeId || activity.generatedName !== activity.name)) {
+    throw new WebinarStandardValidationError(
+      "Webinar sessions require a governed activity; names and codes are generated, not supplied",
+    );
+  }
   const [existing] = await executor.select().from(webinarSessions).where(and(eq(webinarSessions.campaignId, campaignId), eq(webinarSessions.activityId, activity.id)));
   if (!existing && setup === undefined) {
     if (activityType === "events") return null;

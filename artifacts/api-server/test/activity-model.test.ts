@@ -13,7 +13,7 @@ import {
 
 const paidRequired = ["objective", "campaign", "audienceOrAdGroup", "creative", "placement", "platformId", "landingPage"];
 
-test("catalog contains only the 13 channels and 12 production activity types", () => {
+test("catalog contains only the 13 channels and 13 production activity types", () => {
   assert.deepEqual(GOVERNED_CHANNELS.map(({ id, displayName, type }) => [id, displayName, type]), [
     ["psg", "Paid Search: Google", "paid"], ["psl", "Paid Social: LinkedIn", "paid"],
     ["disp", "Display", "paid"], ["orglin", "Organic Social: LinkedIn", "organic"],
@@ -22,7 +22,7 @@ test("catalog contains only the 13 channels and 12 production activity types", (
     ["evlv", "Event: In-Person", "event"], ["evind", "Event: Industry", "event"],
     ["evvrt", "Event: Virtual On24", "event"], ["app", "In-App", "app"], ["mcp", "MCP", "app"],
   ]);
-  assert.equal(ACTIVITY_TYPE_CONFIGURATIONS.length, 12);
+  assert.equal(ACTIVITY_TYPE_CONFIGURATIONS.length, 13);
   assert.deepEqual(
     ACTIVITY_TYPE_CONFIGURATIONS.map(({ id, namingTemplate, requiredFields }) => [
       id, namingTemplate, requiredFields.map((field) => field.key),
@@ -35,6 +35,7 @@ test("catalog contains only the 13 channels and 12 production activity types", (
       ["organic-social", "{campaign}-organic-{name}", ["socialFormat"]],
       ["employee-advocacy", "{campaign}-advocacy-{name}", ["advocacyProgram"]],
       ["events", "{campaign}-{eventType}-{name}", ["eventType"]],
+      ["webinar", "{campaign}-webinar-{name}", []],
       ["sales-cadences", "{campaign}-{salesType}-{name}", ["salesType"]],
       ["in-app", "{campaign}-in-app-{name}", ["placement"]],
       ["mcp", "{campaign}-mcp-{intentCategory}", ["intentCategory"]],

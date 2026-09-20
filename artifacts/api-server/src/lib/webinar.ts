@@ -42,7 +42,6 @@ export const registrationRuleSchema = z.object({
 
 export const webinarInputSchema = z.object({
   activityId: z.string().uuid(),
-  name: z.string().trim().min(1),
   sessionDate: sessionDateSchema,
   startTime: z.string().regex(timePattern, "startTime must be HH:mm"),
   durationMinutes: z.number().int().positive().max(1440),
@@ -60,7 +59,7 @@ export const webinarInputSchema = z.object({
     attendedBranch: "attended",
     noShowBranch: "no_show",
   }),
-});
+}).strict();
 
 export const webinarUpdateSchema = webinarInputSchema
   .omit({ activityId: true })

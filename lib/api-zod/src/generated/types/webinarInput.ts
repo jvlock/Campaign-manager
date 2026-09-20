@@ -11,8 +11,6 @@ import type { Speaker } from './speaker';
 
 export interface WebinarInput {
   activityId: string;
-  /** @minLength 1 */
-  name: string;
   sessionDate: Date;
   startTime: string;
   /**

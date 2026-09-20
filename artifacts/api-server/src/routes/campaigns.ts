@@ -21,6 +21,7 @@ import {
   ActivityModelError,
   GOVERNED_CHANNELS,
   assertMcpSafe,
+  assertNoSuppliedGeneratedIdentity,
   activityConfiguration,
   normalizeCampaignInheritance,
   validateActivityModel,
@@ -498,6 +499,17 @@ router.put("/campaigns/:id/map", async (req, res, next) => {
           : activityTypeSupplied ? n.activityTypeId : existing?.activityTypeId;
         let modelValues: Partial<typeof activities.$inferInsert> = {};
         if (activityTypeId) {
+          assertNoSuppliedGeneratedIdentity(n, existing
+            ? { path: "activity", allowUnchanged: { name: existing.name, generatedName: existing.generatedName } }
+            : { path: "activity" });
+          assertNoSuppliedGeneratedIdentity(n.webinarSetup, { path: "activity.webinarSetup" });
+          if (!existing) {
+            throw new ActivityModelError(
+              "id",
+              "map_activity_creation_not_allowed",
+              "New activities must use the governed activity creation endpoint so the server assigns their UUID",
+            );
+          }
           if (activityTypeId === "mcp") assertMcpSafe(n, "activity");
           const namingInput = n.namingInput !== undefined ? n.namingInput : existing?.namingInput;
           const model = validateActivityModel({
@@ -520,8 +532,14 @@ router.put("/campaigns/:id/map", async (req, res, next) => {
           };
         } else if (!existing) {
           throw new ActivityModelError("activityTypeId", "required", "New activities require a governed activityTypeId");
-        } else if (n.type !== existing.type) {
-          throw new ActivityModelError("type", "legacy_type_immutable", "A legacy activity type cannot be changed; create a governed activity instead");
+        } else {
+          assertNoSuppliedGeneratedIdentity(n, {
+            path: "activity",
+            allowUnchanged: { name: existing.name, generatedName: existing.generatedName },
+          });
+          if (n.type !== existing.type) {
+            throw new ActivityModelError("type", "legacy_type_immutable", "A legacy activity type cannot be changed; create a governed activity instead");
+          }
         }
         const values = {
           name: n.name, type: n.type, audience: n.audience, region: n.region, timing: n.timing,
@@ -605,6 +623,8 @@ router.put("/campaigns/:id/map", async (req, res, next) => {
 router.post("/campaigns/:id/activities", async (req, res, next) => {
   try {
     assertNoFinalityRequest(req.body);
+    assertNoSuppliedGeneratedIdentity(req.body, { includeId: true, path: "activity" });
+    assertNoSuppliedGeneratedIdentity(req.body.webinarSetup, { path: "activity.webinarSetup" });
     const version = expectedRowVersion(req);
     if (version === undefined) {
       res.status(428).json({ error: "rowVersion is required for an existing campaign" });
@@ -621,10 +641,9 @@ router.post("/campaigns/:id/activities", async (req, res, next) => {
     }
     const [activityStrategy] = await db.select().from(campaignStrategy).where(eq(campaignStrategy.campaignId, req.params.id));
     if (req.body.activityTypeId === "mcp") assertMcpSafe(req.body, "activity");
-    const legacyWebinar = req.body.activityTypeId === undefined && String(req.body.type).toLowerCase() === "webinar" && req.body.webinarSetup !== undefined;
-    const model = legacyWebinar ? null : validateActivityModel({
+    const model = validateActivityModel({
         activityTypeId: req.body.activityTypeId,
-        name: req.body.name,
+        name: req.body.namingInput,
         answers: req.body.answers ?? {},
         overrides: req.body.overrides ?? {},
         campaignName: existingCampaign.name,
@@ -637,19 +656,19 @@ router.post("/campaigns/:id/activities", async (req, res, next) => {
       }).where(and(eq(campaigns.id, req.params.id), eq(campaigns.rowVersion, version as number))).returning();
       if (!campaign) throw versionError(409, "Campaign has changed");
       const [activity] = await tx.insert(activities).values({
-        name: model?.generatedName ?? req.body.name, type: model?.configuration.id ?? "Webinar", audience: req.body.audience, region: req.body.region,
+        name: model.generatedName, type: model.configuration.id, audience: req.body.audience, region: req.body.region,
         timing: req.body.timing, status: req.body.status, owner: req.body.owner,
         conflict: req.body.conflict ?? false, decisionStatus: req.body.decisionStatus ?? "Estimated",
         campaignId: req.params.id, x: String(req.body.position?.x ?? 0), y: String(req.body.position?.y ?? 0),
-        activityTypeId: model?.configuration.id ?? null, activityAnswers: model?.answers ?? {},
-        activityOverrides: model?.overrides ?? {}, generatedName: model?.generatedName ?? null,
-        namingInput: model && req.body.name !== undefined && req.body.name !== null ? String(req.body.name) : null,
-        effectiveInheritance: model?.effectiveInheritance ?? {},
+        activityTypeId: model.configuration.id, activityAnswers: model.answers,
+        activityOverrides: model.overrides, generatedName: model.generatedName,
+        namingInput: req.body.namingInput !== undefined && req.body.namingInput !== null ? String(req.body.namingInput) : null,
+        effectiveInheritance: model.effectiveInheritance,
       }).returning();
       await ensureWebinarForActivity(req.params.id, activity, req.body.webinarSetup, tx);
       return [activity];
     });
-    res.status(201).json(activityResponse(a, model?.effectiveInheritance ?? {}));
+    res.status(201).json(activityResponse(a, model.effectiveInheritance));
   } catch (e) {
     if (e instanceof GovernanceQuarantineError) {
       res.status(e.status).json({ error: { field: e.field, code: e.code, message: e.message } });

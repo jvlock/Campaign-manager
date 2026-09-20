@@ -11,7 +11,8 @@ import type { Position } from './position';
 import type { WebinarSetup } from './webinarSetup';
 
 export interface ActivityInput {
-  name?: string;
+  /** Descriptive input used by the governed name generator; generated names and codes cannot be supplied. */
+  namingInput?: string;
   activityTypeId: string;
   answers: ActivityInputAnswers;
   overrides?: ActivityInputOverrides;

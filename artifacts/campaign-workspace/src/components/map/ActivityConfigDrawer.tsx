@@ -574,10 +574,11 @@ export default function ActivityConfigDrawer({
                 </div>
               ) : <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Session Name</Label>
+                  <Label className="text-xs text-muted-foreground">Generated Session Name</Label>
                   <Input
                     defaultValue={webinarData.name}
-                    onBlur={(event) => { if (event.target.value !== webinarData.name) updateWebinar({ name: event.target.value }); }}
+                    readOnly
+                    aria-readonly="true"
                     className="h-8 text-sm"
                   />
                 </div>

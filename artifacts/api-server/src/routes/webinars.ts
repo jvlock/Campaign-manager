@@ -3,6 +3,10 @@ import { Router, type IRouter, type NextFunction, type Request, type Response } 
 import { z } from "zod";
 import { activities, audiences, campaigns, db, DEFAULT_NEW_WEBINAR_TEMPLATE_VERSION } from "@workspace/db";
 import {
+  ActivityModelError,
+  assertNoSuppliedGeneratedIdentity,
+} from "../lib/activity-model";
+import {
   webinarAttendanceResults,
   webinarPeople,
   webinarRegistrationResults,
@@ -49,12 +53,21 @@ async function campaignExists(campaignId: string) {
   return Boolean(campaign);
 }
 
-async function activityBelongsToCampaign(activityId: string, campaignId: string) {
+async function governedWebinarActivity(activityId: string, campaignId: string) {
   const [activity] = await db
-    .select({ id: activities.id })
+    .select({
+      id: activities.id,
+      name: activities.name,
+      generatedName: activities.generatedName,
+      activityTypeId: activities.activityTypeId,
+    })
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.campaignId, campaignId)));
-  return Boolean(activity);
+  return activity
+    && ["webinar", "events"].includes(activity.activityTypeId ?? "")
+    && activity.generatedName === activity.name
+    ? activity
+    : null;
 }
 
 async function sessionForCampaign(campaignId: string, sessionId: string) {
@@ -101,6 +114,10 @@ async function audienceBranchFor(campaignId: string, requestedId?: string) {
 }
 
 function reportError(error: unknown, res: Response, next: NextFunction) {
+  if (error instanceof ActivityModelError) {
+    res.status(400).json({ error: { field: error.field, code: error.code, message: error.message } });
+    return;
+  }
   if (error instanceof WebinarValidationError) {
     res.status(error.status).json({ error: error.message });
     return;
@@ -135,6 +152,7 @@ router.get("/campaigns/:id/webinars", async (req, res, next): Promise<void> => {
 
 router.post("/campaigns/:id/webinars", async (req, res, next): Promise<void> => {
   try {
+    assertNoSuppliedGeneratedIdentity(req.body, { includeId: true, path: "webinar" });
     const parsedParams = idParams.safeParse(req.params);
     const parsedBody = webinarInputSchema.safeParse(req.body);
     if (!parsedParams.success || !parsedBody.success) {
@@ -152,8 +170,9 @@ router.post("/campaigns/:id/webinars", async (req, res, next): Promise<void> => 
       res.status(404).json({ error: "Campaign not found" });
       return;
     }
-    if (!(await activityBelongsToCampaign(body.activityId, campaignId))) {
-      res.status(400).json({ error: "Activity does not belong to this campaign" });
+    const governedActivity = await governedWebinarActivity(body.activityId, campaignId);
+    if (!governedActivity) {
+      res.status(400).json({ error: "Webinar sessions require a governed activity; names and codes are generated, not supplied" });
       return;
     }
     const row = await db.transaction(async (tx) => {
@@ -163,6 +182,7 @@ router.post("/campaigns/:id/webinars", async (req, res, next): Promise<void> => 
         .values({
           ...sessionInput,
           campaignId,
+          name: governedActivity.name,
           recruitmentLaunchAt: new Date(body.recruitmentLaunchAt),
           templateVersion: DEFAULT_NEW_WEBINAR_TEMPLATE_VERSION,
         })
@@ -202,6 +222,7 @@ router.get("/campaigns/:id/webinars/:sessionId", async (req, res, next): Promise
 
 router.patch("/campaigns/:id/webinars/:sessionId", async (req, res, next): Promise<void> => {
   try {
+    assertNoSuppliedGeneratedIdentity(req.body, { includeId: true, path: "webinar" });
     const parsedParams = sessionParams.safeParse(req.params);
     const parsedBody = webinarUpdateSchema.safeParse(req.body);
     if (!parsedParams.success || !parsedBody.success) {
@@ -216,13 +237,12 @@ router.patch("/campaigns/:id/webinars/:sessionId", async (req, res, next): Promi
     const { id: campaignId, sessionId } = parsedParams.data;
     await sessionForCampaign(campaignId, sessionId);
     const body = parsedBody.data;
-    if (body.activityId !== undefined && !(await activityBelongsToCampaign(body.activityId, campaignId))) {
-      res.status(400).json({ error: "Activity does not belong to this campaign" });
+    if (body.activityId !== undefined && !(await governedWebinarActivity(body.activityId, campaignId))) {
+      res.status(400).json({ error: "Webinar sessions require a governed activity; names and codes are generated, not supplied" });
       return;
     }
     const patch: Partial<typeof webinarSessions.$inferInsert> = { updatedAt: new Date() };
     if (body.activityId !== undefined) patch.activityId = body.activityId;
-    if (body.name !== undefined) patch.name = body.name;
     if (body.sessionDate !== undefined) patch.sessionDate = body.sessionDate;
     if (body.startTime !== undefined) patch.startTime = body.startTime;
     if (body.durationMinutes !== undefined) patch.durationMinutes = body.durationMinutes;

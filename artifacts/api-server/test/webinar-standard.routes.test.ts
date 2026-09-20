@@ -135,12 +135,34 @@ after(async () => {
 
 test("activity POST provisions exactly five standard rows and replay map is idempotent", async () => {
   const createdCampaign = await campaign(`Webinar route activity ${randomUUID()}`);
+  const rejected = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/activities`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      name: "Caller-provided webinar identifier",
+      activityTypeId: "webinar",
+      namingInput: "Route activity webinar",
+      answers: {},
+      audience: "Route test audience",
+      region: "EMEA",
+      timing: "2027-04-21",
+      status: "Confirmed",
+      owner: "Route test",
+      position: { x: 0, y: 0 },
+      webinarSetup: setup,
+      rowVersion: 1,
+    }),
+  });
+  assert.equal(rejected.status, 400);
+  assert.equal((await rejected.json() as any).error.code, "generated_identifier_not_accepted");
+
   const response = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/activities`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      name: "Route activity webinar",
-      type: "Webinar",
+      namingInput: "Route activity webinar",
+      activityTypeId: "webinar",
+      answers: {},
       audience: "Route test audience",
       region: "EMEA",
       timing: "2027-04-21",
@@ -152,7 +174,10 @@ test("activity POST provisions exactly five standard rows and replay map is idem
     }),
   });
   assert.equal(response.status, 201);
-  const activity = await response.json() as { id: string; rowVersion: number; position: { x: number; y: number } };
+  const activity = await response.json() as { id: string; name: string; generatedName: string; namingInput: string; rowVersion: number; position: { x: number; y: number } };
+  assert.equal(activity.name, `${createdCampaign.name}-webinar-Route activity webinar`);
+  assert.equal(activity.generatedName, activity.name);
+  assert.equal(activity.namingInput, "Route activity webinar");
   const [session] = await db.select().from(webinarSessions).where(eq(webinarSessions.activityId, activity.id));
    assert.ok(session);
    assert.equal(session.templateVersion, "default_5");
@@ -176,8 +201,13 @@ test("activity POST provisions exactly five standard rows and replay map is idem
       rowVersion: currentCampaign.rowVersion,
       activities: [{
         id: activity.id,
-        name: "Route activity webinar",
-        type: "Webinar",
+        name: activity.name,
+        generatedName: activity.generatedName,
+        namingInput: activity.namingInput,
+        type: "webinar",
+        activityTypeId: "webinar",
+        answers: {},
+        overrides: {},
         audience: "Route test audience",
         region: "EMEA",
         timing: "2027-04-21",
@@ -202,8 +232,11 @@ test("session POST persists the five-message default and draft copy", async () =
   const createdCampaign = await campaign(`Webinar route session ${randomUUID()}`);
   const [activity] = await db.insert(activities).values({
     campaignId: createdCampaign.id,
-    name: "Route session activity",
-    type: "Webinar",
+    name: `${createdCampaign.name}-webinar-Route session activity`,
+    generatedName: `${createdCampaign.name}-webinar-Route session activity`,
+    namingInput: "Route session activity",
+    type: "webinar",
+    activityTypeId: "webinar",
     audience: "Route test audience",
     region: "EMEA",
     timing: "2027-04-21",
@@ -212,25 +245,41 @@ test("session POST persists the five-message default and draft copy", async () =
     x: "0",
     y: "0",
   }).returning();
+  const sessionInput = {
+    activityId: activity.id,
+    sessionDate: setup.eventDate,
+    startTime: setup.eventTime,
+    durationMinutes: setup.durationMinutes,
+    timezone: setup.timezone,
+    platform: setup.platform,
+    speakers: setup.speakers,
+    recruitmentLaunchAt: setup.recruitmentLaunchAt,
+    registrationRule: { suppressRecruitmentAfterRegistration: true },
+    channel: "eml",
+  };
+  const rejected = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ...sessionInput, name: "Caller session identifier" }),
+  });
+  assert.equal(rejected.status, 400);
+  assert.equal((await rejected.json() as any).error.code, "generated_identifier_not_accepted");
+
   const response = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      activityId: activity.id,
-      name: "Route session",
-      sessionDate: setup.eventDate,
-      startTime: setup.eventTime,
-      durationMinutes: setup.durationMinutes,
-      timezone: setup.timezone,
-      platform: setup.platform,
-      speakers: setup.speakers,
-      recruitmentLaunchAt: setup.recruitmentLaunchAt,
-      registrationRule: { suppressRecruitmentAfterRegistration: true },
-       channel: "eml",
-    }),
+    body: JSON.stringify(sessionInput),
   });
   assert.equal(response.status, 201);
-  const session = await response.json() as { id: string };
+  const session = await response.json() as { id: string; name: string };
+  assert.equal(session.name, activity.name);
+  const rejectedRename = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ name: "Caller replacement identifier" }),
+  });
+  assert.equal(rejectedRename.status, 400);
+  assert.equal((await rejectedRename.json() as any).error.code, "generated_identifier_not_accepted");
    const rows = await db.select().from(webinarStandardCommunications).where(eq(webinarStandardCommunications.sessionId, session.id));
    const [sessionRecord] = await db.select().from(webinarSessions).where(eq(webinarSessions.id, session.id));
    assert.equal(sessionRecord.templateVersion, "default_5");

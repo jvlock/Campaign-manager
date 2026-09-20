@@ -1375,7 +1375,9 @@ components:
       required: [activityTypeId, answers, audience, region, timing, status, owner, position]
       additionalProperties: false
       properties:
-        name: {type: string}
+        namingInput:
+          type: string
+          description: Descriptive input used by the governed name generator; generated names and codes cannot be supplied.
         activityTypeId: {type: string}
         answers: {type: object, additionalProperties: true}
         overrides: {type: object, additionalProperties: true}
@@ -2230,10 +2232,10 @@ components:
         updatedAt: {type: string, format: date-time}
     WebinarInput:
       type: object
-      required: [activityId, name, sessionDate, startTime, durationMinutes, timezone, platform, recruitmentLaunchAt]
+      required: [activityId, sessionDate, startTime, durationMinutes, timezone, platform, recruitmentLaunchAt]
+      additionalProperties: false
       properties:
         activityId: {type: string, format: uuid}
-        name: {type: string, minLength: 1}
         sessionDate: {type: string, format: date}
         startTime: {type: string}
         durationMinutes: {type: integer, minimum: 1, maximum: 1440}

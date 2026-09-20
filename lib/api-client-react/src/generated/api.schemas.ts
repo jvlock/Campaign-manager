@@ -445,7 +445,8 @@ export type ActivityInputAnswers = { [key: string]: unknown };
 export type ActivityInputOverrides = { [key: string]: unknown };
 
 export interface ActivityInput {
-  name?: string;
+  /** Descriptive input used by the governed name generator; generated names and codes cannot be supplied. */
+  namingInput?: string;
   activityTypeId: string;
   answers: ActivityInputAnswers;
   overrides?: ActivityInputOverrides;
@@ -1199,8 +1200,6 @@ export interface WebinarSession {
 
 export interface WebinarInput {
   activityId: string;
-  /** @minLength 1 */
-  name: string;
   sessionDate: string;
   startTime: string;
   /**

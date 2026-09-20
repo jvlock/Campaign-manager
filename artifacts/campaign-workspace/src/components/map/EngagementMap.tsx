@@ -22,6 +22,7 @@ import '@xyflow/react/dist/style.css';
 import {
   CampaignDetail,
   MapInput,
+  useCreateActivity,
   useSaveCampaignMap,
   useGetGovernance,
   useGetCampaignDelivery,
@@ -98,6 +99,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
   
   const { data: governance } = useGetGovernance();
   const { mutate: saveMap } = useSaveCampaignMap();
+  const { mutate: createActivity } = useCreateActivity();
   const { data: delivery } = useGetCampaignDelivery(campaign.id, {
     query: { enabled: !!campaign.id, queryKey: getGetCampaignDeliveryQueryKey(campaign.id) }
   });
@@ -184,7 +186,12 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
             onConnectionAction,
             ...restData
           } = n.data as any;
-          return { ...restData, id: n.id, position: n.position };
+          const activity = { ...restData, id: n.id, position: n.position };
+          if (activity.activityTypeId && !activity.rowVersion) {
+            delete activity.name;
+            delete activity.generatedName;
+          }
+          return activity;
         }),
         connections: currentMap.edges.map(e => ({
           ...e.data as any,
@@ -570,6 +577,51 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
       reject(new Error('Activity draft is no longer available.'));
       return;
     }
+    if (isNew) {
+      const data = { ...draft.data, ...updates } as Record<string, any>;
+      createActivity({
+        id: campaign.id,
+        data: {
+          rowVersion: campaignVersion.current,
+          activityTypeId: String(data.activityTypeId),
+          namingInput: data.namingInput === undefined ? undefined : String(data.namingInput),
+          answers: data.answers ?? {},
+          overrides: data.overrides ?? {},
+          audience: String(data.audience ?? campaign.audience),
+          region: String(data.region ?? campaign.region),
+          timing: String(data.timing ?? 'TBD'),
+          status: String(data.status ?? 'Estimated'),
+          owner: String(data.owner ?? 'Unassigned'),
+          position: draft.position,
+        },
+      }, {
+        onSuccess: (created) => {
+          campaignVersion.current += 1;
+          const node: Node = {
+            id: created.id,
+            type: 'activity',
+            position: created.position,
+            data: {
+              ...created,
+              connectionSourceId: connectionMode?.sourceId,
+              onConnectionAction: dispatchConnectionAction,
+            } as unknown as Record<string, unknown>,
+          };
+          setNodes((current) => {
+            const next = current.concat(node);
+            latestMap.current = { nodes: next, edges };
+            return next;
+          });
+          setSelectedElement({ type: 'node', id: created.id });
+          setPendingActivity(null);
+          queryClient.invalidateQueries({ queryKey: getGetCampaignDeliveryQueryKey(campaign.id) });
+          queryClient.invalidateQueries({ queryKey: getGetCampaignQueryKey(campaign.id) });
+          resolve();
+        },
+        onError: reject,
+      });
+      return;
+    }
     const committed: Node = {
       ...draft,
       data: { ...draft.data, ...updates, id: draft.id } as Record<string, unknown>,
@@ -617,7 +669,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
         reject(error);
       },
     });
-  }), [edges, enqueueSave, nodes, pendingActivity, selectedElement?.id]);
+  }), [campaign.audience, campaign.id, campaign.region, connectionMode?.sourceId, createActivity, dispatchConnectionAction, edges, enqueueSave, nodes, pendingActivity, queryClient, selectedElement?.id]);
 
   const updateSelectedEdgeData = (updates: Record<string, unknown>) => {
     if (selectedElement?.type !== 'edge') return;
@@ -802,14 +854,12 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
             if (!webinarSetupDrop) return;
             setWebinarSetupError('');
             setWebinarSetupSaving(true);
-            const newNode: Node = {
-              id: uuidv4(),
-              type: 'activity',
-              position: webinarSetupDrop.position,
+            createActivity({
+              id: campaign.id,
               data: {
-                name: `New Webinar`,
-                type: 'Webinar',
-                activityTypeId: webinarSetupDrop.type === 'webinar' ? 'webinar' : undefined,
+                rowVersion: campaignVersion.current,
+                activityTypeId: 'webinar',
+                namingInput: 'Webinar',
                 answers: {},
                 overrides: {},
                 audience: campaign.audience,
@@ -817,26 +867,37 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
                 timing: 'TBD',
                 status: 'Estimated',
                 owner: 'Unassigned',
-                conflict: false,
                 position: webinarSetupDrop.position,
-                webinarSetup: setup
-              } as unknown as Record<string, unknown>,
-            };
-            setNodes((nds) => {
-              const nodeWithMatchingId = { ...newNode, data: { ...newNode.data, id: newNode.id } as unknown as Record<string, unknown> };
-              const next = nds.concat(nodeWithMatchingId);
-              triggerSave(next, edges, {
-                onSuccess: () => {
-                  setWebinarSetupSaving(false);
-                  setWebinarSetupDrop(null);
-                },
-                onError: (error) => {
-                  setNodes((current) => current.filter((node) => node.id !== newNode.id));
-                  setWebinarSetupSaving(false);
-                  setWebinarSetupError(error instanceof Error ? error.message : 'Failed to save webinar setup. Correct the setup and try again.');
-                },
-              });
-              return next;
+                webinarSetup: setup,
+              },
+            }, {
+              onSuccess: (created) => {
+                campaignVersion.current += 1;
+                const node: Node = {
+                  id: created.id,
+                  type: 'activity',
+                  position: created.position,
+                  data: {
+                    ...created,
+                    connectionSourceId: connectionMode?.sourceId,
+                    onConnectionAction: dispatchConnectionAction,
+                  } as unknown as Record<string, unknown>,
+                };
+                setNodes((current) => {
+                  const next = current.concat(node);
+                  latestMap.current = { nodes: next, edges };
+                  return next;
+                });
+                setWebinarSetupSaving(false);
+                setWebinarSetupDrop(null);
+                queryClient.invalidateQueries({ queryKey: getGetCampaignDeliveryQueryKey(campaign.id) });
+                queryClient.invalidateQueries({ queryKey: getGetCampaignQueryKey(campaign.id) });
+                queryClient.invalidateQueries({ queryKey: getListWebinarsQueryKey(campaign.id) });
+              },
+              onError: (error) => {
+                setWebinarSetupSaving(false);
+                setWebinarSetupError(error instanceof Error ? error.message : 'Failed to save webinar setup. Correct the setup and try again.');
+              },
             });
           }}
         />

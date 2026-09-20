@@ -55,7 +55,7 @@ test("catalog exposes the authoritative exact counts", async () => {
   const result = await request("/activity-model/catalog");
   assert.equal(result.status, 200);
   assert.equal(result.body.channels.length, 13);
-  assert.equal(result.body.activityTypes.length, 12);
+  assert.equal(result.body.activityTypes.length, 13);
   assert.deepEqual(
     { id: result.body.channels[0].id, displayName: result.body.channels[0].displayName, type: result.body.channels[0].type },
     { id: "psg", displayName: "Paid Search: Google", type: "paid" },
@@ -85,6 +85,97 @@ test("bulk map and generated naming routes reject finality aliases", async () =>
   });
   assert.equal(blockedName.status, 409);
   assert.equal(blockedName.body.error.code, "final_code_issuance_unavailable");
+});
+
+test("activity creation rejects caller-supplied names and codes", async () => {
+  const detail = await request(`/campaigns/${campaignId}`);
+  for (const supplied of [
+    { name: "Caller webinar name" },
+    { code: "CALLER-CODE" },
+    { id: randomUUID() },
+  ]) {
+    const blocked = await request(`/campaigns/${campaignId}/activities`, "POST", {
+      rowVersion: detail.body.rowVersion,
+      activityTypeId: "webinar",
+      namingInput: "Quarterly outlook",
+      answers: {},
+      audience: "Test", region: "Global", timing: "TBD", status: "Estimated",
+      owner: "Campaign Owner", position: { x: 0, y: 0 },
+      webinarSetup: {
+        eventDate: "2027-04-21", eventTime: "14:00", durationMinutes: 60,
+        timezone: "UTC", platform: "ON24", speakers: [],
+        recruitmentLaunchAt: "2027-04-01T12:00:00.000Z",
+      },
+      ...supplied,
+    });
+    assert.equal(blocked.status, 400);
+    assert.equal(blocked.body.error.code, "generated_identifier_not_accepted");
+    assert.match(blocked.body.error.message, /generated, not supplied/);
+  }
+
+  for (const field of ["name", "code"] as const) {
+    const blockedNested = await request(`/campaigns/${campaignId}/activities`, "POST", {
+      rowVersion: detail.body.rowVersion,
+      activityTypeId: "webinar",
+      namingInput: "Quarterly outlook",
+      answers: {},
+      audience: "Test", region: "Global", timing: "TBD", status: "Estimated",
+      owner: "Campaign Owner", position: { x: 0, y: 0 },
+      webinarSetup: {
+        eventDate: "2027-04-21", eventTime: "14:00", durationMinutes: 60,
+        timezone: "UTC", platform: "ON24", speakers: [],
+        recruitmentLaunchAt: "2027-04-01T12:00:00.000Z",
+        [field]: "CALLER-SUPPLIED",
+      },
+    });
+    assert.equal(blockedNested.status, 400);
+    assert.equal(blockedNested.body.error.code, "generated_identifier_not_accepted");
+    assert.equal(blockedNested.body.error.field, `activity.webinarSetup.${field}`);
+  }
+
+  const blockedMap = await request(`/campaigns/${campaignId}/map`, "PUT", {
+    rowVersion: detail.body.rowVersion,
+    activities: [
+      ...detail.body.map.activities,
+      {
+        id: randomUUID(),
+        name: "Caller webinar name through map",
+        activityTypeId: "webinar",
+        namingInput: "Quarterly outlook",
+        answers: {},
+        overrides: {},
+        audience: "Test", region: "Global", timing: "TBD", status: "Estimated",
+        owner: "Campaign Owner", conflict: false, position: { x: 0, y: 0 },
+        webinarSetup: {
+          eventDate: "2027-04-21", eventTime: "14:00", durationMinutes: 60,
+          timezone: "UTC", platform: "ON24", speakers: [],
+          recruitmentLaunchAt: "2027-04-01T12:00:00.000Z",
+        },
+      },
+    ],
+    connections: detail.body.map.connections,
+  });
+  assert.equal(blockedMap.status, 400);
+  assert.equal(blockedMap.body.error.code, "generated_identifier_not_accepted");
+
+  const suppliedMapUuid = await request(`/campaigns/${campaignId}/map`, "PUT", {
+    rowVersion: detail.body.rowVersion,
+    activities: [
+      ...detail.body.map.activities,
+      {
+        id: randomUUID(),
+        activityTypeId: "email",
+        namingInput: "Quarterly outlook",
+        answers: { emailType: "activation" },
+        overrides: {},
+        audience: "Test", region: "Global", timing: "TBD", status: "Estimated",
+        owner: "Campaign Owner", conflict: false, position: { x: 0, y: 0 },
+      },
+    ],
+    connections: detail.body.map.connections,
+  });
+  assert.equal(suppliedMapUuid.status, 400);
+  assert.equal(suppliedMapUuid.body.error.code, "map_activity_creation_not_allowed");
 });
 
 test("campaign create and patch reject raw snake-case finality controls", async () => {
@@ -166,28 +257,63 @@ test("GET map roundtrip preserves explicit-null legacy rows while appending a ca
   assert.equal(detail.body.map.activities.length, 2);
   assert.ok(detail.body.map.activities.every((node: any) => node.activityTypeId === null));
   const legacyIds = detail.body.map.activities.map((node: any) => node.id);
-  const newId = randomUUID();
-  const saved = await request(`/campaigns/${created.body.id}/map`, "PUT", {
+  const canonicalCreated = await request(`/campaigns/${created.body.id}/activities`, "POST", {
     rowVersion: detail.body.rowVersion,
-    activities: [
-      ...detail.body.map.activities,
-      {
-        id: newId, name: "Welcome", namingInput: "Welcome",
-        type: "email", activityTypeId: "email",
-        answers: { emailType: "activation" }, overrides: {},
-        audience: "Roundtrip audience", region: "Global", timing: "TBD",
-        status: "Estimated", owner: "Campaign team", conflict: false,
-        decisionStatus: "Estimated", position: { x: 300, y: 200 },
-      },
-    ],
-    connections: detail.body.map.connections,
+    namingInput: "Welcome",
+    activityTypeId: "email",
+    answers: { emailType: "activation" },
+    overrides: {},
+    audience: "Roundtrip audience", region: "Global", timing: "TBD",
+    status: "Estimated", owner: "Campaign team", position: { x: 300, y: 200 },
+  });
+  assert.equal(canonicalCreated.status, 201);
+  const withCanonical = await request(`/campaigns/${created.body.id}`);
+  const saved = await request(`/campaigns/${created.body.id}/map`, "PUT", {
+    rowVersion: withCanonical.body.rowVersion,
+    activities: withCanonical.body.map.activities,
+    connections: withCanonical.body.map.connections,
   });
   assert.equal(saved.status, 200);
   assert.equal(saved.body.activities.length, 3);
   assert.ok(legacyIds.every((id: string) => saved.body.activities.some((node: any) => node.id === id && node.activityTypeId === null)));
-  const canonical = saved.body.activities.find((node: any) => node.id === newId);
+  const canonical = saved.body.activities.find((node: any) => node.id === canonicalCreated.body.id);
   assert.equal(canonical.name, `${created.body.name}-email-Welcome`);
   assert.equal(canonical.generatedName, `${created.body.name}-email-Welcome`);
+
+  const renamedLegacy = await request(`/campaigns/${created.body.id}/map`, "PUT", {
+    rowVersion: saved.body.rowVersion,
+    activities: saved.body.activities.map((node: any) => node.id === legacyIds[0]
+      ? { ...node, name: "Caller-replaced legacy identifier" }
+      : node),
+    connections: saved.body.connections,
+  });
+  assert.equal(renamedLegacy.status, 400);
+  assert.equal(renamedLegacy.body.error.code, "generated_identifier_not_accepted");
+  const unchanged = await request(`/campaigns/${created.body.id}`);
+  assert.notEqual(
+    unchanged.body.map.activities.find((node: any) => node.id === legacyIds[0]).name,
+    "Caller-replaced legacy identifier",
+  );
+
+  const legacyWebinar = unchanged.body.map.activities.find((node: any) => node.id === legacyIds[0]);
+  await db.update(activities).set({ type: "Webinar" }).where(eq(activities.id, legacyWebinar.id));
+  const refreshed = await request(`/campaigns/${created.body.id}`);
+  const blockedLegacySetup = await request(`/campaigns/${created.body.id}/map`, "PUT", {
+    rowVersion: refreshed.body.rowVersion,
+    activities: refreshed.body.map.activities.map((node: any) => node.id === legacyWebinar.id
+      ? {
+          ...node,
+          webinarSetup: {
+            eventDate: "2027-04-21", eventTime: "14:00", durationMinutes: 60,
+            timezone: "UTC", platform: "ON24", speakers: [],
+            recruitmentLaunchAt: "2027-04-01T12:00:00.000Z",
+          },
+        }
+      : node),
+    connections: refreshed.body.map.connections,
+  });
+  assert.equal(blockedLegacySetup.status, 400);
+  assert.match(blockedLegacySetup.body.error, /require a governed activity/);
 });
 
 test("MCP scans the whole raw request and naming errors are named", async () => {

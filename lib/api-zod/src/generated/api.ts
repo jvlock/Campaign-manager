@@ -1077,7 +1077,7 @@ export const createActivityBodyWebinarSetupDurationMinutesMax = 1440;
 export const createActivityBodyWebinarSetupSpeakersDefault = [];
 
 export const CreateActivityBody = zod.object({
-  "name": zod.string().optional(),
+  "namingInput": zod.string().optional().describe('Descriptive input used by the governed name generator; generated names and codes cannot be supplied.'),
   "activityTypeId": zod.string(),
   "answers": zod.record(zod.string(), zod.unknown()),
   "overrides": zod.record(zod.string(), zod.unknown()).optional(),
@@ -2454,7 +2454,6 @@ export const CreateWebinarParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
-
 export const createWebinarBodyDurationMinutesMax = 1440;
 
 
@@ -2466,7 +2465,6 @@ export const createWebinarBodyRegistrationRuleNoShowBranchDefault = `no_show`;
 
 export const CreateWebinarBody = zod.object({
   "activityId": zod.string().uuid(),
-  "name": zod.string().min(1),
   "sessionDate": zod.coerce.date(),
   "startTime": zod.string(),
   "durationMinutes": zod.number().int().min(1).max(createWebinarBodyDurationMinutesMax),

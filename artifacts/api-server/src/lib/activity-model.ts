@@ -42,6 +42,7 @@ export const ACTIVITY_TYPE_CONFIGURATIONS: readonly ActivityTypeConfiguration[] 
   { id: "organic-social", displayName: "Organic Social", namingTemplate: "{campaign}-organic-{name}", requiredFields: fields("socialFormat"), allowedOverrides: overrides() },
   { id: "employee-advocacy", displayName: "Employee Advocacy", namingTemplate: "{campaign}-advocacy-{name}", requiredFields: fields("advocacyProgram"), allowedOverrides: overrides() },
   { id: "events", displayName: "Events", namingTemplate: "{campaign}-{eventType}-{name}", requiredFields: [{ key: "eventType", options: ["event series", "individual event", "registration source", "attendance", "no-show", "handraiser", "follow-up"] }], allowedOverrides: overrides("owner") },
+  { id: "webinar", displayName: "Webinar", namingTemplate: "{campaign}-webinar-{name}", requiredFields: [], allowedOverrides: overrides("owner") },
   { id: "sales-cadences", displayName: "Sales Cadences", namingTemplate: "{campaign}-{salesType}-{name}", requiredFields: [{ key: "salesType", options: ["prospecting", "handraiser recovery", "event follow-up", "account expansion", "cross-sell", "renewal support", "executive outreach"] }], allowedOverrides: overrides("owner") },
   { id: "in-app", displayName: "In-App", namingTemplate: "{campaign}-in-app-{name}", requiredFields: fields("placement"), allowedOverrides: overrides("primaryCta") },
   { id: "mcp", displayName: "MCP", namingTemplate: "{campaign}-mcp-{intentCategory}", requiredFields: [{ key: "intentCategory", options: MCP_INTENTS }], allowedOverrides: overrides() },
@@ -53,6 +54,35 @@ export class ActivityModelError extends Error {
   constructor(public field: string, public code: string, message: string) {
     super(message);
     this.name = "ActivityModelError";
+  }
+}
+
+const GENERATED_IDENTITY_FIELDS = [
+  "name", "code", "identifier", "generatedName", "generatedCode",
+  "activityCode", "campaignCode", "campaignName",
+] as const;
+
+export function assertNoSuppliedGeneratedIdentity(
+  value: unknown,
+  options: { allowUnchanged?: Record<string, unknown>; includeId?: boolean; path?: string } = {},
+): void {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return;
+  const record = value as Record<string, unknown>;
+  const fields: readonly string[] = options.includeId
+    ? [...GENERATED_IDENTITY_FIELDS, "id"]
+    : GENERATED_IDENTITY_FIELDS;
+  for (const field of fields) {
+    if (!Object.prototype.hasOwnProperty.call(record, field)) continue;
+    if (options.allowUnchanged
+      && Object.prototype.hasOwnProperty.call(options.allowUnchanged, field)
+      && record[field] === options.allowUnchanged[field]) {
+      continue;
+    }
+    throw new ActivityModelError(
+      options.path ? `${options.path}.${field}` : field,
+      "generated_identifier_not_accepted",
+      "Names and codes are generated, not supplied; use namingInput for descriptive text",
+    );
   }
 }
 

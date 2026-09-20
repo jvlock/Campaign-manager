@@ -47,8 +47,11 @@ before(async () => {
     .insert(activities)
     .values({
       campaignId,
-      name: "Branch verification webinar",
-      type: "Webinar",
+      name: `${campaign.name}-webinar-Branch verification webinar`,
+      generatedName: `${campaign.name}-webinar-Branch verification webinar`,
+      namingInput: "Branch verification webinar",
+      type: "webinar",
+      activityTypeId: "webinar",
       audience: "Synthetic verification audience",
       region: "EMEA",
       timing: "2026-11-18",
@@ -250,7 +253,6 @@ test("a failed anchor calculation rolls back the webinar session insert", async 
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       activityId,
-      name: "Rolled back webinar session",
       sessionDate: "2026-11-20",
       startTime: "14:00",
       durationMinutes: 60,
@@ -264,6 +266,6 @@ test("a failed anchor calculation rolls back the webinar session insert", async 
   const sessions = await db
     .select()
     .from(webinarSessions)
-    .where(eq(webinarSessions.name, "Rolled back webinar session"));
+    .where(and(eq(webinarSessions.activityId, activityId), eq(webinarSessions.sessionDate, "2026-11-20")));
   assert.equal(sessions.length, 0);
 });
