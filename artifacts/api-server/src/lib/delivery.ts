@@ -6,6 +6,7 @@ import { assertTimezone, instanceResponse, recomputeForAnchor } from "./planning
 import { ensureWebinarStandard } from "./webinar-standard";
 import { countTasks, implementationTaskResponse } from "./implementation-tasks";
 import { GOVERNED_CHANNELS } from "./activity-model";
+import { deliverablesFor } from "./deliverables";
 
 export class DeliveryValidationError extends Error {
   readonly status: number;
@@ -47,6 +48,8 @@ export const communicationDetailsResponseSchema = z.object({
   qaOwnerConfirmed: z.boolean(),
   blockingDependencyTaskIds: z.array(z.string().uuid()),
   blockingDependencyIds: z.array(z.string().uuid()),
+  releaseState: z.enum(["Draft", "Released"]),
+  releasedAt: z.string().datetime().nullable(),
 });
 
 function detailResponse(row: typeof communicationDetails.$inferSelect) {
@@ -62,6 +65,8 @@ function detailResponse(row: typeof communicationDetails.$inferSelect) {
     qaOwnerConfirmed: row.qaOwnerConfirmed,
     blockingDependencyTaskIds: row.blockingDependencyTaskIds,
     blockingDependencyIds: row.blockingDependencyTaskIds,
+    releaseState: row.releaseState,
+    releasedAt: row.releasedAt?.toISOString() ?? null,
   });
 }
 
@@ -100,8 +105,13 @@ export async function deliveryFor(campaignId: string) {
       .orderBy(asc(activityTasks.sortOrder), asc(activityTasks.createdAt)),
   ]);
 
+  const deliverables = await deliverablesFor(campaignId);
+  const readiness = new Map<string, any>(deliverables.communications.map((row: any) => [row.communicationId, row]));
   return {
-    communications: communicationRows.map(({ communication, detail }) => communicationResponse(communication, detail ?? undefined)),
+    communications: communicationRows.map(({ communication, detail }) => ({
+      ...communicationResponse(communication, detail ?? undefined),
+      ...readiness.get(communication.id),
+    })),
     tasks: await Promise.all(taskRows.map(taskResponse)),
     taskCounts: countTasks(taskRows),
   };

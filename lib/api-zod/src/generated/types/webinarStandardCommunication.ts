@@ -5,6 +5,7 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { WebinarCanonicalCta } from './webinarCanonicalCta';
 import type { WebinarStandardCommunicationKey } from './webinarStandardCommunicationKey';
 import type { WebinarStandardScheduled } from './webinarStandardScheduled';
 import type { WebinarStandardTiming } from './webinarStandardTiming';
@@ -26,4 +27,5 @@ export interface WebinarStandardCommunication {
   /** @nullable */
   effectiveDate?: Date | null;
   variants: WebinarStandardVariantContent[];
+  ctas: WebinarCanonicalCta[];
 }

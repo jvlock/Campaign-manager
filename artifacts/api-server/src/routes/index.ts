@@ -6,12 +6,14 @@ import governanceRouter from "./governance";
 import planningRouter from "./planning";
 import webinarsRouter from "./webinars";
 import implementationTasksRouter from "./implementation-tasks";
+import deliverablesRouter from "./deliverables";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(campaignsRouter);
 router.use(deliveryRouter);
+router.use(deliverablesRouter);
 router.use(implementationTasksRouter);
 router.use(governanceRouter);
 router.use(planningRouter);

@@ -8,6 +8,7 @@ import { Loader2, ArrowLeft, Share, Download, Play, Save, CheckCircle2 } from 'l
 import { Link } from 'wouter';
 import EngagementMap from '@/components/map/EngagementMap';
 import CampaignDeliveryTab from './CampaignDeliveryTab';
+import CampaignDeliverablesTab from './CampaignDeliverablesTab';
 import { useEffect, useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -177,6 +178,12 @@ export default function CampaignDetail() {
               Calendar
             </TabsTrigger>
             <TabsTrigger 
+              value="deliverables"
+              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-12 px-0"
+            >
+              Deliverables
+            </TabsTrigger>
+            <TabsTrigger
               value="delivery" 
               className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-12 px-0"
             >
@@ -276,6 +283,10 @@ export default function CampaignDetail() {
           
           <TabsContent value="calendar" className="m-0 h-full p-6 flex items-center justify-center text-muted-foreground">
             Calendar View (Stub)
+          </TabsContent>
+
+          <TabsContent value="deliverables" className="m-0 h-full p-6 max-w-7xl mx-auto overflow-y-auto">
+            <CampaignDeliverablesTab campaign={campaign} />
           </TabsContent>
 
           <TabsContent value="delivery" className="m-0 h-full p-6 max-w-7xl mx-auto overflow-y-auto">

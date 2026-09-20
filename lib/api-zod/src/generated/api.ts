@@ -314,7 +314,23 @@ export const CreateCampaignResponse = zod.object({
   "qaTimingVerified": zod.boolean(),
   "qaOwnerConfirmed": zod.boolean(),
   "blockingDependencyTaskIds": zod.array(zod.string().uuid()),
-  "blockingDependencyIds": zod.array(zod.string().uuid())
+  "blockingDependencyIds": zod.array(zod.string().uuid()),
+  "releaseState": zod.enum(['Draft', 'Released']),
+  "releasedAt": zod.coerce.date().nullable(),
+  "dependencyReadiness": zod.enum(['Ready', 'Blocked']).optional(),
+  "dependencyReadinessDescription": zod.string().optional(),
+  "ctaIds": zod.array(zod.string().uuid()).optional(),
+  "landingPageIds": zod.array(zod.string().uuid()).optional(),
+  "blockers": zod.array(zod.object({
+  "code": zod.string(),
+  "entityType": zod.enum(['cta', 'landingPage', 'contentAsset', 'task', 'legacyWebinarCta']),
+  "id": zod.string(),
+  "name": zod.string(),
+  "owner": zod.string().nullable(),
+  "publishBy": zod.coerce.date().nullable(),
+  "status": zod.string()
+})).optional(),
+  "externalSending": zod.literal(false).optional()
 })),
   "tasks": zod.array(zod.object({
   "stage": zod.enum(['Not Started', 'In Progress', 'Ready for Review', 'Complete']).optional(),
@@ -477,7 +493,23 @@ export const GetCampaignResponse = zod.object({
   "qaTimingVerified": zod.boolean(),
   "qaOwnerConfirmed": zod.boolean(),
   "blockingDependencyTaskIds": zod.array(zod.string().uuid()),
-  "blockingDependencyIds": zod.array(zod.string().uuid())
+  "blockingDependencyIds": zod.array(zod.string().uuid()),
+  "releaseState": zod.enum(['Draft', 'Released']),
+  "releasedAt": zod.coerce.date().nullable(),
+  "dependencyReadiness": zod.enum(['Ready', 'Blocked']).optional(),
+  "dependencyReadinessDescription": zod.string().optional(),
+  "ctaIds": zod.array(zod.string().uuid()).optional(),
+  "landingPageIds": zod.array(zod.string().uuid()).optional(),
+  "blockers": zod.array(zod.object({
+  "code": zod.string(),
+  "entityType": zod.enum(['cta', 'landingPage', 'contentAsset', 'task', 'legacyWebinarCta']),
+  "id": zod.string(),
+  "name": zod.string(),
+  "owner": zod.string().nullable(),
+  "publishBy": zod.coerce.date().nullable(),
+  "status": zod.string()
+})).optional(),
+  "externalSending": zod.literal(false).optional()
 })),
   "tasks": zod.array(zod.object({
   "stage": zod.enum(['Not Started', 'In Progress', 'Ready for Review', 'Complete']).optional(),
@@ -660,7 +692,23 @@ export const UpdateCampaignResponse = zod.object({
   "qaTimingVerified": zod.boolean(),
   "qaOwnerConfirmed": zod.boolean(),
   "blockingDependencyTaskIds": zod.array(zod.string().uuid()),
-  "blockingDependencyIds": zod.array(zod.string().uuid())
+  "blockingDependencyIds": zod.array(zod.string().uuid()),
+  "releaseState": zod.enum(['Draft', 'Released']),
+  "releasedAt": zod.coerce.date().nullable(),
+  "dependencyReadiness": zod.enum(['Ready', 'Blocked']).optional(),
+  "dependencyReadinessDescription": zod.string().optional(),
+  "ctaIds": zod.array(zod.string().uuid()).optional(),
+  "landingPageIds": zod.array(zod.string().uuid()).optional(),
+  "blockers": zod.array(zod.object({
+  "code": zod.string(),
+  "entityType": zod.enum(['cta', 'landingPage', 'contentAsset', 'task', 'legacyWebinarCta']),
+  "id": zod.string(),
+  "name": zod.string(),
+  "owner": zod.string().nullable(),
+  "publishBy": zod.coerce.date().nullable(),
+  "status": zod.string()
+})).optional(),
+  "externalSending": zod.literal(false).optional()
 })),
   "tasks": zod.array(zod.object({
   "stage": zod.enum(['Not Started', 'In Progress', 'Ready for Review', 'Complete']).optional(),
@@ -956,7 +1004,23 @@ export const GetCampaignDeliveryResponse = zod.object({
   "qaTimingVerified": zod.boolean(),
   "qaOwnerConfirmed": zod.boolean(),
   "blockingDependencyTaskIds": zod.array(zod.string().uuid()),
-  "blockingDependencyIds": zod.array(zod.string().uuid())
+  "blockingDependencyIds": zod.array(zod.string().uuid()),
+  "releaseState": zod.enum(['Draft', 'Released']),
+  "releasedAt": zod.coerce.date().nullable(),
+  "dependencyReadiness": zod.enum(['Ready', 'Blocked']).optional(),
+  "dependencyReadinessDescription": zod.string().optional(),
+  "ctaIds": zod.array(zod.string().uuid()).optional(),
+  "landingPageIds": zod.array(zod.string().uuid()).optional(),
+  "blockers": zod.array(zod.object({
+  "code": zod.string(),
+  "entityType": zod.enum(['cta', 'landingPage', 'contentAsset', 'task', 'legacyWebinarCta']),
+  "id": zod.string(),
+  "name": zod.string(),
+  "owner": zod.string().nullable(),
+  "publishBy": zod.coerce.date().nullable(),
+  "status": zod.string()
+})).optional(),
+  "externalSending": zod.literal(false).optional()
 })),
   "tasks": zod.array(zod.object({
   "stage": zod.enum(['Not Started', 'In Progress', 'Ready for Review', 'Complete']).optional(),
@@ -1045,7 +1109,23 @@ export const CreateCommunicationResponse = zod.object({
   "qaTimingVerified": zod.boolean(),
   "qaOwnerConfirmed": zod.boolean(),
   "blockingDependencyTaskIds": zod.array(zod.string().uuid()),
-  "blockingDependencyIds": zod.array(zod.string().uuid())
+  "blockingDependencyIds": zod.array(zod.string().uuid()),
+  "releaseState": zod.enum(['Draft', 'Released']),
+  "releasedAt": zod.coerce.date().nullable(),
+  "dependencyReadiness": zod.enum(['Ready', 'Blocked']).optional(),
+  "dependencyReadinessDescription": zod.string().optional(),
+  "ctaIds": zod.array(zod.string().uuid()).optional(),
+  "landingPageIds": zod.array(zod.string().uuid()).optional(),
+  "blockers": zod.array(zod.object({
+  "code": zod.string(),
+  "entityType": zod.enum(['cta', 'landingPage', 'contentAsset', 'task', 'legacyWebinarCta']),
+  "id": zod.string(),
+  "name": zod.string(),
+  "owner": zod.string().nullable(),
+  "publishBy": zod.coerce.date().nullable(),
+  "status": zod.string()
+})).optional(),
+  "externalSending": zod.literal(false).optional()
 })
 
 
@@ -1103,7 +1183,23 @@ export const UpdateCommunicationResponse = zod.object({
   "qaTimingVerified": zod.boolean(),
   "qaOwnerConfirmed": zod.boolean(),
   "blockingDependencyTaskIds": zod.array(zod.string().uuid()),
-  "blockingDependencyIds": zod.array(zod.string().uuid())
+  "blockingDependencyIds": zod.array(zod.string().uuid()),
+  "releaseState": zod.enum(['Draft', 'Released']),
+  "releasedAt": zod.coerce.date().nullable(),
+  "dependencyReadiness": zod.enum(['Ready', 'Blocked']).optional(),
+  "dependencyReadinessDescription": zod.string().optional(),
+  "ctaIds": zod.array(zod.string().uuid()).optional(),
+  "landingPageIds": zod.array(zod.string().uuid()).optional(),
+  "blockers": zod.array(zod.object({
+  "code": zod.string(),
+  "entityType": zod.enum(['cta', 'landingPage', 'contentAsset', 'task', 'legacyWebinarCta']),
+  "id": zod.string(),
+  "name": zod.string(),
+  "owner": zod.string().nullable(),
+  "publishBy": zod.coerce.date().nullable(),
+  "status": zod.string()
+})).optional(),
+  "externalSending": zod.literal(false).optional()
 })
 
 
@@ -1113,6 +1209,569 @@ export const DeleteCommunicationParams = zod.object({
 })
 
 export const DeleteCommunicationResponse = zod.void()
+
+
+export const GetCampaignDeliverablesParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+
+
+
+
+
+
+export const GetCampaignDeliverablesResponse = zod.object({
+  "ctas": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "buttonText": zod.string().min(1),
+  "landingPageId": zod.string().uuid().nullable(),
+  "destinationUrl": zod.string().url().nullable().describe('Absolute HTTP(S) URL'),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable()
+}).and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "landingPageId": zod.string().uuid().nullable(),
+  "destinationUrl": zod.string().url().nullable(),
+  "sourceMetadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "communicationIds": zod.array(zod.string().uuid()),
+  "blockingCommunications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string()
+}))
+}))),
+  "landingPages": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "headline": zod.string(),
+  "supportingCopyNeeds": zod.string(),
+  "personalizationRequirements": zod.string(),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "publishedUrl": zod.string().url().nullable(),
+  "contentAssetIds": zod.array(zod.string().uuid())
+}).describe('publishedUrl is required and must use HTTP(S) when status is Published.').and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "publishedUrl": zod.string().url().nullable(),
+  "contentAssetIds": zod.array(zod.string().uuid()),
+  "communicationIds": zod.array(zod.string().uuid()),
+  "blockingCommunications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string()
+}))
+}))),
+  "contentAssets": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "brief": zod.string(),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable()
+}).and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "landingPageIds": zod.array(zod.string().uuid()),
+  "blockingCommunications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string()
+}))
+}))),
+  "communications": zod.array(zod.object({
+  "communicationId": zod.string().uuid(),
+  "communicationName": zod.string(),
+  "dependencyReadiness": zod.enum(['Ready', 'Blocked']),
+  "dependencyReadinessDescription": zod.string(),
+  "releaseState": zod.enum(['Draft', 'Released']),
+  "releasedAt": zod.coerce.date().nullable(),
+  "externalSending": zod.literal(false),
+  "ctaIds": zod.array(zod.string().uuid()),
+  "landingPageIds": zod.array(zod.string().uuid()),
+  "blockers": zod.array(zod.object({
+  "code": zod.string(),
+  "entityType": zod.enum(['cta', 'landingPage', 'contentAsset', 'task', 'legacyWebinarCta']),
+  "id": zod.string(),
+  "name": zod.string(),
+  "owner": zod.string().nullable(),
+  "publishBy": zod.coerce.date().nullable(),
+  "status": zod.string()
+}))
+})),
+  "outstanding": zod.array(zod.record(zod.string(), zod.unknown())).describe('Union of unpublished CTA, landing-page, and content-asset records.')
+})
+
+
+export const CreateCtaParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+
+
+export const CreateCtaBody = zod.object({
+  "name": zod.string().min(1),
+  "buttonText": zod.string().min(1),
+  "landingPageId": zod.string().uuid().nullish(),
+  "destinationUrl": zod.string().url().nullish().describe('Absolute HTTP(S) URL'),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']).optional(),
+  "publishBy": zod.coerce.date().nullish()
+})
+
+
+
+
+
+
+export const CreateCtaResponse = zod.object({
+  "name": zod.string().min(1),
+  "buttonText": zod.string().min(1),
+  "landingPageId": zod.string().uuid().nullable(),
+  "destinationUrl": zod.string().url().nullable().describe('Absolute HTTP(S) URL'),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable()
+}).and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "landingPageId": zod.string().uuid().nullable(),
+  "destinationUrl": zod.string().url().nullable(),
+  "sourceMetadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "communicationIds": zod.array(zod.string().uuid()),
+  "blockingCommunications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string()
+}))
+}))
+
+
+/**
+ * @summary Atomically create and attach a CTA without replacing existing links
+ */
+export const CreateAndAttachCtaParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "itemId": zod.coerce.string().uuid()
+})
+
+
+
+
+
+
+export const CreateAndAttachCtaBody = zod.object({
+  "name": zod.string().min(1),
+  "buttonText": zod.string().min(1),
+  "landingPageId": zod.string().uuid().nullish(),
+  "destinationUrl": zod.string().url().nullish().describe('Absolute HTTP(S) URL'),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']).optional(),
+  "publishBy": zod.coerce.date().nullish()
+})
+
+
+
+
+
+
+export const CreateAndAttachCtaResponse = zod.object({
+  "name": zod.string().min(1),
+  "buttonText": zod.string().min(1),
+  "landingPageId": zod.string().uuid().nullable(),
+  "destinationUrl": zod.string().url().nullable().describe('Absolute HTTP(S) URL'),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable()
+}).and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "landingPageId": zod.string().uuid().nullable(),
+  "destinationUrl": zod.string().url().nullable(),
+  "sourceMetadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "communicationIds": zod.array(zod.string().uuid()),
+  "blockingCommunications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string()
+}))
+}))
+
+
+export const UpdateCtaParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "deliverableId": zod.coerce.string().uuid()
+})
+
+
+
+
+
+
+export const UpdateCtaBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "buttonText": zod.string().min(1).optional(),
+  "landingPageId": zod.string().uuid().nullish(),
+  "destinationUrl": zod.string().url().nullish(),
+  "owner": zod.string().min(1).optional(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']).optional(),
+  "publishBy": zod.coerce.date().nullish()
+})
+
+
+
+
+
+
+export const UpdateCtaResponse = zod.object({
+  "name": zod.string().min(1),
+  "buttonText": zod.string().min(1),
+  "landingPageId": zod.string().uuid().nullable(),
+  "destinationUrl": zod.string().url().nullable().describe('Absolute HTTP(S) URL'),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable()
+}).and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "landingPageId": zod.string().uuid().nullable(),
+  "destinationUrl": zod.string().url().nullable(),
+  "sourceMetadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "communicationIds": zod.array(zod.string().uuid()),
+  "blockingCommunications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string()
+}))
+}))
+
+
+export const DeleteCtaParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "deliverableId": zod.coerce.string().uuid()
+})
+
+export const DeleteCtaResponse = zod.void()
+
+
+export const CreateLandingPageParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+
+export const CreateLandingPageBody = zod.object({
+  "name": zod.string().min(1),
+  "headline": zod.string(),
+  "supportingCopyNeeds": zod.string(),
+  "personalizationRequirements": zod.string(),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']).optional(),
+  "publishBy": zod.coerce.date().nullish(),
+  "publishedUrl": zod.string().url().nullish(),
+  "contentAssetIds": zod.array(zod.string().uuid()).optional()
+}).describe('publishedUrl is required and must use HTTP(S) when status is Published.')
+
+
+
+
+
+export const CreateLandingPageResponse = zod.object({
+  "name": zod.string().min(1),
+  "headline": zod.string(),
+  "supportingCopyNeeds": zod.string(),
+  "personalizationRequirements": zod.string(),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "publishedUrl": zod.string().url().nullable(),
+  "contentAssetIds": zod.array(zod.string().uuid())
+}).describe('publishedUrl is required and must use HTTP(S) when status is Published.').and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "publishedUrl": zod.string().url().nullable(),
+  "contentAssetIds": zod.array(zod.string().uuid()),
+  "communicationIds": zod.array(zod.string().uuid()),
+  "blockingCommunications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string()
+}))
+}))
+
+
+/**
+ * @summary Atomically create and attach a landing page without replacing existing links
+ */
+export const CreateAndAttachLandingPageParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "itemId": zod.coerce.string().uuid()
+})
+
+
+
+
+
+export const CreateAndAttachLandingPageBody = zod.object({
+  "name": zod.string().min(1),
+  "headline": zod.string(),
+  "supportingCopyNeeds": zod.string(),
+  "personalizationRequirements": zod.string(),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']).optional(),
+  "publishBy": zod.coerce.date().nullish(),
+  "publishedUrl": zod.string().url().nullish(),
+  "contentAssetIds": zod.array(zod.string().uuid()).optional()
+}).describe('publishedUrl is required and must use HTTP(S) when status is Published.')
+
+
+
+
+
+export const CreateAndAttachLandingPageResponse = zod.object({
+  "name": zod.string().min(1),
+  "headline": zod.string(),
+  "supportingCopyNeeds": zod.string(),
+  "personalizationRequirements": zod.string(),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "publishedUrl": zod.string().url().nullable(),
+  "contentAssetIds": zod.array(zod.string().uuid())
+}).describe('publishedUrl is required and must use HTTP(S) when status is Published.').and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "publishedUrl": zod.string().url().nullable(),
+  "contentAssetIds": zod.array(zod.string().uuid()),
+  "communicationIds": zod.array(zod.string().uuid()),
+  "blockingCommunications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string()
+}))
+}))
+
+
+export const UpdateLandingPageParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "deliverableId": zod.coerce.string().uuid()
+})
+
+
+
+
+
+export const UpdateLandingPageBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "headline": zod.string().optional(),
+  "supportingCopyNeeds": zod.string().optional(),
+  "personalizationRequirements": zod.string().optional(),
+  "owner": zod.string().min(1).optional(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']).optional(),
+  "publishBy": zod.coerce.date().nullish(),
+  "publishedUrl": zod.string().url().nullish(),
+  "contentAssetIds": zod.array(zod.string().uuid()).optional()
+}).describe('The resulting record must have an HTTP(S) publishedUrl when status is Published.')
+
+
+
+
+
+export const UpdateLandingPageResponse = zod.object({
+  "name": zod.string().min(1),
+  "headline": zod.string(),
+  "supportingCopyNeeds": zod.string(),
+  "personalizationRequirements": zod.string(),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "publishedUrl": zod.string().url().nullable(),
+  "contentAssetIds": zod.array(zod.string().uuid())
+}).describe('publishedUrl is required and must use HTTP(S) when status is Published.').and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "publishedUrl": zod.string().url().nullable(),
+  "contentAssetIds": zod.array(zod.string().uuid()),
+  "communicationIds": zod.array(zod.string().uuid()),
+  "blockingCommunications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string()
+}))
+}))
+
+
+export const DeleteLandingPageParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "deliverableId": zod.coerce.string().uuid()
+})
+
+export const DeleteLandingPageResponse = zod.void()
+
+
+export const CreateContentAssetParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+
+export const CreateContentAssetBody = zod.object({
+  "name": zod.string().min(1),
+  "brief": zod.string(),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']).optional(),
+  "publishBy": zod.coerce.date().nullish()
+})
+
+
+
+
+
+export const CreateContentAssetResponse = zod.object({
+  "name": zod.string().min(1),
+  "brief": zod.string(),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable()
+}).and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "landingPageIds": zod.array(zod.string().uuid()),
+  "blockingCommunications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string()
+}))
+}))
+
+
+export const UpdateContentAssetParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "deliverableId": zod.coerce.string().uuid()
+})
+
+
+
+
+
+export const UpdateContentAssetBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "brief": zod.string().optional(),
+  "owner": zod.string().min(1).optional(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']).optional(),
+  "publishBy": zod.coerce.date().nullish()
+})
+
+
+
+
+
+export const UpdateContentAssetResponse = zod.object({
+  "name": zod.string().min(1),
+  "brief": zod.string(),
+  "owner": zod.string().min(1),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable()
+}).and(zod.object({
+  "id": zod.string().uuid(),
+  "campaignId": zod.string().uuid(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published']),
+  "publishBy": zod.coerce.date().nullable(),
+  "landingPageIds": zod.array(zod.string().uuid()),
+  "blockingCommunications": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string()
+}))
+}))
+
+
+export const DeleteContentAssetParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "deliverableId": zod.coerce.string().uuid()
+})
+
+export const DeleteContentAssetResponse = zod.void()
+
+
+export const UpdateCommunicationDeliverableDependenciesParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "itemId": zod.coerce.string().uuid()
+})
+
+export const UpdateCommunicationDeliverableDependenciesBody = zod.object({
+  "ctaIds": zod.array(zod.string().uuid()),
+  "landingPageIds": zod.array(zod.string().uuid())
+})
+
+export const UpdateCommunicationDeliverableDependenciesResponse = zod.object({
+  "communicationId": zod.string().uuid(),
+  "communicationName": zod.string(),
+  "dependencyReadiness": zod.enum(['Ready', 'Blocked']),
+  "dependencyReadinessDescription": zod.string(),
+  "releaseState": zod.enum(['Draft', 'Released']),
+  "releasedAt": zod.coerce.date().nullable(),
+  "externalSending": zod.literal(false),
+  "ctaIds": zod.array(zod.string().uuid()),
+  "landingPageIds": zod.array(zod.string().uuid()),
+  "blockers": zod.array(zod.object({
+  "code": zod.string(),
+  "entityType": zod.enum(['cta', 'landingPage', 'contentAsset', 'task', 'legacyWebinarCta']),
+  "id": zod.string(),
+  "name": zod.string(),
+  "owner": zod.string().nullable(),
+  "publishBy": zod.coerce.date().nullable(),
+  "status": zod.string()
+}))
+})
+
+
+export const ReleaseCommunicationParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "itemId": zod.coerce.string().uuid()
+})
+
+export const ReleaseCommunicationResponse = zod.object({
+  "communicationId": zod.string().uuid(),
+  "communicationName": zod.string(),
+  "dependencyReadiness": zod.enum(['Ready', 'Blocked']),
+  "dependencyReadinessDescription": zod.string(),
+  "releaseState": zod.enum(['Draft', 'Released']),
+  "releasedAt": zod.coerce.date().nullable(),
+  "externalSending": zod.literal(false),
+  "ctaIds": zod.array(zod.string().uuid()),
+  "landingPageIds": zod.array(zod.string().uuid()),
+  "blockers": zod.array(zod.object({
+  "code": zod.string(),
+  "entityType": zod.enum(['cta', 'landingPage', 'contentAsset', 'task', 'legacyWebinarCta']),
+  "id": zod.string(),
+  "name": zod.string(),
+  "owner": zod.string().nullable(),
+  "publishBy": zod.coerce.date().nullable(),
+  "status": zod.string()
+}))
+})
 
 
 export const CreateActivityTaskParams = zod.object({
@@ -2023,6 +2682,14 @@ export const GetWebinarStandardResponse = zod.object({
   "message": zod.string()
 }))
 })
+})),
+  "ctas": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "buttonText": zod.string(),
+  "destinationUrl": zod.string().url().nullable(),
+  "destinationError": zod.string().nullable(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published'])
 }))
 })).min(getWebinarStandardResponseCommunicationsMin).max(getWebinarStandardResponseCommunicationsMax)
 })
@@ -2089,10 +2756,8 @@ export const UpdateWebinarStandardBody = zod.object({
   "preheader": zod.string().optional(),
   "hero": zod.string().optional(),
   "body": zod.string().optional(),
-  "ctaLabel": zod.string().optional(),
-  "ctaUrl": zod.string().optional(),
   "internalAssetName": zod.string().optional()
-})
+}).describe('CTA label and URL are read-only legacy projections; manage reusable CTA links through communication dependency endpoints.')
 })).optional()
 })).optional()
 })
@@ -2192,6 +2857,14 @@ export const UpdateWebinarStandardResponse = zod.object({
   "message": zod.string()
 }))
 })
+})),
+  "ctas": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "buttonText": zod.string(),
+  "destinationUrl": zod.string().url().nullable(),
+  "destinationError": zod.string().nullable(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published'])
 }))
 })).min(updateWebinarStandardResponseCommunicationsMin).max(updateWebinarStandardResponseCommunicationsMax)
 })
@@ -2243,6 +2916,14 @@ export const ExportWebinarStandardResponse = zod.object({
   "locked": zod.literal(true)
 }),
   "audienceRule": zod.string(),
+  "ctas": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "buttonText": zod.string(),
+  "destinationUrl": zod.string().url().nullable(),
+  "destinationError": zod.string().nullable(),
+  "status": zod.enum(['Not Started', 'Drafted', 'In Review', 'Published'])
+})),
   "scheduled": zod.object({
   "status": zod.string(),
   "originalAt": zod.coerce.date().nullable(),

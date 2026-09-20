@@ -21,6 +21,8 @@ export const communicationDetails = pgTable("communication_details", {
   qaTimingVerified: boolean("qa_timing_verified").notNull().default(false),
   qaOwnerConfirmed: boolean("qa_owner_confirmed").notNull().default(false),
   blockingDependencyTaskIds: jsonb("blocking_dependency_task_ids").$type<string[]>().notNull().default([]),
+  releaseState: text("release_state").notNull().default("Draft"),
+  releasedAt: timestamp("released_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

@@ -63,8 +63,24 @@ export const communications = pgTable("communications", {
 }, (table) => ({
   idCampaignUnique: unique("communications_id_campaign_unique").on(table.id, table.campaignId),
 }));
-export const assets = pgTable("assets", { id: id(), campaignId: uuid("campaign_id").notNull(), name: text("name").notNull(), reusable: boolean("reusable").default(false).notNull(), status: text("status").notNull(), ...audit });
-export const landingPages = pgTable("landing_pages", { id: id(), campaignId: uuid("campaign_id").notNull(), name: text("name").notNull(), url: text("url"), status: text("status").notNull(), ...audit });
+export const assets = pgTable("assets", {
+  id: id(), campaignId: uuid("campaign_id").notNull(), name: text("name").notNull(),
+  reusable: boolean("reusable").default(true).notNull(), status: text("status").notNull(),
+  brief: text("brief").default("").notNull(), owner: text("owner").default("Campaign team").notNull(),
+  publishBy: text("publish_by"), ...audit,
+}, (table) => ({
+  idCampaignUnique: unique("assets_id_campaign_unique").on(table.id, table.campaignId),
+}));
+export const landingPages = pgTable("landing_pages", {
+  id: id(), campaignId: uuid("campaign_id").notNull(), name: text("name").notNull(),
+  url: text("url"), status: text("status").notNull(),
+  headline: text("headline").default("").notNull(),
+  supportingCopyNeeds: text("supporting_copy_needs").default("").notNull(),
+  personalizationRequirements: text("personalization_requirements").default("").notNull(),
+  owner: text("owner").default("Campaign team").notNull(), publishBy: text("publish_by"), ...audit,
+}, (table) => ({
+  idCampaignUnique: unique("landing_pages_id_campaign_unique").on(table.id, table.campaignId),
+}));
 export const kpis = pgTable("kpis", { id: id(), campaignId: uuid("campaign_id").notNull(), name: text("name").notNull(), target: numeric("target"), status: text("status").notNull(), ...audit });
 export const budgets = pgTable("budgets", { id: id(), campaignId: uuid("campaign_id").notNull(), amount: numeric("amount"), currency: text("currency").default("USD").notNull(), status: text("status").notNull(), ...audit });
 export const conflicts = pgTable("conflicts", { id: id(), classification: text("classification").notNull(), severity: text("severity").notNull(), title: text("title").notNull(), reason: text("reason").notNull(), campaignIds: jsonb("campaign_ids").notNull(), dates: text("dates").notNull(), recommendation: text("recommendation").notNull(), owner: text("owner").notNull(), status: text("status").notNull(), ...audit });

@@ -207,6 +207,45 @@ export const DeliveryStatus = {
   Confirmed: 'Confirmed',
 } as const;
 
+export type CommunicationReleaseState = typeof CommunicationReleaseState[keyof typeof CommunicationReleaseState];
+
+
+export const CommunicationReleaseState = {
+  Draft: 'Draft',
+  Released: 'Released',
+} as const;
+
+export type CommunicationDependencyReadiness = typeof CommunicationDependencyReadiness[keyof typeof CommunicationDependencyReadiness];
+
+
+export const CommunicationDependencyReadiness = {
+  Ready: 'Ready',
+  Blocked: 'Blocked',
+} as const;
+
+export type DeliverableBlockerEntityType = typeof DeliverableBlockerEntityType[keyof typeof DeliverableBlockerEntityType];
+
+
+export const DeliverableBlockerEntityType = {
+  cta: 'cta',
+  landingPage: 'landingPage',
+  contentAsset: 'contentAsset',
+  task: 'task',
+  legacyWebinarCta: 'legacyWebinarCta',
+} as const;
+
+export interface DeliverableBlocker {
+  code: string;
+  entityType: DeliverableBlockerEntityType;
+  id: string;
+  name: string;
+  /** @nullable */
+  owner: string | null;
+  /** @nullable */
+  publishBy: string | null;
+  status: string;
+}
+
 export interface Communication {
   id: string;
   campaignId: string;
@@ -232,6 +271,15 @@ export interface Communication {
   qaOwnerConfirmed: boolean;
   blockingDependencyTaskIds: string[];
   blockingDependencyIds: string[];
+  releaseState: CommunicationReleaseState;
+  /** @nullable */
+  releasedAt: string | null;
+  dependencyReadiness?: CommunicationDependencyReadiness;
+  dependencyReadinessDescription?: string;
+  ctaIds?: string[];
+  landingPageIds?: string[];
+  blockers?: DeliverableBlocker[];
+  externalSending?: false;
 }
 
 export type ImplementationTaskWriteFieldsStage = typeof ImplementationTaskWriteFieldsStage[keyof typeof ImplementationTaskWriteFieldsStage];
@@ -404,6 +452,202 @@ export interface ActivityNameRenderInput {
 
 export interface ActivityNameRenderResponse {
   name: string;
+}
+
+export type DeliverableBuildStatus = typeof DeliverableBuildStatus[keyof typeof DeliverableBuildStatus];
+
+
+export const DeliverableBuildStatus = {
+  Not_Started: 'Not Started',
+  Drafted: 'Drafted',
+  In_Review: 'In Review',
+  Published: 'Published',
+} as const;
+
+export interface BlockingCommunication {
+  id: string;
+  name: string;
+}
+
+export interface CtaInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  buttonText: string;
+  /** @nullable */
+  landingPageId?: string | null;
+  /**
+     * Absolute HTTP(S) URL
+     * @nullable
+     */
+  destinationUrl?: string | null;
+  /** @minLength 1 */
+  owner: string;
+  status?: DeliverableBuildStatus;
+  /** @nullable */
+  publishBy?: string | null;
+}
+
+export interface CtaUpdate {
+  /** @minLength 1 */
+  name?: string;
+  /** @minLength 1 */
+  buttonText?: string;
+  /** @nullable */
+  landingPageId?: string | null;
+  /** @nullable */
+  destinationUrl?: string | null;
+  /** @minLength 1 */
+  owner?: string;
+  status?: DeliverableBuildStatus;
+  /** @nullable */
+  publishBy?: string | null;
+}
+
+export type CtaSourceMetadata = { [key: string]: unknown };
+
+export type Cta = CtaInput & ({
+  id: string;
+  campaignId: string;
+  status: DeliverableBuildStatus;
+  /** @nullable */
+  publishBy: string | null;
+  /** @nullable */
+  landingPageId: string | null;
+  /** @nullable */
+  destinationUrl: string | null;
+  sourceMetadata?: CtaSourceMetadata;
+  communicationIds: string[];
+  blockingCommunications: BlockingCommunication[];
+});
+
+/**
+ * publishedUrl is required and must use HTTP(S) when status is Published.
+ */
+export interface LandingPageInput {
+  /** @minLength 1 */
+  name: string;
+  headline: string;
+  supportingCopyNeeds: string;
+  personalizationRequirements: string;
+  /** @minLength 1 */
+  owner: string;
+  status?: DeliverableBuildStatus;
+  /** @nullable */
+  publishBy?: string | null;
+  /** @nullable */
+  publishedUrl?: string | null;
+  contentAssetIds?: string[];
+}
+
+/**
+ * The resulting record must have an HTTP(S) publishedUrl when status is Published.
+ */
+export interface LandingPageUpdate {
+  /** @minLength 1 */
+  name?: string;
+  headline?: string;
+  supportingCopyNeeds?: string;
+  personalizationRequirements?: string;
+  /** @minLength 1 */
+  owner?: string;
+  status?: DeliverableBuildStatus;
+  /** @nullable */
+  publishBy?: string | null;
+  /** @nullable */
+  publishedUrl?: string | null;
+  contentAssetIds?: string[];
+}
+
+export type LandingPageDeliverable = LandingPageInput & ({
+  id: string;
+  campaignId: string;
+  status: DeliverableBuildStatus;
+  /** @nullable */
+  publishBy: string | null;
+  /** @nullable */
+  publishedUrl: string | null;
+  contentAssetIds: string[];
+  communicationIds: string[];
+  blockingCommunications: BlockingCommunication[];
+});
+
+export interface ContentAssetInput {
+  /** @minLength 1 */
+  name: string;
+  brief: string;
+  /** @minLength 1 */
+  owner: string;
+  status?: DeliverableBuildStatus;
+  /** @nullable */
+  publishBy?: string | null;
+}
+
+export interface ContentAssetUpdate {
+  /** @minLength 1 */
+  name?: string;
+  brief?: string;
+  /** @minLength 1 */
+  owner?: string;
+  status?: DeliverableBuildStatus;
+  /** @nullable */
+  publishBy?: string | null;
+}
+
+export type ContentAsset = ContentAssetInput & ({
+  id: string;
+  campaignId: string;
+  status: DeliverableBuildStatus;
+  /** @nullable */
+  publishBy: string | null;
+  landingPageIds: string[];
+  blockingCommunications: BlockingCommunication[];
+});
+
+export interface CommunicationDeliverableDependencies {
+  ctaIds: string[];
+  landingPageIds: string[];
+}
+
+export type CommunicationReadinessDependencyReadiness = typeof CommunicationReadinessDependencyReadiness[keyof typeof CommunicationReadinessDependencyReadiness];
+
+
+export const CommunicationReadinessDependencyReadiness = {
+  Ready: 'Ready',
+  Blocked: 'Blocked',
+} as const;
+
+export type CommunicationReadinessReleaseState = typeof CommunicationReadinessReleaseState[keyof typeof CommunicationReadinessReleaseState];
+
+
+export const CommunicationReadinessReleaseState = {
+  Draft: 'Draft',
+  Released: 'Released',
+} as const;
+
+export interface CommunicationReadiness {
+  communicationId: string;
+  communicationName: string;
+  dependencyReadiness: CommunicationReadinessDependencyReadiness;
+  dependencyReadinessDescription: string;
+  releaseState: CommunicationReadinessReleaseState;
+  /** @nullable */
+  releasedAt: string | null;
+  externalSending: false;
+  ctaIds: string[];
+  landingPageIds: string[];
+  blockers: DeliverableBlocker[];
+}
+
+export type CampaignDeliverablesOutstandingItem = { [key: string]: unknown };
+
+export interface CampaignDeliverables {
+  ctas: Cta[];
+  landingPages: LandingPageDeliverable[];
+  contentAssets: ContentAsset[];
+  communications: CommunicationReadiness[];
+  /** Union of unpublished CTA, landing-page, and content-asset records. */
+  outstanding: CampaignDeliverablesOutstandingItem[];
 }
 
 export interface CommunicationInput {
@@ -1125,6 +1369,17 @@ export const WebinarStandardCommunicationKey = {
   no_show_followup: 'no_show_followup',
 } as const;
 
+export interface WebinarCanonicalCta {
+  id: string;
+  name: string;
+  buttonText: string;
+  /** @nullable */
+  destinationUrl: string | null;
+  /** @nullable */
+  destinationError: string | null;
+  status: DeliverableBuildStatus;
+}
+
 export interface WebinarStandardCommunication {
   id: string;
   key: WebinarStandardCommunicationKey;
@@ -1141,6 +1396,7 @@ export interface WebinarStandardCommunication {
   /** @nullable */
   effectiveDate?: string | null;
   variants: WebinarStandardVariantContent[];
+  ctas: WebinarCanonicalCta[];
 }
 
 export type WebinarStandardTemplateConfigPilotLimits = {
@@ -1198,13 +1454,14 @@ export interface WebinarStandard {
   communications: WebinarStandardCommunication[];
 }
 
+/**
+ * CTA label and URL are read-only legacy projections; manage reusable CTA links through communication dependency endpoints.
+ */
 export interface WebinarStandardContentPatch {
   subject?: string;
   preheader?: string;
   hero?: string;
   body?: string;
-  ctaLabel?: string;
-  ctaUrl?: string;
   internalAssetName?: string;
 }
 
@@ -1302,6 +1559,7 @@ export type WebinarStandardExportCommunicationsItem = {
   sortOrder: number;
   timing: WebinarStandardTiming;
   audienceRule: string;
+  ctas: WebinarCanonicalCta[];
   scheduled?: WebinarStandardScheduled;
   variant: WebinarStandardExportCommunicationsItemVariant;
 };

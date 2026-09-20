@@ -26,6 +26,7 @@ import {
   validateActivityModel,
   renderActivityName,
 } from "../lib/activity-model";
+import { assertCampaignDeliverablesReady, DeliverableError } from "../lib/deliverables";
 
 const router: IRouter = Router();
 
@@ -252,6 +253,10 @@ router.patch("/campaigns/:id", async (req, res, next) => {
       return { activity, model };
     });
     const c = await db.transaction(async (tx) => {
+      if (req.body.lifecycle === "Live") {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${req.params.id}))`);
+        await assertCampaignDeliverablesReady(req.params.id, tx);
+      }
       const [updated] = await tx.update(campaigns).set({
         ...patch,
         rowVersion: sql`${campaigns.rowVersion} + 1`,
@@ -286,6 +291,10 @@ router.patch("/campaigns/:id", async (req, res, next) => {
     res.json(await detail(c));
   } catch (e) {
     if (e instanceof ActivityModelError) { activityModelError(res, e); return; }
+    if (e instanceof DeliverableError) {
+      res.status(e.status).json({ error: { field: e.field, code: e.code, message: e.message } });
+      return;
+    }
     next(e);
   }
 });

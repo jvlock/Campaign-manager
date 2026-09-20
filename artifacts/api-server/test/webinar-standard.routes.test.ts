@@ -9,6 +9,8 @@ import {
   audiences,
   campaigns,
   communications,
+  communicationCtas,
+  ctas,
   db,
   scheduleRules,
   scheduledInstanceHistory,
@@ -19,6 +21,7 @@ import {
   webinarStandardCommunications,
   webinarStandardConfigs,
   webinarStandardTriggerEvents,
+  landingPages,
 } from "@workspace/db";
 import { communicationDetails } from "@workspace/db/schema/communication-details";
 
@@ -85,6 +88,9 @@ async function cleanupCampaign(campaignId: string) {
   await db.delete(scheduleRules).where(eq(scheduleRules.campaignId, campaignId));
   await db.delete(webinarStandardCommunications).where(eq(webinarStandardCommunications.campaignId, campaignId));
   await db.delete(webinarStandardConfigs).where(eq(webinarStandardConfigs.campaignId, campaignId));
+  await db.delete(communicationCtas).where(eq(communicationCtas.campaignId, campaignId));
+  await db.delete(ctas).where(eq(ctas.campaignId, campaignId));
+  await db.delete(landingPages).where(eq(landingPages.campaignId, campaignId));
   await db.delete(communicationDetails).where(eq(communicationDetails.campaignId, campaignId));
   await db.delete(communications).where(eq(communications.campaignId, campaignId));
   if (sessionRows.length) await db.delete(webinarSessions).where(eq(webinarSessions.campaignId, campaignId));
@@ -92,6 +98,34 @@ async function cleanupCampaign(campaignId: string) {
   await db.delete(webinarPeople).where(eq(webinarPeople.campaignId, campaignId));
   await db.delete(audiences).where(eq(audiences.campaignId, campaignId));
   await db.delete(campaigns).where(eq(campaigns.id, campaignId));
+}
+
+async function linkPublishedCta(campaignId: string, sessionId: string) {
+  const created = await fetch(`${baseUrl}/campaigns/${campaignId}/ctas`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      name: "Canonical webinar CTA",
+      buttonText: "Join",
+      destinationUrl: "https://example.com",
+      owner: "Route test",
+      status: "Published",
+      publishBy: null,
+    }),
+  });
+  assert.equal(created.status, 201);
+  const cta = await created.json() as { id: string };
+  const rows = await db.select().from(webinarStandardCommunications).where(eq(webinarStandardCommunications.sessionId, sessionId));
+  for (const row of rows) {
+    assert.ok(row.communicationId);
+    const linked = await fetch(`${baseUrl}/campaigns/${campaignId}/communications/${row.communicationId}/dependencies`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ctaIds: [cta.id], landingPageIds: [] }),
+    });
+    assert.equal(linked.status, 200);
+  }
+  return { cta, rows };
 }
 
 after(async () => {
@@ -218,6 +252,33 @@ test("session POST persists the five-message default and draft copy", async () =
     }),
   });
   assert.equal(draftPatch.status, 200);
+  const rejectedLegacyCtaPatch = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      communications: [{ key: "recruitment_1", variants: [{ slot: 1, content: { ctaLabel: "Bypass" } }] }],
+    }),
+  });
+  assert.equal(rejectedLegacyCtaPatch.status, 409);
+  const [legacyRow] = await db.select().from(webinarStandardCommunications)
+    .where(eq(webinarStandardCommunications.sessionId, session.id));
+  const originalVariants = legacyRow.variants;
+  const malformedVariants = (originalVariants as any[]).map((variant, index) => index === 0 ? {
+    ...variant,
+    content: { ...variant.content, ctaLabel: "Broken historical CTA", ctaUrl: "not-a-url" },
+  } : variant);
+  await db.update(webinarStandardCommunications).set({ variants: malformedVariants })
+    .where(eq(webinarStandardCommunications.id, legacyRow.id));
+  const malformedReadinessResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/deliverables`);
+  assert.equal(malformedReadinessResponse.status, 200);
+  const malformedReadiness = await malformedReadinessResponse.json() as {
+    communications: Array<{ communicationId: string; blockers: Array<{ code: string }> }>;
+  };
+  assert.ok(malformedReadiness.communications
+    .find((communication) => communication.communicationId === legacyRow.communicationId)
+    ?.blockers.some((blocker) => blocker.code === "legacy_webinar_cta_requires_migration"));
+  await db.update(webinarStandardCommunications).set({ variants: originalVariants })
+    .where(eq(webinarStandardCommunications.id, legacyRow.id));
   const invalidExport = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard/export`);
   assert.equal(invalidExport.status, 422);
 
@@ -235,19 +296,51 @@ test("session POST persists the five-message default and draft copy", async () =
             preheader: "Preheader",
             hero: "Hero",
             body: "Body",
-            ctaLabel: "Join",
-            ctaUrl: "https://example.com",
           },
         }],
       })),
     }),
   });
   assert.equal(validPatch.status, 200);
+  const canonical = await linkPublishedCta(createdCampaign.id, session.id);
   const validExportResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard/export`);
   assert.equal(validExportResponse.status, 200);
    const validExport = await validExportResponse.json() as { communications: Array<{ key: string; scheduled?: { effectiveAt: string | null } }> };
    assert.equal(validExport.communications.length, 5);
   assert.ok(validExport.communications.find((communication) => communication.key === "recruitment_1")?.scheduled?.effectiveAt);
+  const [page] = await db.insert(landingPages).values({
+    campaignId: createdCampaign.id, name: "Historical published page missing URL",
+    headline: "", supportingCopyNeeds: "", personalizationRequirements: "",
+    owner: "Route test", status: "Published", url: null,
+  }).returning();
+  const unresolvedCtaResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/ctas`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      name: "Unresolvable page CTA", buttonText: "Open", landingPageId: page.id,
+      owner: "Route test", status: "Published", publishBy: null,
+    }),
+  });
+  assert.equal(unresolvedCtaResponse.status, 201);
+  const unresolvedCta = await unresolvedCtaResponse.json() as { id: string };
+  const firstRow = canonical.rows[0];
+  assert.ok(firstRow.communicationId);
+  const unresolvedLink = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/communications/${firstRow.communicationId}/dependencies`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ctaIds: [unresolvedCta.id], landingPageIds: [] }),
+  });
+  assert.equal(unresolvedLink.status, 200);
+  const unresolvedExport = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard/export`);
+  assert.equal(unresolvedExport.status, 409);
+  const unresolvedError = await unresolvedExport.json() as { error: string };
+  assert.match(unresolvedError.error, /publishedUrl/);
+  const restoredLink = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/communications/${firstRow.communicationId}/dependencies`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ctaIds: [canonical.cta.id], landingPageIds: [] }),
+  });
+  assert.equal(restoredLink.status, 200);
    assert.equal(validExport.communications.some((communication) => communication.key === "registration_confirmation" || communication.key === "no_show_followup"), false);
    const [audience] = await db.select().from(audiences).where(eq(audiences.campaignId, createdCampaign.id));
    const personResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/people`, {
@@ -338,14 +431,13 @@ test("registration confirmation is persisted per successful person event", async
             preheader: "Preheader",
             hero: "Hero",
             body: "Body",
-            ctaLabel: "Join",
-            ctaUrl: "https://example.com",
           },
         }],
       })),
     }),
   });
   assert.equal(legacyCopyPatch.status, 200);
+  await linkPublishedCta(createdCampaign.id, session.id);
   const legacyExportResponse = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars/${session.id}/standard/export`);
   assert.equal(legacyExportResponse.status, 200);
   const legacyExport = await legacyExportResponse.json() as { communications: Array<{ key: string }> };

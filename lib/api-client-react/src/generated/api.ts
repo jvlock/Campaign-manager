@@ -32,16 +32,25 @@ import type {
   AdapterStatus,
   AttendanceResultInput,
   BadRequestResponse,
+  CampaignDeliverables,
   CampaignDelivery,
   CampaignDetail,
   CampaignInput,
   CampaignSummary,
   CampaignUpdate,
   Communication,
+  CommunicationDeliverableDependencies,
   CommunicationInput,
+  CommunicationReadiness,
   CommunicationUpdate,
   Conflict,
   ConflictResponse,
+  ContentAsset,
+  ContentAssetInput,
+  ContentAssetUpdate,
+  Cta,
+  CtaInput,
+  CtaUpdate,
   Governance,
   GovernanceActorReason,
   GovernanceApproval,
@@ -52,6 +61,9 @@ import type {
   GovernanceCommentInput,
   GovernanceCommentUpdate,
   HealthStatus,
+  LandingPageDeliverable,
+  LandingPageInput,
+  LandingPageUpdate,
   ListGovernanceApprovalsParams,
   ListGovernanceAuditParams,
   ListGovernanceCommentsParams,
@@ -1597,6 +1609,1128 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDeleteCommunicationMutationOptions(options));
+    }
+
+export const getGetCampaignDeliverablesUrl = (id: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/deliverables`
+}
+
+export const getCampaignDeliverables = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<CampaignDeliverables> => {
+
+  return customFetch<CampaignDeliverables>(getGetCampaignDeliverablesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCampaignDeliverablesQueryKey = (id: string,) => {
+    return [
+    `/api/campaigns/${id}/deliverables`
+    ] as const;
+    }
+
+
+export const getGetCampaignDeliverablesQueryOptions = <TData = Awaited<ReturnType<typeof getCampaignDeliverables>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCampaignDeliverables>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCampaignDeliverablesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCampaignDeliverables>>> = ({ signal }) => getCampaignDeliverables(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCampaignDeliverables>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCampaignDeliverablesQueryResult = NonNullable<Awaited<ReturnType<typeof getCampaignDeliverables>>>
+export type GetCampaignDeliverablesQueryError = ErrorType<unknown>
+
+
+
+export function useGetCampaignDeliverables<TData = Awaited<ReturnType<typeof getCampaignDeliverables>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCampaignDeliverables>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCampaignDeliverablesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCtaUrl = (id: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/ctas`
+}
+
+export const createCta = async (id: string,
+    ctaInput: CtaInput, options?: Parameters<typeof customFetch>[1]): Promise<Cta> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Cta>(getCreateCtaUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(ctaInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCtaMutationKey = () => ['createCta'] as const;
+
+export const getCreateCtaMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCta>>, TError,CreateCtaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCta>>, TError,CreateCtaMutationVariables, TContext> => {
+
+const mutationKey = getCreateCtaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCta>>, CreateCtaMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createCta(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCtaMutationResult = NonNullable<Awaited<ReturnType<typeof createCta>>>
+    export type CreateCtaMutationBody = BodyType<CtaInput>
+    export type CreateCtaMutationError = ErrorType<unknown>
+    export type CreateCtaMutationVariables = {id: string;data: BodyType<CtaInput>}
+
+    export const useCreateCta = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCta>>, TError,CreateCtaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCta>>,
+        TError,
+        CreateCtaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCtaMutationOptions(options));
+    }
+
+export const getCreateAndAttachCtaUrl = (id: string,
+    itemId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/communications/${itemId}/ctas`
+}
+
+/**
+ * @summary Atomically create and attach a CTA without replacing existing links
+ */
+export const createAndAttachCta = async (id: string,
+    itemId: string,
+    ctaInput: CtaInput, options?: Parameters<typeof customFetch>[1]): Promise<Cta> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Cta>(getCreateAndAttachCtaUrl(id,itemId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(ctaInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAndAttachCtaMutationKey = () => ['createAndAttachCta'] as const;
+
+export const getCreateAndAttachCtaMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAndAttachCta>>, TError,CreateAndAttachCtaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAndAttachCta>>, TError,CreateAndAttachCtaMutationVariables, TContext> => {
+
+const mutationKey = getCreateAndAttachCtaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAndAttachCta>>, CreateAndAttachCtaMutationVariables> = (props) => {
+          const {id,itemId,data} = props ?? {};
+
+          return  createAndAttachCta(id,itemId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAndAttachCtaMutationResult = NonNullable<Awaited<ReturnType<typeof createAndAttachCta>>>
+    export type CreateAndAttachCtaMutationBody = BodyType<CtaInput>
+    export type CreateAndAttachCtaMutationError = ErrorType<unknown>
+    export type CreateAndAttachCtaMutationVariables = {id: string;itemId: string;data: BodyType<CtaInput>}
+
+    /**
+ * @summary Atomically create and attach a CTA without replacing existing links
+ */
+export const useCreateAndAttachCta = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAndAttachCta>>, TError,CreateAndAttachCtaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAndAttachCta>>,
+        TError,
+        CreateAndAttachCtaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateAndAttachCtaMutationOptions(options));
+    }
+
+export const getUpdateCtaUrl = (id: string,
+    deliverableId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/ctas/${deliverableId}`
+}
+
+export const updateCta = async (id: string,
+    deliverableId: string,
+    ctaUpdate: CtaUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Cta> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Cta>(getUpdateCtaUrl(id,deliverableId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(ctaUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateCtaMutationKey = () => ['updateCta'] as const;
+
+export const getUpdateCtaMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCta>>, TError,UpdateCtaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCta>>, TError,UpdateCtaMutationVariables, TContext> => {
+
+const mutationKey = getUpdateCtaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCta>>, UpdateCtaMutationVariables> = (props) => {
+          const {id,deliverableId,data} = props ?? {};
+
+          return  updateCta(id,deliverableId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCtaMutationResult = NonNullable<Awaited<ReturnType<typeof updateCta>>>
+    export type UpdateCtaMutationBody = BodyType<CtaUpdate>
+    export type UpdateCtaMutationError = ErrorType<unknown>
+    export type UpdateCtaMutationVariables = {id: string;deliverableId: string;data: BodyType<CtaUpdate>}
+
+    export const useUpdateCta = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCta>>, TError,UpdateCtaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCta>>,
+        TError,
+        UpdateCtaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateCtaMutationOptions(options));
+    }
+
+export const getDeleteCtaUrl = (id: string,
+    deliverableId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/ctas/${deliverableId}`
+}
+
+export const deleteCta = async (id: string,
+    deliverableId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteCtaUrl(id,deliverableId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteCtaMutationKey = () => ['deleteCta'] as const;
+
+export const getDeleteCtaMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCta>>, TError,DeleteCtaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCta>>, TError,DeleteCtaMutationVariables, TContext> => {
+
+const mutationKey = getDeleteCtaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCta>>, DeleteCtaMutationVariables> = (props) => {
+          const {id,deliverableId} = props ?? {};
+
+          return  deleteCta(id,deliverableId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCtaMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCta>>>
+
+    export type DeleteCtaMutationError = ErrorType<unknown>
+    export type DeleteCtaMutationVariables = {id: string;deliverableId: string}
+
+    export const useDeleteCta = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCta>>, TError,DeleteCtaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCta>>,
+        TError,
+        DeleteCtaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteCtaMutationOptions(options));
+    }
+
+export const getCreateLandingPageUrl = (id: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/landing-pages`
+}
+
+export const createLandingPage = async (id: string,
+    landingPageInput: LandingPageInput, options?: Parameters<typeof customFetch>[1]): Promise<LandingPageDeliverable> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<LandingPageDeliverable>(getCreateLandingPageUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(landingPageInput)
+  }
+);}
+
+
+
+
+
+export const getCreateLandingPageMutationKey = () => ['createLandingPage'] as const;
+
+export const getCreateLandingPageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLandingPage>>, TError,CreateLandingPageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createLandingPage>>, TError,CreateLandingPageMutationVariables, TContext> => {
+
+const mutationKey = getCreateLandingPageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createLandingPage>>, CreateLandingPageMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createLandingPage(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateLandingPageMutationResult = NonNullable<Awaited<ReturnType<typeof createLandingPage>>>
+    export type CreateLandingPageMutationBody = BodyType<LandingPageInput>
+    export type CreateLandingPageMutationError = ErrorType<unknown>
+    export type CreateLandingPageMutationVariables = {id: string;data: BodyType<LandingPageInput>}
+
+    export const useCreateLandingPage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLandingPage>>, TError,CreateLandingPageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createLandingPage>>,
+        TError,
+        CreateLandingPageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateLandingPageMutationOptions(options));
+    }
+
+export const getCreateAndAttachLandingPageUrl = (id: string,
+    itemId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/communications/${itemId}/landing-pages`
+}
+
+/**
+ * @summary Atomically create and attach a landing page without replacing existing links
+ */
+export const createAndAttachLandingPage = async (id: string,
+    itemId: string,
+    landingPageInput: LandingPageInput, options?: Parameters<typeof customFetch>[1]): Promise<LandingPageDeliverable> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<LandingPageDeliverable>(getCreateAndAttachLandingPageUrl(id,itemId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(landingPageInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAndAttachLandingPageMutationKey = () => ['createAndAttachLandingPage'] as const;
+
+export const getCreateAndAttachLandingPageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAndAttachLandingPage>>, TError,CreateAndAttachLandingPageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAndAttachLandingPage>>, TError,CreateAndAttachLandingPageMutationVariables, TContext> => {
+
+const mutationKey = getCreateAndAttachLandingPageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAndAttachLandingPage>>, CreateAndAttachLandingPageMutationVariables> = (props) => {
+          const {id,itemId,data} = props ?? {};
+
+          return  createAndAttachLandingPage(id,itemId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAndAttachLandingPageMutationResult = NonNullable<Awaited<ReturnType<typeof createAndAttachLandingPage>>>
+    export type CreateAndAttachLandingPageMutationBody = BodyType<LandingPageInput>
+    export type CreateAndAttachLandingPageMutationError = ErrorType<unknown>
+    export type CreateAndAttachLandingPageMutationVariables = {id: string;itemId: string;data: BodyType<LandingPageInput>}
+
+    /**
+ * @summary Atomically create and attach a landing page without replacing existing links
+ */
+export const useCreateAndAttachLandingPage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAndAttachLandingPage>>, TError,CreateAndAttachLandingPageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAndAttachLandingPage>>,
+        TError,
+        CreateAndAttachLandingPageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateAndAttachLandingPageMutationOptions(options));
+    }
+
+export const getUpdateLandingPageUrl = (id: string,
+    deliverableId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/landing-pages/${deliverableId}`
+}
+
+export const updateLandingPage = async (id: string,
+    deliverableId: string,
+    landingPageUpdate: LandingPageUpdate, options?: Parameters<typeof customFetch>[1]): Promise<LandingPageDeliverable> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<LandingPageDeliverable>(getUpdateLandingPageUrl(id,deliverableId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(landingPageUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateLandingPageMutationKey = () => ['updateLandingPage'] as const;
+
+export const getUpdateLandingPageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateLandingPage>>, TError,UpdateLandingPageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateLandingPage>>, TError,UpdateLandingPageMutationVariables, TContext> => {
+
+const mutationKey = getUpdateLandingPageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateLandingPage>>, UpdateLandingPageMutationVariables> = (props) => {
+          const {id,deliverableId,data} = props ?? {};
+
+          return  updateLandingPage(id,deliverableId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateLandingPageMutationResult = NonNullable<Awaited<ReturnType<typeof updateLandingPage>>>
+    export type UpdateLandingPageMutationBody = BodyType<LandingPageUpdate>
+    export type UpdateLandingPageMutationError = ErrorType<unknown>
+    export type UpdateLandingPageMutationVariables = {id: string;deliverableId: string;data: BodyType<LandingPageUpdate>}
+
+    export const useUpdateLandingPage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateLandingPage>>, TError,UpdateLandingPageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateLandingPage>>,
+        TError,
+        UpdateLandingPageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateLandingPageMutationOptions(options));
+    }
+
+export const getDeleteLandingPageUrl = (id: string,
+    deliverableId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/landing-pages/${deliverableId}`
+}
+
+export const deleteLandingPage = async (id: string,
+    deliverableId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteLandingPageUrl(id,deliverableId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteLandingPageMutationKey = () => ['deleteLandingPage'] as const;
+
+export const getDeleteLandingPageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteLandingPage>>, TError,DeleteLandingPageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteLandingPage>>, TError,DeleteLandingPageMutationVariables, TContext> => {
+
+const mutationKey = getDeleteLandingPageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteLandingPage>>, DeleteLandingPageMutationVariables> = (props) => {
+          const {id,deliverableId} = props ?? {};
+
+          return  deleteLandingPage(id,deliverableId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteLandingPageMutationResult = NonNullable<Awaited<ReturnType<typeof deleteLandingPage>>>
+
+    export type DeleteLandingPageMutationError = ErrorType<unknown>
+    export type DeleteLandingPageMutationVariables = {id: string;deliverableId: string}
+
+    export const useDeleteLandingPage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteLandingPage>>, TError,DeleteLandingPageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteLandingPage>>,
+        TError,
+        DeleteLandingPageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteLandingPageMutationOptions(options));
+    }
+
+export const getCreateContentAssetUrl = (id: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/content-assets`
+}
+
+export const createContentAsset = async (id: string,
+    contentAssetInput: ContentAssetInput, options?: Parameters<typeof customFetch>[1]): Promise<ContentAsset> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ContentAsset>(getCreateContentAssetUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(contentAssetInput)
+  }
+);}
+
+
+
+
+
+export const getCreateContentAssetMutationKey = () => ['createContentAsset'] as const;
+
+export const getCreateContentAssetMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createContentAsset>>, TError,CreateContentAssetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createContentAsset>>, TError,CreateContentAssetMutationVariables, TContext> => {
+
+const mutationKey = getCreateContentAssetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createContentAsset>>, CreateContentAssetMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createContentAsset(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateContentAssetMutationResult = NonNullable<Awaited<ReturnType<typeof createContentAsset>>>
+    export type CreateContentAssetMutationBody = BodyType<ContentAssetInput>
+    export type CreateContentAssetMutationError = ErrorType<unknown>
+    export type CreateContentAssetMutationVariables = {id: string;data: BodyType<ContentAssetInput>}
+
+    export const useCreateContentAsset = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createContentAsset>>, TError,CreateContentAssetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createContentAsset>>,
+        TError,
+        CreateContentAssetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateContentAssetMutationOptions(options));
+    }
+
+export const getUpdateContentAssetUrl = (id: string,
+    deliverableId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/content-assets/${deliverableId}`
+}
+
+export const updateContentAsset = async (id: string,
+    deliverableId: string,
+    contentAssetUpdate: ContentAssetUpdate, options?: Parameters<typeof customFetch>[1]): Promise<ContentAsset> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ContentAsset>(getUpdateContentAssetUrl(id,deliverableId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(contentAssetUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateContentAssetMutationKey = () => ['updateContentAsset'] as const;
+
+export const getUpdateContentAssetMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateContentAsset>>, TError,UpdateContentAssetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateContentAsset>>, TError,UpdateContentAssetMutationVariables, TContext> => {
+
+const mutationKey = getUpdateContentAssetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateContentAsset>>, UpdateContentAssetMutationVariables> = (props) => {
+          const {id,deliverableId,data} = props ?? {};
+
+          return  updateContentAsset(id,deliverableId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateContentAssetMutationResult = NonNullable<Awaited<ReturnType<typeof updateContentAsset>>>
+    export type UpdateContentAssetMutationBody = BodyType<ContentAssetUpdate>
+    export type UpdateContentAssetMutationError = ErrorType<unknown>
+    export type UpdateContentAssetMutationVariables = {id: string;deliverableId: string;data: BodyType<ContentAssetUpdate>}
+
+    export const useUpdateContentAsset = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateContentAsset>>, TError,UpdateContentAssetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateContentAsset>>,
+        TError,
+        UpdateContentAssetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateContentAssetMutationOptions(options));
+    }
+
+export const getDeleteContentAssetUrl = (id: string,
+    deliverableId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/content-assets/${deliverableId}`
+}
+
+export const deleteContentAsset = async (id: string,
+    deliverableId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteContentAssetUrl(id,deliverableId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteContentAssetMutationKey = () => ['deleteContentAsset'] as const;
+
+export const getDeleteContentAssetMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteContentAsset>>, TError,DeleteContentAssetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteContentAsset>>, TError,DeleteContentAssetMutationVariables, TContext> => {
+
+const mutationKey = getDeleteContentAssetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteContentAsset>>, DeleteContentAssetMutationVariables> = (props) => {
+          const {id,deliverableId} = props ?? {};
+
+          return  deleteContentAsset(id,deliverableId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteContentAssetMutationResult = NonNullable<Awaited<ReturnType<typeof deleteContentAsset>>>
+
+    export type DeleteContentAssetMutationError = ErrorType<unknown>
+    export type DeleteContentAssetMutationVariables = {id: string;deliverableId: string}
+
+    export const useDeleteContentAsset = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteContentAsset>>, TError,DeleteContentAssetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteContentAsset>>,
+        TError,
+        DeleteContentAssetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteContentAssetMutationOptions(options));
+    }
+
+export const getUpdateCommunicationDeliverableDependenciesUrl = (id: string,
+    itemId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/communications/${itemId}/dependencies`
+}
+
+export const updateCommunicationDeliverableDependencies = async (id: string,
+    itemId: string,
+    communicationDeliverableDependencies: CommunicationDeliverableDependencies, options?: Parameters<typeof customFetch>[1]): Promise<CommunicationReadiness> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CommunicationReadiness>(getUpdateCommunicationDeliverableDependenciesUrl(id,itemId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(communicationDeliverableDependencies)
+  }
+);}
+
+
+
+
+
+export const getUpdateCommunicationDeliverableDependenciesMutationKey = () => ['updateCommunicationDeliverableDependencies'] as const;
+
+export const getUpdateCommunicationDeliverableDependenciesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCommunicationDeliverableDependencies>>, TError,UpdateCommunicationDeliverableDependenciesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCommunicationDeliverableDependencies>>, TError,UpdateCommunicationDeliverableDependenciesMutationVariables, TContext> => {
+
+const mutationKey = getUpdateCommunicationDeliverableDependenciesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCommunicationDeliverableDependencies>>, UpdateCommunicationDeliverableDependenciesMutationVariables> = (props) => {
+          const {id,itemId,data} = props ?? {};
+
+          return  updateCommunicationDeliverableDependencies(id,itemId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCommunicationDeliverableDependenciesMutationResult = NonNullable<Awaited<ReturnType<typeof updateCommunicationDeliverableDependencies>>>
+    export type UpdateCommunicationDeliverableDependenciesMutationBody = BodyType<CommunicationDeliverableDependencies>
+    export type UpdateCommunicationDeliverableDependenciesMutationError = ErrorType<unknown>
+    export type UpdateCommunicationDeliverableDependenciesMutationVariables = {id: string;itemId: string;data: BodyType<CommunicationDeliverableDependencies>}
+
+    export const useUpdateCommunicationDeliverableDependencies = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCommunicationDeliverableDependencies>>, TError,UpdateCommunicationDeliverableDependenciesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCommunicationDeliverableDependencies>>,
+        TError,
+        UpdateCommunicationDeliverableDependenciesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateCommunicationDeliverableDependenciesMutationOptions(options));
+    }
+
+export const getReleaseCommunicationUrl = (id: string,
+    itemId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/communications/${itemId}/release`
+}
+
+export const releaseCommunication = async (id: string,
+    itemId: string, options?: Parameters<typeof customFetch>[1]): Promise<CommunicationReadiness> => {
+
+  return customFetch<CommunicationReadiness>(getReleaseCommunicationUrl(id,itemId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getReleaseCommunicationMutationKey = () => ['releaseCommunication'] as const;
+
+export const getReleaseCommunicationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof releaseCommunication>>, TError,ReleaseCommunicationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof releaseCommunication>>, TError,ReleaseCommunicationMutationVariables, TContext> => {
+
+const mutationKey = getReleaseCommunicationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof releaseCommunication>>, ReleaseCommunicationMutationVariables> = (props) => {
+          const {id,itemId} = props ?? {};
+
+          return  releaseCommunication(id,itemId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReleaseCommunicationMutationResult = NonNullable<Awaited<ReturnType<typeof releaseCommunication>>>
+
+    export type ReleaseCommunicationMutationError = ErrorType<unknown>
+    export type ReleaseCommunicationMutationVariables = {id: string;itemId: string}
+
+    export const useReleaseCommunication = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof releaseCommunication>>, TError,ReleaseCommunicationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof releaseCommunication>>,
+        TError,
+        ReleaseCommunicationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReleaseCommunicationMutationOptions(options));
     }
 
 export const getCreateActivityTaskUrl = (id: string,) => {

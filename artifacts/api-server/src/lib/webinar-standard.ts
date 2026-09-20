@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   activities,
@@ -29,6 +29,7 @@ import {
   type WebinarStandardVariantContent,
 } from "@workspace/db";
 import { GOVERNED_CHANNELS } from "./activity-model";
+import { canonicalCtasForCommunication, communicationReadinessFor } from "./deliverables";
 
 export const standardKeys = STANDARD_WEBINAR_KEYS;
 
@@ -668,24 +669,56 @@ export async function standardForSession(campaignId: string, sessionId: string, 
   const templateVersion = templateVersionFor(session.templateVersion);
   const expectedDefinitions = definitionsForTemplate(templateVersion);
   if (!config || rows.length !== expectedDefinitions.length) throw new WebinarStandardValidationError("Webinar standard is incomplete", 500);
-  return {
+  const response = {
     campaignId,
     sessionId,
     activityId: session.activityId,
     launchAt: session.recruitmentLaunchAt?.toISOString() ?? null,
     ...standardResponse(config, rows, session.timezone, templateVersion),
   };
+  const projectedCommunications: any[] = [];
+  for (const communication of response.communications) {
+    const row = rows.find((candidate: any) => candidate.key === communication.key);
+    const canonical = row?.communicationId
+      ? await canonicalCtasForCommunication(campaignId, row.communicationId, executor, false)
+      : [];
+    projectedCommunications.push({
+      ...communication,
+      ctas: canonical.map(({ legacySourceKey: _legacySourceKey, ...cta }) => cta),
+      variants: communication.variants.map((variant) => {
+        const sourceKey = row ? `webinar:${row.id}:variant:${variant.slot}` : "";
+        const projected = canonical.find((cta) => cta.legacySourceKey === sourceKey) ?? canonical[0];
+        return projected?.destinationUrl ? {
+          ...variant,
+          content: { ...variant.content, ctaLabel: projected.buttonText, ctaUrl: projected.destinationUrl },
+        } : variant;
+      }),
+    });
+  }
+  response.communications = projectedCommunications;
+  return response;
 }
 
 export async function patchStandard(campaignId: string, sessionId: string, input: unknown, executor: any = db): Promise<any> {
   const parsed = standardPatchSchema.safeParse(input);
   if (!parsed.success) throw new WebinarStandardValidationError(parsed.error.message);
+  for (const communication of parsed.data.communications ?? []) {
+    for (const variant of communication.variants ?? []) {
+      if (variant.content.ctaLabel !== undefined || variant.content.ctaUrl !== undefined) {
+        throw new WebinarStandardValidationError(
+          "ctaLabel and ctaUrl are managed through reusable CTA records; link CTAs to this communication instead",
+          409,
+        );
+      }
+    }
+  }
   // Callers outside the HTTP route (including jobs and tests) get the same
   // all-or-nothing semantics as the route.  The route supplies its existing
   // transaction explicitly, so this does not nest transactions.
   if (executor === db) {
     return db.transaction((tx) => patchStandard(campaignId, sessionId, input, tx));
   }
+  await executor.execute(sql`select pg_advisory_xact_lock(hashtext(${campaignId}))`);
   const [config] = await executor.select().from(webinarStandardConfigs)
     .where(eq(webinarStandardConfigs.sessionId, sessionId))
     .for("update");
@@ -705,7 +738,15 @@ export async function patchStandard(campaignId: string, sessionId: string, input
     if (!row) throw new WebinarStandardValidationError(`Unknown standard key ${communication.key}`);
     if (communication.timing !== undefined) throw new WebinarStandardValidationError(`Timing for ${communication.key} is fixed and cannot be edited`, 409);
     const patch: Partial<typeof webinarStandardCommunications.$inferInsert> = { updatedAt: new Date() };
-    if (communication.status !== undefined) patch.status = communication.status;
+    if (communication.status !== undefined) {
+      if (["published", "ready to send", "live"].includes(communication.status.toLowerCase()) && row.communicationId) {
+        const readiness = await communicationReadinessFor(campaignId, row.communicationId, executor);
+        if (readiness.dependencyReadiness === "Blocked") {
+          throw new WebinarStandardValidationError(`${row.name} is blocked by unpublished build dependencies`, 409);
+        }
+      }
+      patch.status = communication.status;
+    }
     if (communication.variants) {
       const existing = new Map((row.variants as WebinarStandardVariantContent[]).map((item: WebinarStandardVariantContent) => [item.slot, item.content]));
       for (const variant of communication.variants) {
@@ -738,6 +779,12 @@ export async function triggerRegistrationConfirmation(
 ) {
   const [row] = await executor.select().from(webinarStandardCommunications).where(and(eq(webinarStandardCommunications.campaignId, campaignId), eq(webinarStandardCommunications.sessionId, sessionId), eq(webinarStandardCommunications.key, "registration_confirmation")));
   if (!row) return;
+  if (row.communicationId) {
+    const readiness = await communicationReadinessFor(campaignId, row.communicationId, executor);
+    if (readiness.dependencyReadiness === "Blocked") {
+      throw new WebinarStandardValidationError(`${row.name} is blocked by unpublished build dependencies`, 409);
+    }
+  }
   await executor.insert(webinarStandardTriggerEvents).values({
     campaignId,
     sessionId,

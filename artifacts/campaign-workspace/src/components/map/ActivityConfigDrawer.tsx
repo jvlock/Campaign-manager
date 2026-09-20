@@ -40,6 +40,8 @@ import WebinarStandardPanel from './WebinarStandardPanel';
 import ActivityTasksPanel from './ActivityTasksPanel';
 import ActivityTaskSettingsPanel from './ActivityTaskSettingsPanel';
 
+import { CommunicationDeliverablesEditor } from '../delivery/CommunicationDeliverablesEditor';
+
 interface ActivityConfigDrawerProps {
   campaignId: string;
   node: { id: string; data: any };
@@ -840,6 +842,13 @@ export default function ActivityConfigDrawer({
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
+
+                    <div className="px-1 mt-1">
+                      <CommunicationDeliverablesEditor
+                        campaignId={campaignId}
+                        communicationId={comm.id}
+                      />
+                    </div>
                   </div>
                   )})
               )}

@@ -263,6 +263,160 @@ paths:
         "204": {description: Deleted}
         "404": {$ref: "#/components/responses/NotFound"}
         "409": {$ref: "#/components/responses/Conflict"}
+  /campaigns/{id}/deliverables:
+    get:
+      operationId: getCampaignDeliverables
+      tags: [delivery]
+      parameters: [{$ref: "#/components/parameters/Id"}]
+      responses:
+        "200":
+          description: Reusable deliverables, dependency readiness, and outstanding work
+          content: {application/json: {schema: {$ref: "#/components/schemas/CampaignDeliverables"}}}
+  /campaigns/{id}/ctas:
+    post:
+      operationId: createCta
+      tags: [delivery]
+      parameters: [{$ref: "#/components/parameters/Id"}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/CtaInput"}}}
+      responses:
+        "201":
+          description: Created CTA
+          content: {application/json: {schema: {$ref: "#/components/schemas/Cta"}}}
+  /campaigns/{id}/communications/{itemId}/ctas:
+    post:
+      operationId: createAndAttachCta
+      summary: Atomically create and attach a CTA without replacing existing links
+      tags: [delivery]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/ItemId"}
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/CtaInput"}}}
+      responses:
+        "201":
+          description: Created and attached CTA
+          content: {application/json: {schema: {$ref: "#/components/schemas/Cta"}}}
+  /campaigns/{id}/ctas/{deliverableId}:
+    parameters:
+      - {$ref: "#/components/parameters/Id"}
+      - {name: deliverableId, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      operationId: updateCta
+      tags: [delivery]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/CtaUpdate"}}}
+      responses:
+        "200":
+          description: Updated CTA
+          content: {application/json: {schema: {$ref: "#/components/schemas/Cta"}}}
+    delete:
+      operationId: deleteCta
+      tags: [delivery]
+      responses: {"204": {description: Deleted}}
+  /campaigns/{id}/landing-pages:
+    post:
+      operationId: createLandingPage
+      tags: [delivery]
+      parameters: [{$ref: "#/components/parameters/Id"}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/LandingPageInput"}}}
+      responses:
+        "201":
+          description: Created landing page
+          content: {application/json: {schema: {$ref: "#/components/schemas/LandingPageDeliverable"}}}
+  /campaigns/{id}/communications/{itemId}/landing-pages:
+    post:
+      operationId: createAndAttachLandingPage
+      summary: Atomically create and attach a landing page without replacing existing links
+      tags: [delivery]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/ItemId"}
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/LandingPageInput"}}}
+      responses:
+        "201":
+          description: Created and attached landing page
+          content: {application/json: {schema: {$ref: "#/components/schemas/LandingPageDeliverable"}}}
+  /campaigns/{id}/landing-pages/{deliverableId}:
+    parameters:
+      - {$ref: "#/components/parameters/Id"}
+      - {name: deliverableId, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      operationId: updateLandingPage
+      tags: [delivery]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/LandingPageUpdate"}}}
+      responses:
+        "200":
+          description: Updated landing page
+          content: {application/json: {schema: {$ref: "#/components/schemas/LandingPageDeliverable"}}}
+    delete:
+      operationId: deleteLandingPage
+      tags: [delivery]
+      responses: {"204": {description: Deleted}}
+  /campaigns/{id}/content-assets:
+    post:
+      operationId: createContentAsset
+      tags: [delivery]
+      parameters: [{$ref: "#/components/parameters/Id"}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/ContentAssetInput"}}}
+      responses:
+        "201":
+          description: Created content asset
+          content: {application/json: {schema: {$ref: "#/components/schemas/ContentAsset"}}}
+  /campaigns/{id}/content-assets/{deliverableId}:
+    parameters:
+      - {$ref: "#/components/parameters/Id"}
+      - {name: deliverableId, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      operationId: updateContentAsset
+      tags: [delivery]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/ContentAssetUpdate"}}}
+      responses:
+        "200":
+          description: Updated content asset
+          content: {application/json: {schema: {$ref: "#/components/schemas/ContentAsset"}}}
+    delete:
+      operationId: deleteContentAsset
+      tags: [delivery]
+      responses: {"204": {description: Deleted}}
+  /campaigns/{id}/communications/{itemId}/dependencies:
+    put:
+      operationId: updateCommunicationDeliverableDependencies
+      tags: [delivery]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/ItemId"}
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/CommunicationDeliverableDependencies"}}}
+      responses:
+        "200":
+          description: Updated dependency readiness
+          content: {application/json: {schema: {$ref: "#/components/schemas/CommunicationReadiness"}}}
+  /campaigns/{id}/communications/{itemId}/release:
+    post:
+      operationId: releaseCommunication
+      tags: [delivery]
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/ItemId"}
+      responses:
+        "200":
+          description: Planning release recorded; this does not send externally
+          content: {application/json: {schema: {$ref: "#/components/schemas/CommunicationReadiness"}}}
   /campaigns/{id}/tasks:
     post:
       operationId: createActivityTask
@@ -1278,12 +1432,177 @@ components:
     DeliveryStatus:
       type: string
       enum: [Known, Estimated, Decision needed, Not applicable, Confirmed]
+    DeliverableBuildStatus:
+      type: string
+      enum: [Not Started, Drafted, In Review, Published]
+    BlockingCommunication:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+    CtaInput:
+      type: object
+      additionalProperties: false
+      required: [name, buttonText, owner]
+      properties:
+        name: {type: string, minLength: 1}
+        buttonText: {type: string, minLength: 1}
+        landingPageId: {type: [string, "null"], format: uuid}
+        destinationUrl: {type: [string, "null"], format: uri, description: Absolute HTTP(S) URL}
+        owner: {type: string, minLength: 1}
+        status: {$ref: "#/components/schemas/DeliverableBuildStatus"}
+        publishBy: {type: [string, "null"], format: date}
+    CtaUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        name: {type: string, minLength: 1}
+        buttonText: {type: string, minLength: 1}
+        landingPageId: {type: [string, "null"], format: uuid}
+        destinationUrl: {type: [string, "null"], format: uri}
+        owner: {type: string, minLength: 1}
+        status: {$ref: "#/components/schemas/DeliverableBuildStatus"}
+        publishBy: {type: [string, "null"], format: date}
+    Cta:
+      allOf:
+        - {$ref: "#/components/schemas/CtaInput"}
+        - type: object
+          required: [id, campaignId, status, publishBy, landingPageId, destinationUrl, communicationIds, blockingCommunications]
+          properties:
+            id: {type: string, format: uuid}
+            campaignId: {type: string, format: uuid}
+            status: {$ref: "#/components/schemas/DeliverableBuildStatus"}
+            publishBy: {type: [string, "null"], format: date}
+            landingPageId: {type: [string, "null"], format: uuid}
+            destinationUrl: {type: [string, "null"], format: uri}
+            sourceMetadata: {type: object, additionalProperties: true}
+            communicationIds: {type: array, items: {type: string, format: uuid}}
+            blockingCommunications: {type: array, items: {$ref: "#/components/schemas/BlockingCommunication"}}
+    LandingPageInput:
+      type: object
+      description: publishedUrl is required and must use HTTP(S) when status is Published.
+      additionalProperties: false
+      required: [name, headline, supportingCopyNeeds, personalizationRequirements, owner]
+      properties:
+        name: {type: string, minLength: 1}
+        headline: {type: string}
+        supportingCopyNeeds: {type: string}
+        personalizationRequirements: {type: string}
+        owner: {type: string, minLength: 1}
+        status: {$ref: "#/components/schemas/DeliverableBuildStatus"}
+        publishBy: {type: [string, "null"], format: date}
+        publishedUrl: {type: [string, "null"], format: uri}
+        contentAssetIds: {type: array, items: {type: string, format: uuid}}
+    LandingPageUpdate:
+      type: object
+      description: The resulting record must have an HTTP(S) publishedUrl when status is Published.
+      additionalProperties: false
+      properties:
+        name: {type: string, minLength: 1}
+        headline: {type: string}
+        supportingCopyNeeds: {type: string}
+        personalizationRequirements: {type: string}
+        owner: {type: string, minLength: 1}
+        status: {$ref: "#/components/schemas/DeliverableBuildStatus"}
+        publishBy: {type: [string, "null"], format: date}
+        publishedUrl: {type: [string, "null"], format: uri}
+        contentAssetIds: {type: array, items: {type: string, format: uuid}}
+    LandingPageDeliverable:
+      allOf:
+        - {$ref: "#/components/schemas/LandingPageInput"}
+        - type: object
+          required: [id, campaignId, status, publishBy, publishedUrl, contentAssetIds, communicationIds, blockingCommunications]
+          properties:
+            id: {type: string, format: uuid}
+            campaignId: {type: string, format: uuid}
+            status: {$ref: "#/components/schemas/DeliverableBuildStatus"}
+            publishBy: {type: [string, "null"], format: date}
+            publishedUrl: {type: [string, "null"], format: uri}
+            contentAssetIds: {type: array, items: {type: string, format: uuid}}
+            communicationIds: {type: array, items: {type: string, format: uuid}}
+            blockingCommunications: {type: array, items: {$ref: "#/components/schemas/BlockingCommunication"}}
+    ContentAssetInput:
+      type: object
+      additionalProperties: false
+      required: [name, brief, owner]
+      properties:
+        name: {type: string, minLength: 1}
+        brief: {type: string}
+        owner: {type: string, minLength: 1}
+        status: {$ref: "#/components/schemas/DeliverableBuildStatus"}
+        publishBy: {type: [string, "null"], format: date}
+    ContentAssetUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        name: {type: string, minLength: 1}
+        brief: {type: string}
+        owner: {type: string, minLength: 1}
+        status: {$ref: "#/components/schemas/DeliverableBuildStatus"}
+        publishBy: {type: [string, "null"], format: date}
+    ContentAsset:
+      allOf:
+        - {$ref: "#/components/schemas/ContentAssetInput"}
+        - type: object
+          required: [id, campaignId, status, publishBy, landingPageIds, blockingCommunications]
+          properties:
+            id: {type: string, format: uuid}
+            campaignId: {type: string, format: uuid}
+            status: {$ref: "#/components/schemas/DeliverableBuildStatus"}
+            publishBy: {type: [string, "null"], format: date}
+            landingPageIds: {type: array, items: {type: string, format: uuid}}
+            blockingCommunications: {type: array, items: {$ref: "#/components/schemas/BlockingCommunication"}}
+    CommunicationDeliverableDependencies:
+      type: object
+      additionalProperties: false
+      required: [ctaIds, landingPageIds]
+      properties:
+        ctaIds: {type: array, uniqueItems: true, items: {type: string, format: uuid}}
+        landingPageIds: {type: array, uniqueItems: true, items: {type: string, format: uuid}}
+    DeliverableBlocker:
+      type: object
+      required: [code, entityType, id, name, owner, publishBy, status]
+      properties:
+        code: {type: string}
+        entityType: {type: string, enum: [cta, landingPage, contentAsset, task, legacyWebinarCta]}
+        id: {type: string}
+        name: {type: string}
+        owner: {type: [string, "null"]}
+        publishBy: {type: [string, "null"], format: date}
+        status: {type: string}
+    CommunicationReadiness:
+      type: object
+      required: [communicationId, communicationName, dependencyReadiness, dependencyReadinessDescription, releaseState, releasedAt, externalSending, ctaIds, landingPageIds, blockers]
+      properties:
+        communicationId: {type: string, format: uuid}
+        communicationName: {type: string}
+        dependencyReadiness: {type: string, enum: [Ready, Blocked]}
+        dependencyReadinessDescription: {type: string}
+        releaseState: {type: string, enum: [Draft, Released]}
+        releasedAt: {type: [string, "null"], format: date-time}
+        externalSending: {type: boolean, const: false}
+        ctaIds: {type: array, items: {type: string, format: uuid}}
+        landingPageIds: {type: array, items: {type: string, format: uuid}}
+        blockers: {type: array, items: {$ref: "#/components/schemas/DeliverableBlocker"}}
+    CampaignDeliverables:
+      type: object
+      required: [ctas, landingPages, contentAssets, communications, outstanding]
+      properties:
+        ctas: {type: array, items: {$ref: "#/components/schemas/Cta"}}
+        landingPages: {type: array, items: {$ref: "#/components/schemas/LandingPageDeliverable"}}
+        contentAssets: {type: array, items: {$ref: "#/components/schemas/ContentAsset"}}
+        communications: {type: array, items: {$ref: "#/components/schemas/CommunicationReadiness"}}
+        outstanding:
+          type: array
+          description: Union of unpublished CTA, landing-page, and content-asset records.
+          items: {type: object, additionalProperties: true}
     TaskType:
       type: string
       enum: [Asset, Landing page, Approval, Tracking, Other]
     Communication:
       type: object
-      required: [id, campaignId, activityId, name, type, timing, sortOrder, status, owner, audienceBranchId, communicationType, channel, approvalStatus, qaAudienceConfirmed, qaContentApproved, qaLinksVerified, qaTimingVerified, qaOwnerConfirmed, blockingDependencyTaskIds, blockingDependencyIds]
+      required: [id, campaignId, activityId, name, type, timing, sortOrder, status, owner, audienceBranchId, communicationType, channel, approvalStatus, qaAudienceConfirmed, qaContentApproved, qaLinksVerified, qaTimingVerified, qaOwnerConfirmed, blockingDependencyTaskIds, blockingDependencyIds, releaseState, releasedAt]
       properties:
         id: {type: string, format: uuid}
         campaignId: {type: string, format: uuid}
@@ -1309,6 +1628,14 @@ components:
         blockingDependencyIds:
           type: array
           items: {type: string, format: uuid}
+        releaseState: {type: string, enum: [Draft, Released]}
+        releasedAt: {type: [string, "null"], format: date-time}
+        dependencyReadiness: {type: string, enum: [Ready, Blocked]}
+        dependencyReadinessDescription: {type: string}
+        ctaIds: {type: array, items: {type: string, format: uuid}}
+        landingPageIds: {type: array, items: {type: string, format: uuid}}
+        blockers: {type: array, items: {$ref: "#/components/schemas/DeliverableBlocker"}}
+        externalSending: {type: boolean, const: false}
     ActivityTask:
       type: object
       allOf:
@@ -2010,7 +2337,7 @@ components:
         skipReason: {type: [string, "null"]}
     WebinarStandardCommunication:
       type: object
-      required: [id, key, name, sortOrder, status, timing, scheduled, audienceRule, variants]
+      required: [id, key, name, sortOrder, status, timing, scheduled, audienceRule, variants, ctas]
       properties:
         id: {type: string, format: uuid}
         key:
@@ -2028,6 +2355,19 @@ components:
         variants:
           type: array
           items: {$ref: "#/components/schemas/WebinarStandardVariantContent"}
+        ctas:
+          type: array
+          items: {$ref: "#/components/schemas/WebinarCanonicalCta"}
+    WebinarCanonicalCta:
+      type: object
+      required: [id, name, buttonText, destinationUrl, destinationError, status]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        buttonText: {type: string}
+        destinationUrl: {type: [string, "null"], format: uri}
+        destinationError: {type: [string, "null"]}
+        status: {$ref: "#/components/schemas/DeliverableBuildStatus"}
     WebinarStandardTemplateConfig:
       type: object
       required: [pilotLimits, variants]
@@ -2070,13 +2410,12 @@ components:
           items: {$ref: "#/components/schemas/WebinarStandardCommunication"}
     WebinarStandardContentPatch:
       type: object
+      description: CTA label and URL are read-only legacy projections; manage reusable CTA links through communication dependency endpoints.
       properties:
         subject: {type: string}
         preheader: {type: string}
         hero: {type: string}
         body: {type: string}
-        ctaLabel: {type: string}
-        ctaUrl: {type: string}
         internalAssetName: {type: string}
     WebinarStandardPatch:
       type: object
@@ -2140,12 +2479,15 @@ components:
           type: array
           items:
             type: object
-            required: [key, sortOrder, timing, audienceRule, variant]
+            required: [key, sortOrder, timing, audienceRule, ctas, variant]
             properties:
               key: {type: string}
               sortOrder: {type: integer}
               timing: {$ref: "#/components/schemas/WebinarStandardTiming"}
               audienceRule: {type: string}
+              ctas:
+                type: array
+                items: {$ref: "#/components/schemas/WebinarCanonicalCta"}
               scheduled: {$ref: "#/components/schemas/WebinarStandardScheduled"}
               variant:
                 allOf:

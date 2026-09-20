@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import {
   CreateActivityTaskBody,
   CreateActivityTaskParams,
@@ -33,6 +33,7 @@ import {
   taskResponse,
   validateCommunicationDetailsInput,
 } from "../lib/delivery";
+import { invalidateBlockedReleases } from "../lib/deliverables";
 
 const router: IRouter = Router();
 import { validateTaskFields, syncCapacityConflicts, TaskValidationError } from "../lib/implementation-tasks";
@@ -112,6 +113,7 @@ router.post("/campaigns/:id/communications", async (req, res, next): Promise<voi
       return;
     }
     const response = await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${campaignId}))`);
       await validateCommunicationDetailsInput(campaignId, details, tx);
       const [row] = await tx
         .insert(communications)
@@ -193,6 +195,7 @@ router.patch("/campaigns/:id/communications/:itemId", async (req, res, next): Pr
         .returning();
       if (!row) throw new DeliveryValidationError("Communication not found", 404);
       const detail = await saveCommunicationDetails(row, details, tx);
+      await invalidateBlockedReleases(campaignId, tx);
       return communicationResponse(row, detail);
     });
     res.json(response);
@@ -246,9 +249,9 @@ router.post("/campaigns/:id/tasks", async (req, res, next): Promise<void> => {
       return;
     }
 
-    const [row] = await db
-      .insert(activityTasks)
-      .values({
+    const [row] = await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${campaignId}))`);
+      const rows = await tx.insert(activityTasks).values({
         ...fields,
         campaignId,
         activityId: body.activityId,
@@ -258,8 +261,10 @@ router.post("/campaigns/:id/tasks", async (req, res, next): Promise<void> => {
         sortOrder: body.sortOrder,
         status: body.status,
         owner: body.owner,
-      })
-      .returning();
+      }).returning();
+      await invalidateBlockedReleases(campaignId, tx);
+      return rows;
+    });
     await syncCapacityConflicts();
     res.status(201).json(CreateActivityTaskResponse.parse(await taskResponse(row)));
   } catch (error) {
@@ -308,11 +313,16 @@ router.patch("/campaigns/:id/tasks/:itemId", async (req, res, next): Promise<voi
     if (body.status !== undefined) patch.status = body.status;
     if (body.owner !== undefined) patch.owner = body.owner;
 
-    const [row] = await db
-      .update(activityTasks)
-      .set(patch)
-      .where(and(eq(activityTasks.id, itemId), eq(activityTasks.campaignId, campaignId)))
-      .returning();
+    const [row] = await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${campaignId}))`);
+      const rows = await tx
+        .update(activityTasks)
+        .set(patch)
+        .where(and(eq(activityTasks.id, itemId), eq(activityTasks.campaignId, campaignId)))
+        .returning();
+      await invalidateBlockedReleases(campaignId, tx);
+      return rows;
+    });
     await syncCapacityConflicts();
     res.json(UpdateActivityTaskResponse.parse(await taskResponse(row)));
   } catch (error) {

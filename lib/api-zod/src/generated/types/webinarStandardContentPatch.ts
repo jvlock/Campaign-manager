@@ -6,12 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * CTA label and URL are read-only legacy projections; manage reusable CTA links through communication dependency endpoints.
+ */
 export interface WebinarStandardContentPatch {
   subject?: string;
   preheader?: string;
   hero?: string;
   body?: string;
-  ctaLabel?: string;
-  ctaUrl?: string;
   internalAssetName?: string;
 }

@@ -5,6 +5,9 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { CommunicationDependencyReadiness } from './communicationDependencyReadiness';
+import type { CommunicationReleaseState } from './communicationReleaseState';
+import type { DeliverableBlocker } from './deliverableBlocker';
 import type { DeliveryStatus } from './deliveryStatus';
 
 export interface Communication {
@@ -32,4 +35,13 @@ export interface Communication {
   qaOwnerConfirmed: boolean;
   blockingDependencyTaskIds: string[];
   blockingDependencyIds: string[];
+  releaseState: CommunicationReleaseState;
+  /** @nullable */
+  releasedAt: Date | null;
+  dependencyReadiness?: CommunicationDependencyReadiness;
+  dependencyReadinessDescription?: string;
+  ctaIds?: string[];
+  landingPageIds?: string[];
+  blockers?: DeliverableBlocker[];
+  externalSending?: false;
 }

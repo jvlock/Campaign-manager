@@ -8,6 +8,7 @@ import {
   webinarRegistrationResults,
   webinarSessions,
 } from "@workspace/db/schema/webinar";
+import { webinarStandardCommunications } from "@workspace/db/schema/webinar-standard";
 import {
   attendanceResultSchema,
   evaluateWebinarPerson,
@@ -31,6 +32,7 @@ import {
   standardForSession,
   triggerRegistrationConfirmation,
 } from "../lib/webinar-standard";
+import { canonicalCtasForCommunication, communicationReadinessFor, DeliverableError } from "../lib/deliverables";
 
 const router: IRouter = Router();
 const idParams = z.object({ id: z.string().uuid() });
@@ -493,17 +495,60 @@ router.get("/campaigns/:id/webinars/:sessionId/standard/export", async (req, res
       return;
     }
     const standard = await standardForSession(parsed.data.id, parsed.data.sessionId);
+    const standardRows = await db.select().from(webinarStandardCommunications)
+      .where(and(
+        eq(webinarStandardCommunications.campaignId, parsed.data.id),
+        eq(webinarStandardCommunications.sessionId, parsed.data.sessionId),
+      ));
+    const canonicalByKey = new Map<string, Awaited<ReturnType<typeof canonicalCtasForCommunication>>>();
+    for (const row of standardRows) {
+      if (!row.communicationId) continue;
+      const readiness = await communicationReadinessFor(parsed.data.id, row.communicationId);
+      if (readiness.dependencyReadiness === "Blocked") {
+        const unavailableDestination = readiness.blockers.find((blocker: any) =>
+          blocker.code === "landing_page_destination_unavailable" || blocker.code === "cta_destination_unavailable");
+        if (unavailableDestination) {
+          throw new DeliverableError(
+            unavailableDestination.entityType === "landingPage" ? "publishedUrl" : "destinationUrl",
+            "destination_unavailable",
+            unavailableDestination.entityType === "landingPage"
+              ? `Webinar communication ${row.name} requires a Published landing page with a valid HTTP(S) publishedUrl`
+              : `Webinar communication ${row.name} has a CTA without a valid HTTP(S) destinationUrl`,
+            409,
+          );
+        }
+        throw new DeliverableError(
+          "dependencies",
+          "communication_blocked",
+          `Webinar communication ${row.name} is blocked by unpublished build dependencies`,
+          409,
+        );
+      }
+      canonicalByKey.set(row.key, await canonicalCtasForCommunication(parsed.data.id, row.communicationId));
+    }
     const activeVariants = standard.templateConfig.variants.filter((variant) => variant.inUse);
     const errors: Array<{ key: string; slot: number; field: string; message: string }> = [];
     const communications = standard.communications
       .filter((communication) => communication.scheduled.status !== "skipped")
-      .map((communication) => ({
-      ...communication,
-      variants: communication.variants.filter((variant) => {
-        const config = activeVariants.find((candidate) => candidate.slot === variant.slot);
-        return Boolean(config?.inUse);
-      }),
-      }));
+      .map((communication) => {
+        const canonical = canonicalByKey.get(communication.key) ?? [];
+        return {
+          ...communication,
+          ctas: canonical.map(({ legacySourceKey: _legacySourceKey, ...cta }) => cta),
+          variants: communication.variants.filter((variant) => {
+            const config = activeVariants.find((candidate) => candidate.slot === variant.slot);
+            return Boolean(config?.inUse);
+          }).map((variant) => {
+            const standardRow = standardRows.find((row) => row.key === communication.key);
+            const sourceKey = standardRow ? `webinar:${standardRow.id}:variant:${variant.slot}` : "";
+            const projected = canonical.find((cta) => cta.legacySourceKey === sourceKey) ?? canonical[0];
+            return projected ? {
+              ...variant,
+              content: { ...variant.content, ctaLabel: projected.buttonText, ctaUrl: projected.destinationUrl },
+            } : variant;
+          }),
+        };
+      });
     for (const variant of activeVariants) {
       for (const communication of communications) {
         const communicationVariant = communication.variants.find((candidate) => candidate.slot === variant.slot);
@@ -540,6 +585,7 @@ router.get("/campaigns/:id/webinars/:sessionId/standard/export", async (req, res
           sortOrder: communication.sortOrder,
           timing: communication.timing,
           audienceRule: communication.audienceRule,
+            ctas: communication.ctas,
           ...(communication.timing.kind === "trigger" ? {} : { scheduled: communication.scheduled }),
           variant: {
             ...config,

@@ -1,9 +1,10 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { activities, activityTasks, activityTaskSettings, taskDefaults, ownerCapacities, db, communicationDetails } from "@workspace/db";
 import { assertTimezone } from "../lib/planning";
 import { capacityTotals, syncCapacityConflicts } from "../lib/implementation-tasks";
+import { invalidateBlockedReleases } from "../lib/deliverables";
 
 const router: IRouter = Router();
 const scope = z.object({ id: z.string().uuid(), activityId: z.string().uuid() });
@@ -92,13 +93,20 @@ router.delete("/campaigns/:id/tasks/:itemId", async (req, res, next) => {
     const parsed = z.object({ id: z.string().uuid(), itemId: z.string().uuid() }).safeParse(req.params);
     if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
     const { id, itemId } = parsed.data;
-    const [existing] = await db.select().from(activityTasks).where(and(eq(activityTasks.id, itemId), eq(activityTasks.campaignId, id)));
-    if (!existing) { res.status(404).json({ error: "Activity task not found" }); return; }
-    const details = await db.select().from(communicationDetails).where(eq(communicationDetails.campaignId, id));
-    if (details.some(detail => detail.blockingDependencyTaskIds.includes(itemId))) {
+    const outcome = await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${id}))`);
+      const [existing] = await tx.select().from(activityTasks).where(and(eq(activityTasks.id, itemId), eq(activityTasks.campaignId, id)));
+      if (!existing) return "missing";
+      const details = await tx.select().from(communicationDetails).where(eq(communicationDetails.campaignId, id));
+      if (details.some(detail => detail.blockingDependencyTaskIds.includes(itemId))) return "referenced";
+      await tx.delete(activityTasks).where(and(eq(activityTasks.id, itemId), eq(activityTasks.campaignId, id)));
+      await invalidateBlockedReleases(id, tx);
+      return "deleted";
+    });
+    if (outcome === "missing") { res.status(404).json({ error: "Activity task not found" }); return; }
+    if (outcome === "referenced") {
       res.status(409).json({ error: "Remove this task from communication blocking dependencies before deleting" }); return;
     }
-    await db.delete(activityTasks).where(and(eq(activityTasks.id, itemId), eq(activityTasks.campaignId, id)));
     await syncCapacityConflicts();
     res.status(204).end();
   } catch (error) { next(error); }

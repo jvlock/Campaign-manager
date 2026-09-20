@@ -3,3 +3,4 @@
 - [UTM provenance](utm-provenance.md) — do not describe specification-based UTM logic as a verified Foundation port or treat legacy taxonomy seeds as approved conventions.
 - [Map round-trip compatibility](map-round-trip-compatibility.md) — full-map validation must accept unchanged legacy read shapes without allowing canonical activities to bypass their rules.
 - [Foundation taxonomy identity](taxonomy-source-identity.md) — repeated tag codes are real; use full stable keys and scoped parents, and preserve sourced rows outside partial imports.
+- [Deliverable readiness boundary](deliverable-readiness-boundary.md) — dependency readiness is not sending or hosting; linked CTAs are canonical, with atomic create-and-attach.

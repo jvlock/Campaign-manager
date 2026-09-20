@@ -15,7 +15,8 @@
     "test:governance": "tsx --test ./test/governance.test.ts",
     "test:planning": "tsx --test ./test/planning.test.ts",
     "test:utm": "tsx --test ./test/utm-compiler.test.ts ./test/utm-routes.test.ts",
-    "test:activity-model": "tsx --test ./test/activity-model.test.ts ./test/activity-model.routes.test.ts"
+    "test:activity-model": "tsx --test ./test/activity-model.test.ts ./test/activity-model.routes.test.ts",
+    "test:deliverables": "tsx --test ./test/deliverables.routes.test.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",

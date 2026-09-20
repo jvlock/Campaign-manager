@@ -26,6 +26,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Layers, Download, Loader2, CheckCircle2, AlertCircle, ChevronDown, Save, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+import { CommunicationDeliverablesEditor } from '../delivery/CommunicationDeliverablesEditor';
+
 type ContentField = keyof WebinarStandardContent;
 type LocalValidation = { valid: boolean; message?: string };
 
@@ -34,8 +36,6 @@ const contentFields: Array<{ key: ContentField; label: string; multiline?: boole
   { key: 'preheader', label: 'Preheader' },
   { key: 'hero', label: 'Hero Image/Text' },
   { key: 'body', label: 'Body', multiline: true },
-  { key: 'ctaLabel', label: 'CTA Label' },
-  { key: 'ctaUrl', label: 'CTA URL' },
   { key: 'internalAssetName', label: 'Internal Asset Name' },
 ];
 
@@ -645,10 +645,32 @@ export default function WebinarStandardPanel({
                             );
                           })}
                         </div>
+
+                        {(content.ctaLabel || content.ctaUrl) && (
+                          <div className="mt-4 p-3 bg-muted/20 border border-border rounded-md">
+                            <h5 className="text-xs font-semibold mb-2 flex items-center gap-1">Legacy CTA Data</h5>
+                            <p className="text-[10px] text-muted-foreground mb-3">This data is preserved but no longer editable. Manage CTAs using the Deliverables Dependency editor below.</p>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <Label className="text-[10px] text-muted-foreground uppercase">Legacy CTA Label</Label>
+                                <div className="text-sm font-medium">{content.ctaLabel || '-'}</div>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[10px] text-muted-foreground uppercase">Legacy CTA URL</Label>
+                                <div className="text-sm font-medium">{content.ctaUrl || '-'}</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </TabsContent>
                     );
                   })}
                 </Tabs>
+
+                <CommunicationDeliverablesEditor
+                  campaignId={campaignId}
+                  communicationId={communication.id}
+                />
               </div>
             </div>
           );
