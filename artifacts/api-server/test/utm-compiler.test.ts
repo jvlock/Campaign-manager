@@ -44,6 +44,12 @@ test("compiles every supported formula literally", () => {
       utm_term: "{keyword}",
     },
     automationName: null,
+    governance: {
+      label: "PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED",
+      verificationStatus: "provisional",
+      governanceApproved: false,
+      publishingEligible: false,
+    },
   });
   const social = compileUtm(input("paid_social"));
   assert.equal(social.parameters.utm_campaign, "index_climate_launch_search-ad_awareness");
@@ -99,4 +105,11 @@ test("passes Salesforce ID through without generating one", () => {
   assert.equal("utm_sf_cmp_id" in absent.parameters, false);
   const supplied = compileUtm({ ...input("paid_search"), salesforceCampaignId: "701ABCdef123456XYZ" });
   assert.equal(supplied.parameters.utm_sf_cmp_id, "701ABCdef123456XYZ");
+});
+
+test("every compiled UTM is explicitly provisional even when validation succeeds", () => {
+  const result = compileUtm(input("paid_search"));
+  assert.equal(result.governance.governanceApproved, false);
+  assert.equal(result.governance.publishingEligible, false);
+  assert.match(result.governance.label, /PROVISIONAL.*NOT GOVERNANCE APPROVED/i);
 });

@@ -7,8 +7,10 @@
  */
 import type { ActivityTypeConfiguration } from './activityTypeConfiguration';
 import type { GovernedChannel } from './governedChannel';
+import type { ProvisionalGovernanceMetadata } from './provisionalGovernanceMetadata';
 
 export interface ActivityModelCatalog {
   channels: GovernedChannel[];
   activityTypes: ActivityTypeConfiguration[];
+  governance: ProvisionalGovernanceMetadata;
 }

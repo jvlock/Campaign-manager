@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CapacityManagementPanel from '@/components/delivery/CapacityManagementPanel';
 import OffsetDefaultsPanel from '@/components/delivery/OffsetDefaultsPanel';
+import { ProvisionalBadge, ProvisionalNotice } from '@/components/governance/ProvisionalNotice';
 
 interface CampaignDeliveryTabProps {
   campaign: CampaignDetail;
@@ -223,7 +224,10 @@ export default function CampaignDeliveryTab({ campaign }: CampaignDeliveryTabPro
                   <tr key={comm.id} className="hover:bg-muted/30">
                     <td className="px-4 py-3 font-medium text-foreground">{comm.name}</td>
                     <td className="px-4 py-3">{comm.communicationType || comm.type || 'Not set'}</td>
-                    <td className="px-4 py-3 text-muted-foreground capitalize">{comm.channel || 'Not set'}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      <div className="capitalize">{comm.channel || 'Not set'}</div>
+                      {comm.channel && <ProvisionalBadge className="mt-1" />}
+                    </td>
                     <td className="px-4 py-3">
                       <Link href={`/campaigns/${campaign.id}?activity=${comm.activityId}&tab=map`} className="text-primary hover:underline font-medium">
                         {getActivityName(comm.activityId)}
@@ -243,7 +247,9 @@ export default function CampaignDeliveryTab({ campaign }: CampaignDeliveryTabPro
                         {comm.status}
                       </span>
                       {comm.approvalStatus && comm.approvalStatus !== 'pending' && (
-                         <div className="text-[10px] mt-1 text-muted-foreground uppercase">{comm.approvalStatus.replace('_', ' ')}</div>
+                         <div className="text-[10px] mt-1 text-amber-700 uppercase">
+                           Historical workflow: {comm.approvalStatus.replace('_', ' ')} · not governance approval
+                         </div>
                       )}
                     </td>
                   </tr>
@@ -264,12 +270,13 @@ export default function CampaignDeliveryTab({ campaign }: CampaignDeliveryTabPro
 
       <div className="pt-8 border-t border-border mt-8">
         <h2 className="text-lg font-semibold mb-4 text-foreground">UTM Links & Tracking</h2>
+        <ProvisionalNotice compact className="mb-3" />
         <div className="rounded-md border border-border bg-card overflow-x-auto shadow-sm">
           <table className="w-full text-sm text-left whitespace-nowrap">
             <thead className="bg-muted/50 text-muted-foreground font-medium border-b border-border text-xs uppercase tracking-wider">
               <tr>
                 <th className="px-4 py-3">Destination</th>
-                <th className="px-4 py-3">Generated URL</th>
+                <th className="px-4 py-3">Provisional UTM preview</th>
                 <th className="px-4 py-3">Status</th>
               </tr>
             </thead>
@@ -282,9 +289,12 @@ export default function CampaignDeliveryTab({ campaign }: CampaignDeliveryTabPro
                 campaign.utmLinks.map(link => (
                   <tr key={link.id} className="hover:bg-muted/30">
                     <td className="px-4 py-3 truncate max-w-[200px]" title={link.destinationUrl}>{link.destinationUrl}</td>
-                    <td className="px-4 py-3 font-mono text-[11px] truncate max-w-[400px] text-muted-foreground" title={link.fullUrl}>{link.fullUrl}</td>
+                    <td className="px-4 py-3 max-w-[400px]">
+                      <div className="font-mono text-[11px] truncate text-muted-foreground" title={link.fullUrl}>{link.fullUrl}</div>
+                      <ProvisionalBadge className="mt-1" />
+                    </td>
                     <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-700">{link.status}</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800">Draft preview</span>
                     </td>
                   </tr>
                 ))

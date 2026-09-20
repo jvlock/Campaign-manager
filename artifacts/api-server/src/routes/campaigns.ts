@@ -3,7 +3,7 @@ import { syncCapacityConflicts } from "../lib/implementation-tasks";
 import { and, desc, eq, inArray, not, or, sql } from "drizzle-orm";
 import {
   db, campaigns, campaignStrategy, activities, activityConnections,
-  activityTasks, approvals, communications, conflicts, scheduleRules, taxonomyTerms, taxonomyVersions, utmLinks,
+  activityTasks, communications, conflicts, scheduleRules, taxonomyTerms, taxonomyVersions, utmLinks,
   webinarSessions,
 } from "@workspace/db";
 import { deliveryFor } from "../lib/delivery";
@@ -27,6 +27,11 @@ import {
   renderActivityName,
 } from "../lib/activity-model";
 import { assertCampaignDeliverablesReady, DeliverableError } from "../lib/deliverables";
+import {
+  assertNoFinalityRequest,
+  GovernanceQuarantineError,
+  PROVISIONAL_GOVERNANCE,
+} from "../lib/governance-quarantine";
 
 const router: IRouter = Router();
 
@@ -57,6 +62,7 @@ const summary = (c: typeof campaigns.$inferSelect) => ({
   audience: c.audience, outcome: c.outcome, lifecycle: c.lifecycle,
   readiness: c.readiness, timing: c.timing, owner: c.owner, rowVersion: c.rowVersion,
   updatedAt: c.updatedAt.toISOString(),
+  governance: PROVISIONAL_GOVERNANCE,
 });
 
 async function mapFor(campaignId: string) {
@@ -114,24 +120,34 @@ function activityResponse(
     rowVersion: activity.rowVersion, activityTypeId: activity.activityTypeId,
     answers: activity.activityAnswers, overrides: activity.activityOverrides,
     generatedName: activity.generatedName, namingInput: activity.namingInput,
+    generatedNameGovernance: PROVISIONAL_GOVERNANCE,
     effectiveInheritance, position: { x: Number(activity.x), y: Number(activity.y) },
   };
 }
 
 router.get("/activity-model/catalog", (_req, res) => {
-  res.json({ channels: GOVERNED_CHANNELS, activityTypes: ACTIVITY_TYPE_CONFIGURATIONS });
+  res.json({
+    channels: GOVERNED_CHANNELS.map((channel) => ({ ...channel, governance: PROVISIONAL_GOVERNANCE })),
+    activityTypes: ACTIVITY_TYPE_CONFIGURATIONS.map((activityType) => ({ ...activityType, governance: PROVISIONAL_GOVERNANCE })),
+    governance: PROVISIONAL_GOVERNANCE,
+  });
 });
 
 router.post("/activity-model/render-name", (req, res) => {
   try {
+    assertNoFinalityRequest(req.body);
     const template = req.body?.template;
     if (typeof template !== "string") throw new ActivityModelError("template", "required", "template is required");
     const builtins = req.body?.builtins;
     const answers = req.body?.answers;
     if (!builtins || typeof builtins !== "object" || Array.isArray(builtins)) throw new ActivityModelError("builtins", "invalid_type", "builtins must be an object");
     if (!answers || typeof answers !== "object" || Array.isArray(answers)) throw new ActivityModelError("answers", "invalid_type", "answers must be an object");
-    res.json({ name: renderActivityName(template, builtins, answers) });
+    res.json({ name: renderActivityName(template, builtins, answers), governance: PROVISIONAL_GOVERNANCE });
   } catch (error) {
+    if (error instanceof GovernanceQuarantineError) {
+      res.status(error.status).json({ error: { field: error.field, code: error.code, message: error.message } });
+      return;
+    }
     if (error instanceof ActivityModelError) { activityModelError(res, error); return; }
     throw error;
   }
@@ -145,7 +161,11 @@ async function detail(c: typeof campaigns.$inferSelect) {
     ...summary(c), strategy: (strategy?.data ?? {}) as Record<string, unknown>,
     inheritance: (strategy?.inheritance ?? {}) as Record<string, unknown>,
     map: await mapFor(c.id),
-    utmLinks: links.map((u) => ({ id: u.id, destinationUrl: u.destinationUrl, fullUrl: u.fullUrl, taxonomyVersion: u.taxonomyVersion, validation: u.validation, status: u.status })),
+    utmLinks: links.map((u) => ({
+      id: u.id, destinationUrl: u.destinationUrl, fullUrl: u.fullUrl,
+      taxonomyVersion: u.taxonomyVersion, validation: u.validation, status: u.status,
+      governance: PROVISIONAL_GOVERNANCE,
+    })),
     communications: delivery.communications,
     tasks: delivery.tasks,
   };
@@ -157,6 +177,7 @@ router.get("/campaigns", async (_req, res, next) => {
 
 router.post("/campaigns", async (req, res, next) => {
   try {
+    assertNoFinalityRequest(req.body);
     const normalizedName = normalizeCampaignName(String(req.body.name ?? ""));
     const [duplicate] = await db.select({ id: campaigns.id }).from(campaigns).where(eq(campaigns.normalizedName, normalizedName));
     if (duplicate) {
@@ -172,6 +193,10 @@ router.post("/campaigns", async (req, res, next) => {
     await db.insert(activityConnections).values({ campaignId: c.id, source: entry.id, target: outcome.id, trigger: "engaged", timing: "when ready", exclusions: [], sentence: `When the audience is engaged, guide them toward ${req.body.outcome}.` });
     res.status(201).json(await detail(c));
   } catch (e) {
+    if (e instanceof GovernanceQuarantineError) {
+      res.status(e.status).json({ error: { field: e.field, code: e.code, message: e.message } });
+      return;
+    }
     if (e instanceof ActivityModelError) { activityModelError(res, e); return; }
     next(e);
   }
@@ -183,6 +208,10 @@ router.get("/campaigns/:id", async (req, res, next) => {
     if (!c) { res.status(404).json({ error: "Campaign not found" }); return; }
     res.json(await detail(c));
   } catch (e) {
+    if (e instanceof GovernanceQuarantineError) {
+      res.status(e.status).json({ error: { field: e.field, code: e.code, message: e.message } });
+      return;
+    }
     if (e instanceof ActivityModelError) { activityModelError(res, e); return; }
     next(e);
   }
@@ -190,6 +219,7 @@ router.get("/campaigns/:id", async (req, res, next) => {
 
 router.patch("/campaigns/:id", async (req, res, next) => {
   try {
+    assertNoFinalityRequest(req.body);
     const version = expectedRowVersion(req);
     if (version === undefined) {
       res.status(428).json({ error: "rowVersion is required for an existing campaign" });
@@ -290,6 +320,10 @@ router.patch("/campaigns/:id", async (req, res, next) => {
     }
     res.json(await detail(c));
   } catch (e) {
+    if (e instanceof GovernanceQuarantineError) {
+      res.status(e.status).json({ error: { field: e.field, code: e.code, message: e.message } });
+      return;
+    }
     if (e instanceof ActivityModelError) { activityModelError(res, e); return; }
     if (e instanceof DeliverableError) {
       res.status(e.status).json({ error: { field: e.field, code: e.code, message: e.message } });
@@ -301,6 +335,7 @@ router.patch("/campaigns/:id", async (req, res, next) => {
 
 router.put("/campaigns/:id/map", async (req, res, next) => {
   try {
+    assertNoFinalityRequest(req.body);
     const campaignVersion = expectedRowVersion(req);
     if (campaignVersion === undefined) {
       res.status(428).json({ error: "rowVersion is required for an existing campaign map" });
@@ -554,6 +589,10 @@ router.put("/campaigns/:id/map", async (req, res, next) => {
     const [campaign] = await db.select().from(campaigns).where(eq(campaigns.id, req.params.id));
     res.json({ ...(await mapFor(req.params.id)), rowVersion: campaign.rowVersion });
   } catch (e) {
+    if (e instanceof GovernanceQuarantineError) {
+      res.status(e.status).json({ error: { field: e.field, code: e.code, message: e.message } });
+      return;
+    }
     if (e instanceof ActivityModelError) { activityModelError(res, e); return; }
     if (e && typeof e === "object" && "statusCode" in e && typeof e.statusCode === "number") {
       res.status(e.statusCode).json({ error: e instanceof Error ? e.message : "Map update rejected" });
@@ -565,6 +604,7 @@ router.put("/campaigns/:id/map", async (req, res, next) => {
 
 router.post("/campaigns/:id/activities", async (req, res, next) => {
   try {
+    assertNoFinalityRequest(req.body);
     const version = expectedRowVersion(req);
     if (version === undefined) {
       res.status(428).json({ error: "rowVersion is required for an existing campaign" });
@@ -611,6 +651,10 @@ router.post("/campaigns/:id/activities", async (req, res, next) => {
     });
     res.status(201).json(activityResponse(a, model?.effectiveInheritance ?? {}));
   } catch (e) {
+    if (e instanceof GovernanceQuarantineError) {
+      res.status(e.status).json({ error: { field: e.field, code: e.code, message: e.message } });
+      return;
+    }
     if (e instanceof ActivityModelError) { activityModelError(res, e); return; }
     if (e && typeof e === "object" && "statusCode" in e && typeof e.statusCode === "number") {
       res.status(e.statusCode).json({ error: e instanceof Error ? e.message : "Activity update rejected" });
@@ -660,6 +704,7 @@ function optionalString(body: Record<string, unknown>, field: string): string | 
 
 router.post("/campaigns/:id/utm-links", async (req, res, next) => {
   try {
+    assertNoFinalityRequest(req.body);
     const [c] = await db.select().from(campaigns).where(eq(campaigns.id, req.params.id));
     if (!c) { utmError(res, 404, "campaignId", "not_found", "Campaign not found"); return; }
     const body = (req.body ?? {}) as Record<string, unknown>;
@@ -682,19 +727,7 @@ router.post("/campaigns/:id/utm-links", async (req, res, next) => {
     const now = Date.now();
     const activeTerms = versionTerms.filter((term) =>
       !term.isDeprecated && !term.supersededBy && (!term.deprecatedAt || term.deprecatedAt.valueOf() > now));
-    const termIds = activeTerms.map((term) => term.id);
-    const approvalRows = termIds.length
-      ? await db.select().from(approvals).where(and(
-          inArray(approvals.recordType, ["taxonomyTerm", "taxonomy_term"]),
-          inArray(approvals.recordId, termIds),
-        )).orderBy(desc(approvals.updatedAt))
-      : [];
-    const latestApproval = new Map<string, string>();
-    for (const approval of approvalRows) {
-      if (!latestApproval.has(approval.recordId)) latestApproval.set(approval.recordId, approval.status.toLowerCase());
-    }
-    const approvedTerms = activeTerms.filter((term) => latestApproval.get(term.id) === "approved");
-    const findApproved = (field: string, category: UtmCategoryKey, reference: string, expectedParentId?: string) => {
+    const findGovernedPreviewValue = (field: string, category: UtmCategoryKey, reference: string, expectedParentId?: string) => {
       const normalized = reference.trim().toLowerCase();
       const subject = field === "channel" ? `channel ${JSON.stringify(reference)}` : field;
       const categoryTerms = versionTerms.filter((term) => term.category === category);
@@ -717,13 +750,10 @@ router.post("/campaigns/:id/utm-links", async (req, res, next) => {
         throw new UtmGovernanceError(field, "ambiguous", `${subject} matches multiple active ${category} values; supply the term ID`);
       }
       const matched = activeMatches[0];
-      if (!approvedTerms.some((term) => term.id === matched.id)) {
-        throw new UtmGovernanceError(field, "not_approved", `${subject} is not an approved active ${category} value`);
-      }
       return matched;
     };
 
-    const channel = findApproved("channel", "channel", channelReference);
+    const channel = findGovernedPreviewValue("channel", "channel", channelReference);
     const metadata = channel.sourceMetadata && typeof channel.sourceMetadata === "object"
       ? channel.sourceMetadata as Record<string, unknown> : {};
     const channelId = channel.shortcode.toLowerCase();
@@ -731,12 +761,16 @@ router.post("/campaigns/:id/utm-links", async (req, res, next) => {
       psg: "paid_search", psl: "paid_social", disp: "display",
       evlv: "events", evind: "events", evvrt: "events",
     };
-    let formula = directFormula[channelId];
+    const metadataFormula = typeof metadata.formulaKey === "string"
+      && Object.prototype.hasOwnProperty.call(formulaRequiredFields, metadata.formulaKey)
+      ? metadata.formulaKey as UtmFormula
+      : undefined;
+    let formula = directFormula[channelId] ?? metadataFormula;
     let resolvedEmailType: typeof taxonomyTerms.$inferSelect | undefined;
     if (["eml", "emlc", "emlp"].includes(channelId)) {
       const emailReference = optionalString(body, "emailType");
       if (!emailReference) throw new UtmGovernanceError("emailType", "required", `emailType is required for ${channel.label}`);
-      resolvedEmailType = findApproved("emailType", "email_type", emailReference);
+      resolvedEmailType = findGovernedPreviewValue("emailType", "email_type", emailReference);
       const emailKind = `${resolvedEmailType.shortcode} ${resolvedEmailType.label}`.toLowerCase();
       formula = emailKind.includes("newsletter") ? "newsletter_email"
         : emailKind.includes("nurture") ? "nurture_email"
@@ -759,21 +793,21 @@ router.post("/campaigns/:id/utm-links", async (req, res, next) => {
     for (const [field, category] of Object.entries(utmFieldCategories)) {
       if (field === "productLine" || field === "campaignShortcode" || field === "subcampaign") continue;
       const reference = optionalString(body, field);
-      if (reference) governedTerms.set(field, findApproved(field, category, reference));
+      if (reference) governedTerms.set(field, findGovernedPreviewValue(field, category, reference));
     }
     const productLineReference = optionalString(body, "productLine");
     if (productLineReference) {
-      const product = findApproved("productLine", "product_line", productLineReference);
+      const product = findGovernedPreviewValue("productLine", "product_line", productLineReference);
       governedTerms.set("productLine", product);
       const campaignReference = optionalString(body, "campaignShortcode");
       if (campaignReference) {
-        const campaignTerm = findApproved("campaignShortcode", "campaign_shortcode", campaignReference, product.id);
+        const campaignTerm = findGovernedPreviewValue("campaignShortcode", "campaign_shortcode", campaignReference, product.id);
         governedTerms.set("campaignShortcode", campaignTerm);
         const subcampaignReference = optionalString(body, "subcampaign");
         if (subcampaignReference) {
           governedTerms.set(
             "subcampaign",
-            findApproved("subcampaign", "subcampaign", subcampaignReference, campaignTerm.id),
+            findGovernedPreviewValue("subcampaign", "subcampaign", subcampaignReference, campaignTerm.id),
           );
         }
       }
@@ -827,8 +861,9 @@ router.post("/campaigns/:id/utm-links", async (req, res, next) => {
       res.status(200).json({
         id: null, destinationUrl: null, fullUrl: null, taxonomyVersion: version.version,
         parameters: compiled.parameters, automationName: compiled.automationName,
-        validation: "Valid", status: "Not persisted",
-        message: "Destination URL is required to build the full link.",
+        validation: "Valid", status: "Provisional preview",
+        governance: compiled.governance,
+        message: `Destination URL is required to build the full link. ${PROVISIONAL_GOVERNANCE.label}`,
       });
       return;
     }
@@ -841,9 +876,11 @@ router.post("/campaigns/:id/utm-links", async (req, res, next) => {
       id: u.id, destinationUrl: u.destinationUrl, fullUrl: u.fullUrl,
       taxonomyVersion: u.taxonomyVersion, parameters: compiled.parameters,
       automationName: compiled.automationName, validation: u.validation,
-      status: u.status, message: null,
+      status: u.status, governance: compiled.governance,
+      message: PROVISIONAL_GOVERNANCE.label,
     });
   } catch (e) {
+    if (e instanceof GovernanceQuarantineError) { utmError(res, e.status, e.field, e.code, e.message); return; }
     if (e instanceof UtmGovernanceError) { utmError(res, 422, e.field, e.code, e.message); return; }
     if (e instanceof UtmInputError) { utmError(res, 400, e.field, e.code, e.message); return; }
     next(e);
@@ -907,8 +944,17 @@ router.get("/governance", async (_req, res, next) => {
     res.json({
       version: v?.version ?? "2026.1",
       activityTypes: ACTIVITY_TYPE_CONFIGURATIONS.map((configuration) => configuration.id),
-      taxonomyTerms: terms.map((t) => ({ category: t.category, label: t.label, shortcode: t.shortcode })),
+      taxonomyTerms: terms.map((t) => ({
+        category: t.category, label: t.label, shortcode: t.shortcode,
+        source_environment: "development",
+        verification_status: "provisional",
+        publishing_eligible: false,
+        source_reference: "Campaign Governance Foundation, migrated via audit",
+        requires_business_validation: true,
+        governance: PROVISIONAL_GOVERNANCE,
+      })),
       namingExamples: [],
+      governance: PROVISIONAL_GOVERNANCE,
     });
   } catch (e) { next(e); }
 });
@@ -920,17 +966,40 @@ router.get("/adapters/status", (_req, res) => res.json({
 
 router.get("/campaigns/:id/export/:format", async (req, res, next) => {
   try {
+    assertNoFinalityRequest(req.query, "query");
     const [c] = await db.select().from(campaigns).where(eq(campaigns.id, req.params.id));
     if (!c) { res.status(404).send("Campaign not found"); return; }
     const map = await mapFor(c.id);
-    if (req.params.format === "json") { res.type("application/json").send(JSON.stringify(await detail(c), null, 2)); return; }
+    res.setHeader("X-Governance-Status", "provisional-not-approved");
+    res.setHeader("X-External-Publishing-Allowed", "false");
+    if (req.params.format === "json") {
+      res.type("application/json").send(JSON.stringify({
+        governance: PROVISIONAL_GOVERNANCE,
+        campaign: await detail(c),
+      }, null, 2));
+      return;
+    }
     if (req.params.format === "utm-csv") {
       const links = await db.select().from(utmLinks).where(eq(utmLinks.campaignId, c.id));
-      res.type("text/csv").send(["Destination URL,Tagged URL,Taxonomy version,Validation,Status", ...links.map((u) => [u.destinationUrl, u.fullUrl, u.taxonomyVersion, u.validation, u.status].map((x) => JSON.stringify(x)).join(","))].join("\n")); return;
+      res.type("text/csv").send([
+        "Provisional label,Destination URL,Tagged URL,Taxonomy version,Validation,Status,Governance approved,External publishing eligible",
+        ...links.map((u) => [PROVISIONAL_GOVERNANCE.label, u.destinationUrl, u.fullUrl, u.taxonomyVersion, u.validation, u.status, false, false].map((x) => JSON.stringify(x)).join(",")),
+      ].join("\n")); return;
     }
-    if (req.params.format === "activities-csv") { res.type("text/csv").send(["Name,Type,Audience,Region,Timing,Status,Owner", ...map.activities.map((a) => [a.name, a.type, a.audience, a.region, a.timing, a.status, a.owner].map((x) => JSON.stringify(x)).join(","))].join("\n")); return; }
-    res.type("text/plain").send(`${c.name}\n${c.scope} · ${c.region}\nAudience: ${c.audience}\nOutcome: ${c.outcome}\nTiming: ${c.timing}\nReadiness: ${c.readiness}%\n\nAudience journey\n${map.activities.map((a) => `• ${a.name} — ${a.timing} — ${a.status}`).join("\n")}`);
-  } catch (e) { next(e); }
+    if (req.params.format === "activities-csv") {
+      res.type("text/csv").send([
+        "Provisional label,Name,Type,Audience,Region,Timing,Status,Owner,Governance approved",
+        ...map.activities.map((a) => [PROVISIONAL_GOVERNANCE.label, a.name, a.type, a.audience, a.region, a.timing, a.status, a.owner, false].map((x) => JSON.stringify(x)).join(",")),
+      ].join("\n")); return;
+    }
+    res.type("text/plain").send(`${PROVISIONAL_GOVERNANCE.label}\n${PROVISIONAL_GOVERNANCE.message}\n\n${c.name}\n${c.scope} · ${c.region}\nAudience: ${c.audience}\nOutcome: ${c.outcome}\nTiming: ${c.timing}\nReadiness: ${c.readiness}%\n\nAudience journey\n${map.activities.map((a) => `• [PROVISIONAL] ${a.name} — ${a.timing} — ${a.status}`).join("\n")}`);
+  } catch (e) {
+    if (e instanceof GovernanceQuarantineError) {
+      res.status(e.status).json({ error: { field: e.field, code: e.code, message: e.message } });
+      return;
+    }
+    next(e);
+  }
 });
 
 export default router;

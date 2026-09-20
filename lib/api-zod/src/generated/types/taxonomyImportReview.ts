@@ -10,6 +10,7 @@ import type { TaxonomyImportReviewPayload } from './taxonomyImportReviewPayload'
 import type { TaxonomyImportReviewStatus } from './taxonomyImportReviewStatus';
 
 export type TaxonomyImportReview = GovernanceActorReason & {
+  /** business_review_complete records provisional draft review. approved is retained only so typed callers receive the server's explicit quarantine rejection; it is never accepted as approval. */
   status: TaxonomyImportReviewStatus;
   note?: string;
   resolveConflict?: boolean;

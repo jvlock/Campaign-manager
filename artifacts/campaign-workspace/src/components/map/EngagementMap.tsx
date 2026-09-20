@@ -44,6 +44,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ProvisionalBadge } from '@/components/governance/ProvisionalNotice';
 
 const nodeTypes = {
   activity: ActivityNode,
@@ -666,7 +667,8 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
                 className="touch-manipulation rounded-md border border-border bg-background p-2 text-sm transition-all hover:border-primary/50 hover:shadow-sm active:cursor-grabbing sm:p-3"
               >
                 <div className="truncate font-medium" title={type.displayName}>{type.displayName}</div>
-                <div className="mt-1 hidden text-xs text-muted-foreground sm:block">Standard template</div>
+                <ProvisionalBadge className="mt-1 max-w-full whitespace-normal" />
+                <div className="mt-1 hidden text-xs text-muted-foreground sm:block">Draft planning template</div>
                 <Button
                   type="button"
                   variant="outline"

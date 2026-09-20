@@ -29,7 +29,15 @@ export type CompiledUtmInput = {
 export type CompiledUtm = {
   parameters: Record<string, string>;
   automationName: string | null;
+  governance: {
+    label: string;
+    verificationStatus: "provisional";
+    governanceApproved: false;
+    publishingEligible: false;
+  };
 };
+
+import { PROVISIONAL_GOVERNANCE } from "./governance-quarantine";
 
 /** Join non-empty values. Empty segments are omitted, never stringified. */
 export function J(...values: Array<string | null | undefined | false>): string {
@@ -117,7 +125,16 @@ export function compileUtm(input: CompiledUtmInput): CompiledUtm {
   if (content) parameters.utm_content = content;
   if (term) parameters.utm_term = term;
   if (input.salesforceCampaignId) parameters.utm_sf_cmp_id = input.salesforceCampaignId;
-  return { parameters, automationName };
+  return {
+    parameters,
+    automationName,
+    governance: {
+      label: PROVISIONAL_GOVERNANCE.label,
+      verificationStatus: "provisional",
+      governanceApproved: false,
+      publishingEligible: false,
+    },
+  };
 }
 
 export function appendUtm(destinationUrl: string, parameters: Record<string, string>): string {

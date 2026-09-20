@@ -125,7 +125,7 @@ export default function StagedImports({ batchId: initialBatchId }: { batchId?: s
     setBatchId(batchLookup.trim());
   };
 
-  const handleReview = (id: string, status: 'approved' | 'rejected', resolveConflict = false) => {
+  const handleReview = (id: string, status: 'business_review_complete' | 'rejected', resolveConflict = false) => {
     if (!batchId || !actor.trim() || !reason.trim()) {
       setFormError('Actor and reason are required for review.');
       return;
@@ -139,7 +139,7 @@ export default function StagedImports({ batchId: initialBatchId }: { batchId?: s
           actor: actor.trim(),
           reason: reason.trim(),
           resolveConflict,
-        },
+        } as any,
       },
       {
         onSuccess: () => invalidateBatch(batchId),
@@ -150,14 +150,14 @@ export default function StagedImports({ batchId: initialBatchId }: { batchId?: s
 
   const handleCommit = () => {
     if (!batchId || !actor.trim() || !reason.trim()) {
-      setFormError('Actor and reason are required for commit.');
+      setFormError('Actor and reason are required to apply provisional values.');
       return;
     }
     commitImport.mutate(
       { batchId, data: { actor: actor.trim(), reason: reason.trim() } },
       {
         onSuccess: () => invalidateBatch(batchId),
-        onError: (error) => setFormError(error instanceof Error ? error.message : 'Unable to commit the import.'),
+        onError: (error) => setFormError(error instanceof Error ? error.message : 'Unable to apply provisional values.'),
       },
     );
   };
@@ -169,7 +169,7 @@ export default function StagedImports({ batchId: initialBatchId }: { batchId?: s
       <CardHeader>
         <CardTitle>Staged Imports</CardTitle>
         <CardDescription>
-          Stage taxonomy JSON against the current version, then review and commit the same returned batch.
+          Stage taxonomy JSON, record business review, then apply values as provisional drafts. This never grants governance approval or publishing eligibility.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -237,19 +237,28 @@ export default function StagedImports({ batchId: initialBatchId }: { batchId?: s
                             <div className="min-w-0 space-y-1">
                               <code className="text-xs font-mono break-all">{JSON.stringify(row.payload ?? row)}</code>
                               <div className="text-[10px] text-muted-foreground">
-                                Status: {String(row.status ?? 'unknown')}
+                                 Source review status: {String(row.status ?? 'unknown')} · quarantined
                                 {row.conflictType ? ` · ${row.conflictType}` : ''}
                               </div>
                               {isConflict && (
                                 <div className="flex items-start gap-1.5 text-xs text-destructive">
                                   <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                                  <span>{row.conflicts?.join(', ') || 'Conflict detected. Resolve before approval.'}</span>
+                                  <span>{row.conflicts?.join(', ') || 'Conflict detected. Review is required before any future validation decision.'}</span>
                                 </div>
                               )}
                             </div>
                             <div className="flex flex-col gap-2 shrink-0">
-                              <Button size="sm" onClick={() => handleReview(id, 'approved', isConflict)} className="h-7 text-xs px-2" variant={isConflict ? 'secondary' : 'default'} disabled={reviewCandidate.isPending}>
-                                <Check className="h-3 w-3 mr-1" /> {isConflict ? 'Force approve' : 'Approve'}
+                              <Button
+                                size="sm"
+                                onClick={() => handleReview(id, 'business_review_complete', isConflict)}
+                                className="h-7 text-xs px-2"
+                                variant={isConflict ? 'secondary' : 'default'}
+                                disabled={reviewCandidate.isPending || row.status === 'business_review_complete'}
+                              >
+                                <Check className="h-3 w-3 mr-1" />
+                                {row.status === 'business_review_complete'
+                                  ? 'Business review complete'
+                                  : isConflict ? 'Resolve & complete review' : 'Mark business review complete'}
                               </Button>
                               <Button size="sm" variant="outline" onClick={() => handleReview(id, 'rejected')} className="h-7 text-xs px-2" disabled={reviewCandidate.isPending}>
                                 <X className="h-3 w-3 mr-1" /> Reject
@@ -261,7 +270,7 @@ export default function StagedImports({ batchId: initialBatchId }: { batchId?: s
                     })}
                     <Button variant="default" className="w-full" onClick={handleCommit} disabled={commitImport.isPending}>
                       {commitImport.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ArrowRight className="h-4 w-4 mr-2" />}
-                      Commit approved candidates
+                      Apply provisional values
                     </Button>
                   </div>
                 )}

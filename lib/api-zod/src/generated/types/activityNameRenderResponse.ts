@@ -5,7 +5,9 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { ProvisionalGovernanceMetadata } from './provisionalGovernanceMetadata';
 
 export interface ActivityNameRenderResponse {
   name: string;
+  governance: ProvisionalGovernanceMetadata;
 }

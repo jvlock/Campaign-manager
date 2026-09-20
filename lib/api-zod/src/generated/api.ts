@@ -12,7 +12,19 @@ export const GetActivityModelCatalogResponse = zod.object({
   "channels": zod.array(zod.object({
   "id": zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),
   "displayName": zod.string(),
-  "type": zod.enum(['paid', 'organic', 'email', 'event', 'app'])
+  "type": zod.enum(['paid', 'organic', 'email', 'event', 'app']),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 })),
   "activityTypes": zod.array(zod.object({
   "id": zod.string(),
@@ -22,8 +34,32 @@ export const GetActivityModelCatalogResponse = zod.object({
   "key": zod.string(),
   "options": zod.array(zod.string()).optional()
 })),
-  "allowedOverrides": zod.array(zod.string())
-}))
+  "allowedOverrides": zod.array(zod.string()),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
+})),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 })
 
 
@@ -34,7 +70,19 @@ export const RenderActivityModelNameBody = zod.object({
 })
 
 export const RenderActivityModelNameResponse = zod.object({
-  "name": zod.string()
+  "name": zod.string(),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 })
 
 
@@ -172,7 +220,19 @@ export const ListCampaignsResponseItem = zod.object({
   "timing": zod.string(),
   "owner": zod.string(),
   "rowVersion": zod.number().int().min(1).optional(),
-  "updatedAt": zod.string()
+  "updatedAt": zod.string(),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 })
 export const ListCampaignsResponse = zod.array(ListCampaignsResponseItem)
 
@@ -221,7 +281,19 @@ export const CreateCampaignResponse = zod.object({
   "timing": zod.string(),
   "owner": zod.string(),
   "rowVersion": zod.number().int().min(1).optional(),
-  "updatedAt": zod.string()
+  "updatedAt": zod.string(),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 }).and(zod.object({
   "strategy": zod.record(zod.string(), zod.unknown()),
   "map": zod.object({
@@ -259,6 +331,18 @@ export const CreateCampaignResponse = zod.object({
   "answers": zod.record(zod.string(), zod.unknown()).optional(),
   "overrides": zod.record(zod.string(), zod.unknown()).optional(),
   "generatedName": zod.string().nullish(),
+  "generatedNameGovernance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "namingInput": zod.string().nullish(),
   "effectiveInheritance": zod.record(zod.string(), zod.unknown()).optional()
 })),
@@ -282,7 +366,19 @@ export const CreateCampaignResponse = zod.object({
   "fullUrl": zod.string(),
   "taxonomyVersion": zod.string(),
   "validation": zod.string(),
-  "status": zod.string()
+  "status": zod.string(),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 })),
   "inheritance": zod.object({
   "deliveryStartDate": zod.coerce.date().nullish(),
@@ -400,7 +496,19 @@ export const GetCampaignResponse = zod.object({
   "timing": zod.string(),
   "owner": zod.string(),
   "rowVersion": zod.number().int().min(1).optional(),
-  "updatedAt": zod.string()
+  "updatedAt": zod.string(),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 }).and(zod.object({
   "strategy": zod.record(zod.string(), zod.unknown()),
   "map": zod.object({
@@ -438,6 +546,18 @@ export const GetCampaignResponse = zod.object({
   "answers": zod.record(zod.string(), zod.unknown()).optional(),
   "overrides": zod.record(zod.string(), zod.unknown()).optional(),
   "generatedName": zod.string().nullish(),
+  "generatedNameGovernance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "namingInput": zod.string().nullish(),
   "effectiveInheritance": zod.record(zod.string(), zod.unknown()).optional()
 })),
@@ -461,7 +581,19 @@ export const GetCampaignResponse = zod.object({
   "fullUrl": zod.string(),
   "taxonomyVersion": zod.string(),
   "validation": zod.string(),
-  "status": zod.string()
+  "status": zod.string(),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 })),
   "inheritance": zod.object({
   "deliveryStartDate": zod.coerce.date().nullish(),
@@ -599,7 +731,19 @@ export const UpdateCampaignResponse = zod.object({
   "timing": zod.string(),
   "owner": zod.string(),
   "rowVersion": zod.number().int().min(1).optional(),
-  "updatedAt": zod.string()
+  "updatedAt": zod.string(),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 }).and(zod.object({
   "strategy": zod.record(zod.string(), zod.unknown()),
   "map": zod.object({
@@ -637,6 +781,18 @@ export const UpdateCampaignResponse = zod.object({
   "answers": zod.record(zod.string(), zod.unknown()).optional(),
   "overrides": zod.record(zod.string(), zod.unknown()).optional(),
   "generatedName": zod.string().nullish(),
+  "generatedNameGovernance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "namingInput": zod.string().nullish(),
   "effectiveInheritance": zod.record(zod.string(), zod.unknown()).optional()
 })),
@@ -660,7 +816,19 @@ export const UpdateCampaignResponse = zod.object({
   "fullUrl": zod.string(),
   "taxonomyVersion": zod.string(),
   "validation": zod.string(),
-  "status": zod.string()
+  "status": zod.string(),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 })),
   "inheritance": zod.object({
   "deliveryStartDate": zod.coerce.date().nullish(),
@@ -789,6 +957,18 @@ export const SaveCampaignMapBody = zod.object({
   "answers": zod.record(zod.string(), zod.unknown()).optional(),
   "overrides": zod.record(zod.string(), zod.unknown()).optional(),
   "generatedName": zod.string().nullish(),
+  "generatedNameGovernance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "namingInput": zod.string().nullish(),
   "effectiveInheritance": zod.record(zod.string(), zod.unknown()).optional()
 })),
@@ -853,6 +1033,18 @@ export const SaveCampaignMapResponse = zod.object({
   "answers": zod.record(zod.string(), zod.unknown()).optional(),
   "overrides": zod.record(zod.string(), zod.unknown()).optional(),
   "generatedName": zod.string().nullish(),
+  "generatedNameGovernance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "namingInput": zod.string().nullish(),
   "effectiveInheritance": zod.record(zod.string(), zod.unknown()).optional()
 })),
@@ -957,6 +1149,18 @@ export const CreateActivityResponse = zod.object({
   "answers": zod.record(zod.string(), zod.unknown()).optional(),
   "overrides": zod.record(zod.string(), zod.unknown()).optional(),
   "generatedName": zod.string().nullish(),
+  "generatedNameGovernance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "namingInput": zod.string().nullish(),
   "effectiveInheritance": zod.record(zod.string(), zod.unknown()).optional()
 })
@@ -3005,7 +3209,19 @@ export const GenerateUtmLinkResponse = zod.object({
   "automationName": zod.string().nullable(),
   "validation": zod.string(),
   "status": zod.string(),
-  "message": zod.string().nullable()
+  "message": zod.string().nullable(),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 })
 
 
@@ -3034,7 +3250,19 @@ export const GetPortfolioResponse = zod.object({
   "timing": zod.string(),
   "owner": zod.string(),
   "rowVersion": zod.number().int().min(1).optional(),
-  "updatedAt": zod.string()
+  "updatedAt": zod.string(),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 })),
   "conflicts": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -3071,7 +3299,19 @@ export const GetGovernanceResponse = zod.object({
   "version": zod.string(),
   "activityTypes": zod.array(zod.string()),
   "taxonomyTerms": zod.array(zod.record(zod.string(), zod.string())),
-  "namingExamples": zod.array(zod.string())
+  "namingExamples": zod.array(zod.string()),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 })
 
 
@@ -3125,12 +3365,41 @@ export const ListGovernanceTermsResponse = zod.object({
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
   "sourceMetadata": zod.record(zod.string(), zod.unknown()),
+  "source_environment": zod.enum(['development']),
+  "verification_status": zod.enum(['provisional']),
+  "publishing_eligible": zod.literal(false),
+  "source_reference": zod.enum(['Campaign Governance Foundation, migrated via audit']),
+  "requires_business_validation": zod.literal(true),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
   "createdAt": zod.coerce.date().optional(),
   "updatedAt": zod.coerce.date().optional()
-}))
+})),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
 })
 
 
@@ -3165,6 +3434,23 @@ export const CreateGovernanceTermResponse = zod.object({
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
   "sourceMetadata": zod.record(zod.string(), zod.unknown()),
+  "source_environment": zod.enum(['development']),
+  "verification_status": zod.enum(['provisional']),
+  "publishing_eligible": zod.literal(false),
+  "source_reference": zod.enum(['Campaign Governance Foundation, migrated via audit']),
+  "requires_business_validation": zod.literal(true),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -3193,6 +3479,23 @@ export const ResolveGovernanceTermResponse = zod.object({
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
   "sourceMetadata": zod.record(zod.string(), zod.unknown()),
+  "source_environment": zod.enum(['development']),
+  "verification_status": zod.enum(['provisional']),
+  "publishing_eligible": zod.literal(false),
+  "source_reference": zod.enum(['Campaign Governance Foundation, migrated via audit']),
+  "requires_business_validation": zod.literal(true),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -3210,6 +3513,23 @@ export const ResolveGovernanceTermResponse = zod.object({
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
   "sourceMetadata": zod.record(zod.string(), zod.unknown()),
+  "source_environment": zod.enum(['development']),
+  "verification_status": zod.enum(['provisional']),
+  "publishing_eligible": zod.literal(false),
+  "source_reference": zod.enum(['Campaign Governance Foundation, migrated via audit']),
+  "requires_business_validation": zod.literal(true),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -3241,6 +3561,23 @@ export const ResolveGovernanceTermPostResponse = zod.object({
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
   "sourceMetadata": zod.record(zod.string(), zod.unknown()),
+  "source_environment": zod.enum(['development']),
+  "verification_status": zod.enum(['provisional']),
+  "publishing_eligible": zod.literal(false),
+  "source_reference": zod.enum(['Campaign Governance Foundation, migrated via audit']),
+  "requires_business_validation": zod.literal(true),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -3258,6 +3595,23 @@ export const ResolveGovernanceTermPostResponse = zod.object({
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
   "sourceMetadata": zod.record(zod.string(), zod.unknown()),
+  "source_environment": zod.enum(['development']),
+  "verification_status": zod.enum(['provisional']),
+  "publishing_eligible": zod.literal(false),
+  "source_reference": zod.enum(['Campaign Governance Foundation, migrated via audit']),
+  "requires_business_validation": zod.literal(true),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -3302,6 +3656,23 @@ export const UpdateGovernanceTermResponse = zod.object({
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
   "sourceMetadata": zod.record(zod.string(), zod.unknown()),
+  "source_environment": zod.enum(['development']),
+  "verification_status": zod.enum(['provisional']),
+  "publishing_eligible": zod.literal(false),
+  "source_reference": zod.enum(['Campaign Governance Foundation, migrated via audit']),
+  "requires_business_validation": zod.literal(true),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -3334,6 +3705,23 @@ export const DeprecateGovernanceTermResponse = zod.object({
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
   "sourceMetadata": zod.record(zod.string(), zod.unknown()),
+  "source_environment": zod.enum(['development']),
+  "verification_status": zod.enum(['provisional']),
+  "publishing_eligible": zod.literal(false),
+  "source_reference": zod.enum(['Campaign Governance Foundation, migrated via audit']),
+  "requires_business_validation": zod.literal(true),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -3377,6 +3765,23 @@ export const RenameGovernanceTermResponse = zod.object({
   "supersededBy": zod.string().uuid().nullish(),
   "legacyCodes": zod.array(zod.string()),
   "sourceMetadata": zod.record(zod.string(), zod.unknown()),
+  "source_environment": zod.enum(['development']),
+  "verification_status": zod.enum(['provisional']),
+  "publishing_eligible": zod.literal(false),
+  "source_reference": zod.enum(['Campaign Governance Foundation, migrated via audit']),
+  "requires_business_validation": zod.literal(true),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n'),
   "isDeprecated": zod.boolean(),
   "deprecatedAt": zod.coerce.date().nullish(),
   "deprecationReason": zod.string().nullish(),
@@ -3402,7 +3807,12 @@ export const StageTaxonomyImportBody = zod.object({
 
 export const StageTaxonomyImportResponse = zod.object({
   "batch": zod.record(zod.string(), zod.unknown()),
-  "candidates": zod.array(zod.record(zod.string(), zod.unknown())),
+  "candidates": zod.array(zod.object({
+  "status": zod.enum(['business_review_complete', 'rejected', 'staged', 'conflict', 'committed']).describe('Provisional import workflow state returned by the API. Legacy approved rows are remapped to business_review_complete and do not represent governance approval.\n'),
+  "metadata": zod.object({
+  "businessReviewComplete": zod.boolean().optional().describe('Draft business review completion only; never governance approval or finality.')
+}).optional()
+})),
   "idempotent": zod.boolean().optional()
 })
 
@@ -3413,7 +3823,12 @@ export const GetTaxonomyImportParams = zod.object({
 
 export const GetTaxonomyImportResponse = zod.object({
   "batch": zod.record(zod.string(), zod.unknown()),
-  "candidates": zod.array(zod.record(zod.string(), zod.unknown())),
+  "candidates": zod.array(zod.object({
+  "status": zod.enum(['business_review_complete', 'rejected', 'staged', 'conflict', 'committed']).describe('Provisional import workflow state returned by the API. Legacy approved rows are remapped to business_review_complete and do not represent governance approval.\n'),
+  "metadata": zod.object({
+  "businessReviewComplete": zod.boolean().optional().describe('Draft business review completion only; never governance approval or finality.')
+}).optional()
+})),
   "idempotent": zod.boolean().optional()
 })
 
@@ -3431,13 +3846,18 @@ export const ReviewTaxonomyImportCandidateBody = zod.object({
   "actor": zod.string().min(1),
   "reason": zod.string().min(1)
 }).and(zod.object({
-  "status": zod.enum(['approved', 'rejected', 'staged', 'conflict']),
+  "status": zod.enum(['business_review_complete', 'rejected', 'staged', 'conflict', 'approved']).describe('business_review_complete records provisional draft review. approved is retained only so typed callers receive the server\'s explicit quarantine rejection; it is never accepted as approval.\n'),
   "note": zod.string().optional(),
   "resolveConflict": zod.boolean().optional(),
   "payload": zod.record(zod.string(), zod.unknown()).optional()
 }))
 
-export const ReviewTaxonomyImportCandidateResponse = zod.record(zod.string(), zod.unknown())
+export const ReviewTaxonomyImportCandidateResponse = zod.object({
+  "status": zod.enum(['business_review_complete', 'rejected', 'staged', 'conflict', 'committed']).describe('Provisional import workflow state returned by the API. Legacy approved rows are remapped to business_review_complete and do not represent governance approval.\n'),
+  "metadata": zod.object({
+  "businessReviewComplete": zod.boolean().optional().describe('Draft business review completion only; never governance approval or finality.')
+}).optional()
+})
 
 
 export const CommitTaxonomyImportParams = zod.object({
@@ -3455,7 +3875,12 @@ export const CommitTaxonomyImportBody = zod.object({
 
 export const CommitTaxonomyImportResponse = zod.object({
   "batch": zod.record(zod.string(), zod.unknown()),
-  "candidates": zod.array(zod.record(zod.string(), zod.unknown())),
+  "candidates": zod.array(zod.object({
+  "status": zod.enum(['business_review_complete', 'rejected', 'staged', 'conflict', 'committed']).describe('Provisional import workflow state returned by the API. Legacy approved rows are remapped to business_review_complete and do not represent governance approval.\n'),
+  "metadata": zod.object({
+  "businessReviewComplete": zod.boolean().optional().describe('Draft business review completion only; never governance approval or finality.')
+}).optional()
+})),
   "idempotent": zod.boolean().optional()
 })
 

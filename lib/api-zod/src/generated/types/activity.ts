@@ -9,6 +9,7 @@ import type { ActivityAnswers } from './activityAnswers';
 import type { ActivityEffectiveInheritance } from './activityEffectiveInheritance';
 import type { ActivityOverrides } from './activityOverrides';
 import type { Position } from './position';
+import type { ProvisionalGovernanceMetadata } from './provisionalGovernanceMetadata';
 import type { WebinarSetup } from './webinarSetup';
 
 export interface Activity {
@@ -32,6 +33,7 @@ export interface Activity {
   overrides?: ActivityOverrides;
   /** @nullable */
   generatedName?: string | null;
+  generatedNameGovernance: ProvisionalGovernanceMetadata;
   /** @nullable */
   namingInput?: string | null;
   effectiveInheritance?: ActivityEffectiveInheritance;

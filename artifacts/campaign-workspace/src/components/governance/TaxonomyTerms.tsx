@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronDown, ChevronRight, History, Loader2 } from 'lucide-react';
 import { useListGovernanceTerms } from '@workspace/api-client-react';
+import { ProvisionalBadge, ProvisionalNotice } from './ProvisionalNotice';
 
 export default function TaxonomyTerms({ version }: { version?: string }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -40,9 +41,10 @@ export default function TaxonomyTerms({ version }: { version?: string }) {
     <Card className="shadow-sm">
       <CardHeader>
         <CardTitle>Taxonomy & Hierarchy</CardTitle>
-        <CardDescription>Active terms, legacy mappings, and superseded values. {version && `(v${version})`}</CardDescription>
+        <CardDescription>Quarantined source terms retained for draft planning and business validation. {version && `(v${version})`}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <ProvisionalNotice compact />
         {categories.length === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md">No taxonomy terms found.</div>
         ) : categories.map(cat => (
@@ -68,6 +70,7 @@ export default function TaxonomyTerms({ version }: { version?: string }) {
                     <div>
                       <div className="text-sm font-medium flex items-center gap-2">
                         {term.label} <span className="px-1.5 py-0.5 bg-secondary/10 text-secondary text-[10px] rounded font-mono">{term.shortcode}</span>
+                        <ProvisionalBadge />
                         {term.isDeprecated && <span className="text-xs text-muted-foreground">Deprecated</span>}
                       </div>
                       {term.stableKey && (

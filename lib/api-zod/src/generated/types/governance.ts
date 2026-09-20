@@ -6,10 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { GovernanceTaxonomyTermsItem } from './governanceTaxonomyTermsItem';
+import type { ProvisionalGovernanceMetadata } from './provisionalGovernanceMetadata';
 
 export interface Governance {
   version: string;
   activityTypes: string[];
   taxonomyTerms: GovernanceTaxonomyTermsItem[];
   namingExamples: string[];
+  governance: ProvisionalGovernanceMetadata;
 }

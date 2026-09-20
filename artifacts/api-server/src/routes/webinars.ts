@@ -33,6 +33,11 @@ import {
   triggerRegistrationConfirmation,
 } from "../lib/webinar-standard";
 import { canonicalCtasForCommunication, communicationReadinessFor, DeliverableError } from "../lib/deliverables";
+import {
+  assertNoFinalityRequest,
+  GovernanceQuarantineError,
+  PROVISIONAL_GOVERNANCE,
+} from "../lib/governance-quarantine";
 
 const router: IRouter = Router();
 const idParams = z.object({ id: z.string().uuid() });
@@ -452,7 +457,10 @@ router.get("/campaigns/:id/webinars/:sessionId/standard", async (req, res, next)
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    res.json(await standardForSession(parsed.data.id, parsed.data.sessionId));
+    res.json({
+      ...(await standardForSession(parsed.data.id, parsed.data.sessionId)),
+      governance: PROVISIONAL_GOVERNANCE,
+    });
   } catch (error) {
     reportError(error, res, next);
   }
@@ -468,7 +476,7 @@ router.patch("/campaigns/:id/webinars/:sessionId/standard", async (req, res, nex
     const patched = await db.transaction((tx) =>
       patchStandard(parsed.data.id, parsed.data.sessionId, req.body, tx),
     );
-    res.json(patched);
+    res.json({ ...patched, governance: PROVISIONAL_GOVERNANCE });
   } catch (error) {
     reportError(error, res, next);
   }
@@ -489,6 +497,7 @@ router.get("/campaigns/:id/webinars/:sessionId/standard/eligibility", async (req
 
 router.get("/campaigns/:id/webinars/:sessionId/standard/export", async (req, res, next): Promise<void> => {
   try {
+    assertNoFinalityRequest(req.query, "query");
     const parsed = sessionParams.safeParse(req.params);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.message });
@@ -575,12 +584,16 @@ router.get("/campaigns/:id/webinars/:sessionId/standard/export", async (req, res
       return;
     }
     res.type("application/json").json({
+      governance: PROVISIONAL_GOVERNANCE,
+      exportMode: "provisional_local_download",
+      externalPublishing: false,
       campaignId: standard.campaignId,
       sessionId: standard.sessionId,
       launchAt: standard.launchAt,
       communications: communications.flatMap((communication) => communication.variants.map((variant) => {
         const config = activeVariants.find((candidate) => candidate.slot === variant.slot)!;
         return {
+          governance: PROVISIONAL_GOVERNANCE,
           key: communication.key,
           sortOrder: communication.sortOrder,
           timing: communication.timing,
@@ -595,6 +608,10 @@ router.get("/campaigns/:id/webinars/:sessionId/standard/export", async (req, res
       })),
     });
   } catch (error) {
+    if (error instanceof GovernanceQuarantineError) {
+      res.status(error.status).json({ error: { field: error.field, code: error.code, message: error.message } });
+      return;
+    }
     reportError(error, res, next);
   }
 });

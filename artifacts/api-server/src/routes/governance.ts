@@ -17,15 +17,50 @@ import {
   updateComment,
   updateTerm,
 } from "../lib/governance";
+import {
+  GovernanceQuarantineError,
+  PROVISIONAL_GOVERNANCE,
+} from "../lib/governance-quarantine";
 
 const router: IRouter = Router();
 
 function errorResponse(error: unknown, res: Response, next: NextFunction) {
+  if (error instanceof GovernanceQuarantineError) {
+    res.status(error.status).json({
+      error: error.message,
+      details: { field: error.field, code: error.code, governance: PROVISIONAL_GOVERNANCE },
+    });
+    return;
+  }
   if (error instanceof GovernanceError) {
     res.status(error.status).json({ error: error.message, details: error.details ?? undefined });
     return;
   }
   next(error);
+}
+
+function provisionalImportReview<T>(value: T): T {
+  if (!value || typeof value !== "object") return value;
+  if (Array.isArray(value)) return value.map(provisionalImportReview) as T;
+  const record = value as Record<string, unknown>;
+  const output = Object.fromEntries(Object.entries(record).map(([key, entry]) => [
+    key,
+    provisionalImportReview(entry),
+  ])) as Record<string, unknown>;
+  if (record.status === "approved") {
+    output.status = "business_review_complete";
+    output.governanceApproved = false;
+    output.governance = PROVISIONAL_GOVERNANCE;
+  } else if (
+    record.status === "staged"
+    && typeof record.reviewNote === "string"
+    && record.reviewNote.startsWith("BUSINESS_REVIEW_COMPLETE")
+  ) {
+    output.status = "business_review_complete";
+    output.governanceApproved = false;
+    output.governance = PROVISIONAL_GOVERNANCE;
+  }
+  return output as T;
 }
 
 function body(req: Request) {
@@ -110,7 +145,7 @@ router.post("/governance/imports", async (req, res, next) => {
 
 router.get("/governance/imports/:batchId", async (req, res, next) => {
   try {
-    res.json(await getImportBatch(req.params.batchId));
+    res.json(provisionalImportReview(await getImportBatch(req.params.batchId)));
   } catch (error) {
     errorResponse(error, res, next);
   }
@@ -118,11 +153,11 @@ router.get("/governance/imports/:batchId", async (req, res, next) => {
 
 router.patch("/governance/imports/:batchId/candidates/:candidateId", async (req, res, next) => {
   try {
-    res.json(await reviewImportCandidate(
+    res.json(provisionalImportReview(await reviewImportCandidate(
       req.params.batchId,
       req.params.candidateId,
       body(req) as Parameters<typeof reviewImportCandidate>[2],
-    ));
+    )));
   } catch (error) {
     errorResponse(error, res, next);
   }
@@ -130,7 +165,7 @@ router.patch("/governance/imports/:batchId/candidates/:candidateId", async (req,
 
 router.post("/governance/imports/:batchId/commit", async (req, res, next) => {
   try {
-    res.json(await commitImportBatch(req.params.batchId, body(req) as Parameters<typeof commitImportBatch>[1]));
+    res.json(provisionalImportReview(await commitImportBatch(req.params.batchId, body(req) as Parameters<typeof commitImportBatch>[1])));
   } catch (error) {
     errorResponse(error, res, next);
   }

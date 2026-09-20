@@ -1,5 +1,5 @@
 import { useRoute, useLocation, useSearch } from 'wouter';
-import { useGetCampaign, useUpdateCampaign, getGetCampaignQueryKey } from '@workspace/api-client-react';
+import { useGetCampaign, useUpdateCampaign, getGetCampaignQueryKey, exportCampaign } from '@workspace/api-client-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import CampaignDeliverablesTab from './CampaignDeliverablesTab';
 import { useEffect, useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { ProvisionalNotice } from '@/components/governance/ProvisionalNotice';
 
 export default function CampaignDetail() {
   const [match, params] = useRoute('/campaigns/:id');
@@ -34,6 +35,7 @@ export default function CampaignDetail() {
   const [strategyDraft, setStrategyDraft] = useState<Record<string, string>>({});
   const [inheritanceDraft, setInheritanceDraft] = useState<Record<string, string>>({});
   const [isSavingStrategy, setIsSavingStrategy] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const strategyInitializedForId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -101,6 +103,34 @@ export default function CampaignDetail() {
     });
   };
 
+  const downloadProvisionalDraft = async () => {
+    if (!campaign) return;
+    setIsExporting(true);
+    try {
+      const exported = await exportCampaign(campaign.id, 'json');
+      const content = typeof exported === 'string' ? exported : JSON.stringify(exported, null, 2);
+      const blob = new Blob([content], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `campaign-${campaign.id}-provisional-draft.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      toast({
+        title: 'Provisional draft downloaded',
+        description: 'This local file is not governance-approved and cannot be externally published.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Draft download failed',
+        description: error instanceof Error ? error.message : 'The provisional draft could not be downloaded.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (!id || id === 'new') return null;
 
   if (isLoading) {
@@ -145,14 +175,16 @@ export default function CampaignDetail() {
             <Button variant="outline" size="sm">
               <Share className="h-4 w-4 mr-2" /> Share
             </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" /> Export
+            <Button variant="outline" size="sm" onClick={() => void downloadProvisionalDraft()} disabled={isExporting}>
+              {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+              Download provisional draft
             </Button>
             <Button size="sm">
               <Play className="h-4 w-4 mr-2" /> Simulate
             </Button>
           </div>
         </div>
+        <ProvisionalNotice compact />
       </div>
 
       {/* Tabs */}

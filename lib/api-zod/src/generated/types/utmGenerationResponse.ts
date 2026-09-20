@@ -5,6 +5,7 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { ProvisionalGovernanceMetadata } from './provisionalGovernanceMetadata';
 import type { UtmGenerationResponseParameters } from './utmGenerationResponseParameters';
 
 export interface UtmGenerationResponse {
@@ -22,4 +23,5 @@ export interface UtmGenerationResponse {
   status: string;
   /** @nullable */
   message: string | null;
+  governance: ProvisionalGovernanceMetadata;
 }

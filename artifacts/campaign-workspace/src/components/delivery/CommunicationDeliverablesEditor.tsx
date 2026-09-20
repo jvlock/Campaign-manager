@@ -178,7 +178,7 @@ export function CommunicationDeliverablesEditor({
         <div className="text-right flex flex-col items-end gap-2">
           {readiness.dependencyReadiness === 'Ready' ? (
             <div className="flex items-center gap-1 text-emerald-600 text-xs font-medium">
-              <CheckCircle2 className="h-4 w-4" /> Ready for Release
+              <CheckCircle2 className="h-4 w-4" /> Ready for planning handoff
             </div>
           ) : (
             <div className="flex items-center gap-1 text-amber-600 text-xs font-medium">
@@ -194,13 +194,13 @@ export function CommunicationDeliverablesEditor({
             className="h-7 text-xs"
           >
             {release.isPending && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
-            {readiness.releaseState === 'Released' ? 'Released' : 'Mark Released'}
+            {readiness.releaseState === 'Released' ? 'Planning handoff recorded' : 'Record planning handoff'}
           </Button>
           {readiness.releaseState === 'Released' && readiness.releasedAt && (
             <div className="text-[10px] text-muted-foreground">at {new Date(readiness.releasedAt).toLocaleString()}</div>
           )}
           {readiness.externalSending === false && readiness.releaseState === 'Released' && (
-            <div className="text-[10px] text-muted-foreground">External sending: OFF</div>
+            <div className="text-[10px] font-medium text-amber-700">External sending and publishing: OFF</div>
           )}
         </div>
       </div>

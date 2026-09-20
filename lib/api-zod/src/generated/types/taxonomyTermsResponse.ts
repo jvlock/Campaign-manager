@@ -5,6 +5,7 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { ProvisionalGovernanceMetadata } from './provisionalGovernanceMetadata';
 import type { TaxonomyTerm } from './taxonomyTerm';
 
 export interface TaxonomyTermsResponse {
@@ -12,4 +13,5 @@ export interface TaxonomyTermsResponse {
   versionId: string;
   categories: string[];
   terms: TaxonomyTerm[];
+  governance: ProvisionalGovernanceMetadata;
 }

@@ -18,6 +18,13 @@ import {
   communications,
 } from "@workspace/db";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import {
+  GovernanceQuarantineError,
+  PROVISIONAL_GOVERNANCE,
+  assertNoFinalityRequest,
+  assertNoSourceMetadataEscalation,
+  quarantineApprovalResponse,
+} from "./governance-quarantine";
 
 export const RECORD_TYPES = [
   "campaign",
@@ -150,6 +157,14 @@ function termResponse(term: any) {
     supersededBy: term.supersededBy,
     legacyCodes: Array.isArray(term.legacyCodes) ? term.legacyCodes : [],
     sourceMetadata: sourceMetadataResponse(term.sourceMetadata),
+    // Deliberate server overlay: production may still contain legacy rows after
+    // schema-only Publish sync, so stored legacy metadata is never authority.
+    source_environment: "development",
+    verification_status: "provisional",
+    publishing_eligible: false,
+    source_reference: "Campaign Governance Foundation, migrated via audit",
+    requires_business_validation: true,
+    governance: PROVISIONAL_GOVERNANCE,
     isDeprecated: Boolean(term.isDeprecated),
     deprecatedAt: term.deprecatedAt,
     deprecationReason: term.deprecationReason,
@@ -438,6 +453,16 @@ export async function createTerm(input: {
   supersededBy?: unknown;
   legacyCodes?: unknown;
 }) {
+  assertNoFinalityRequest(input, "taxonomyTerm");
+  const rawInput = input as typeof input & {
+    sourceMetadata?: unknown;
+    source_metadata?: unknown;
+    "source-metadata"?: unknown;
+  };
+  assertNoSourceMetadataEscalation(
+    rawInput.sourceMetadata ?? rawInput.source_metadata ?? rawInput["source-metadata"],
+    "taxonomyTerm.sourceMetadata",
+  );
   const actor = validateActor(input.actor);
   const reason = validateReason(input.reason);
   if (typeof input.category !== "string" || !input.category.trim()) {
@@ -517,6 +542,16 @@ export async function updateTerm(
     legacyCodes?: unknown;
   },
 ) {
+  assertNoFinalityRequest(input, "taxonomyTerm");
+  const rawInput = input as typeof input & {
+    sourceMetadata?: unknown;
+    source_metadata?: unknown;
+    "source-metadata"?: unknown;
+  };
+  assertNoSourceMetadataEscalation(
+    rawInput.sourceMetadata ?? rawInput.source_metadata ?? rawInput["source-metadata"],
+    "taxonomyTerm.sourceMetadata",
+  );
   const termId = uuid(termIdInput, "termId");
   const actor = validateActor(input.actor);
   const reason = validateReason(input.reason);
@@ -656,7 +691,15 @@ export async function resolveTerm(input: {
     current = terms.find((term: any) => term.id === current.supersededBy);
     if (!current) throw new GovernanceError("Taxonomy supersededBy target is invalid", 409);
   }
-  return { input: code, version: version.version, versionId: version.id, resolved: chain[chain.length - 1], chain };
+  return {
+    input: code,
+    version: version.version,
+    versionId: version.id,
+    resolved: chain[chain.length - 1],
+    chain,
+    validation: "resolved_for_provisional_preview_only",
+    governance: PROVISIONAL_GOVERNANCE,
+  };
 }
 
 export type ImportCandidateInput = {
@@ -847,7 +890,10 @@ export async function createImportBatch(input: {
   const idempotencyKey = input.idempotencyKey === undefined ? null : String(input.idempotencyKey).trim();
   const normalized = input.candidates.map((candidate) => {
     if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) throw new GovernanceError("Each candidate must be an object");
-    return candidate as ImportCandidateInput;
+    assertNoFinalityRequest(candidate, "candidate");
+    const normalizedCandidate = candidate as ImportCandidateInput;
+    assertNoSourceMetadataEscalation(normalizedCandidate.sourceMetadata, "candidate.sourceMetadata");
+    return normalizedCandidate;
   });
   return db.transaction(async (tx) => {
     await lockTaxonomyVersion(tx, version.id);
@@ -942,8 +988,17 @@ export async function reviewImportCandidate(
   const candidateId = uuid(candidateIdInput, "candidateId");
   const actor = validateActor(input.actor);
   const reason = validateReason(input.reason);
-  if (input.status !== undefined && input.status !== "approved" && input.status !== "rejected" && input.status !== "staged" && input.status !== "conflict") {
-    throw new GovernanceError("status must be approved, rejected, staged, or conflict");
+  if (input.status === "approved" || input.status === "final" || input.status === "official") {
+    throw new GovernanceQuarantineError("status");
+  }
+  if (
+    input.status !== undefined
+    && input.status !== "business_review_complete"
+    && input.status !== "rejected"
+    && input.status !== "staged"
+    && input.status !== "conflict"
+  ) {
+    throw new GovernanceError("status must be business_review_complete, rejected, staged, or conflict");
   }
   return db.transaction(async (tx) => {
     const [batch] = await tx
@@ -980,10 +1035,16 @@ export async function reviewImportCandidate(
     }
     const requestedStatus: string = input.status === undefined
       ? (conflicts.length > 0 ? "conflict" : candidate.status === "conflict" ? "staged" : candidate.status)
-      : input.status as string;
-    if (requestedStatus === "approved" && conflicts.length > 0 && input.resolveConflict !== true) {
-      throw new GovernanceError("Conflicted candidates require resolveConflict=true before approval");
+      : input.status === "business_review_complete" ? "staged" : input.status as string;
+    if (input.status === "business_review_complete" && conflicts.length > 0 && input.resolveConflict !== true) {
+      throw new GovernanceError("Conflicted candidates require resolveConflict=true before business review can complete");
     }
+    if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+      assertNoSourceMetadataEscalation((payload as Record<string, unknown>).sourceMetadata, "payload.sourceMetadata");
+    }
+    const reviewNote = input.status === "business_review_complete"
+      ? `BUSINESS_REVIEW_COMPLETE${input.note === undefined ? "" : `\n${String(input.note)}`}`
+      : input.note === undefined ? candidate.reviewNote : String(input.note);
     const before = { ...candidate };
     const [updated] = await tx
       .update(taxonomyImportCandidates)
@@ -992,7 +1053,7 @@ export async function reviewImportCandidate(
         payload,
         conflictType,
         conflicts,
-        reviewNote: input.note === undefined ? candidate.reviewNote : String(input.note),
+        reviewNote,
         updatedAt: new Date(),
       })
       .where(eq(taxonomyImportCandidates.id, candidateId))
@@ -1098,6 +1159,10 @@ async function validateImportPayload(
   ) {
     throw new GovernanceError("Candidate sourceMetadata must be an object when supplied");
   }
+  assertNoSourceMetadataEscalation(
+    (payload as Record<string, unknown>).sourceMetadata,
+    "payload.sourceMetadata",
+  );
   return {
     category,
     label: payload.label.trim(),
@@ -1131,7 +1196,9 @@ export async function commitImportBatch(
         committed.push(candidate.committedTermId);
         continue;
       }
-      if (candidate.status !== "approved") continue;
+      const businessReviewComplete = candidate.status === "staged"
+        && candidate.reviewNote?.startsWith("BUSINESS_REVIEW_COMPLETE");
+      if (!businessReviewComplete) continue;
       const validated = await validateImportPayload(tx, batch.versionId, candidate.payload, candidate.id);
       const beforeTerm = validated.existingStableTerm;
       let term: typeof taxonomyTerms.$inferSelect;
@@ -1259,9 +1326,18 @@ export async function assertRecordTarget(
 }
 
 export async function listApprovals(input: { recordType?: unknown; recordId?: unknown }) {
-  if (input.recordType === undefined && input.recordId === undefined) return db.select().from(approvals).orderBy(desc(approvals.createdAt));
+  if (input.recordType === undefined && input.recordId === undefined) {
+    const rows = await db.select().from(approvals).orderBy(desc(approvals.createdAt));
+    return rows.map((row) => ["campaign", "activity", "taxonomyTerm", "taxonomy_term", "taxonomyVersion", "taxonomy_version"]
+      .includes(row.recordType) ? quarantineApprovalResponse(row) : row);
+  }
   const target = await assertRecordTarget(db, input.recordType, input.recordId);
-  return db.select().from(approvals).where(and(eq(approvals.recordType, target.recordType), eq(approvals.recordId, target.recordId))).orderBy(desc(approvals.createdAt));
+  const rows = await db.select().from(approvals)
+    .where(and(eq(approvals.recordType, target.recordType), eq(approvals.recordId, target.recordId)))
+    .orderBy(desc(approvals.createdAt));
+  return ["campaign", "activity", "taxonomyTerm", "taxonomyVersion"].includes(target.recordType)
+    ? rows.map(quarantineApprovalResponse)
+    : rows;
 }
 
 export async function createApproval(input: {
@@ -1283,6 +1359,12 @@ export async function createApproval(input: {
   const approver = input.approver.trim();
   return db.transaction(async (tx) => {
     const target = await assertRecordTarget(tx, input.recordType, input.recordId);
+    if (
+      ["campaign", "activity", "taxonomyTerm", "taxonomyVersion"].includes(target.recordType)
+      && ["approved", "final", "official"].includes(status.toLowerCase())
+    ) {
+      throw new GovernanceQuarantineError("status");
+    }
     const [created] = await tx.insert(approvals).values({
       recordType: target.recordType,
       recordId: target.recordId,
@@ -1312,6 +1394,14 @@ export async function updateApproval(
         if (typeof input[field] !== "string" || !input[field].trim()) throw new GovernanceError(`${field} must be non-empty`);
         patch[field] = input[field].trim();
       }
+    }
+    const nextStatus = typeof patch.status === "string" ? patch.status : current.status;
+    const recordType = normalizeRecordType(current.recordType);
+    if (
+      ["campaign", "activity", "taxonomyTerm", "taxonomyVersion"].includes(recordType)
+      && ["approved", "final", "official"].includes(nextStatus.toLowerCase())
+    ) {
+      throw new GovernanceQuarantineError("status");
     }
     const [updated] = await tx.update(approvals).set(patch as any).where(eq(approvals.id, approvalId)).returning();
     await insertAudit(tx, { entityType: "approval", entityId: approvalId, action: "update", actor, reason, before: current, after: updated });

@@ -5,5 +5,12 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { TaxonomyImportCandidateMetadata } from './taxonomyImportCandidateMetadata';
+import type { TaxonomyImportCandidateStatus } from './taxonomyImportCandidateStatus';
 
-export interface TaxonomyImportCandidate { [key: string]: unknown }
+export interface TaxonomyImportCandidate {
+  /** Provisional import workflow state returned by the API. Legacy approved rows are remapped to business_review_complete and do not represent governance approval. */
+  status: TaxonomyImportCandidateStatus;
+  metadata?: TaxonomyImportCandidateMetadata;
+  [key: string]: unknown;
+ }

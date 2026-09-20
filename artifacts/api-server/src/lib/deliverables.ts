@@ -13,6 +13,7 @@ import {
   landingPages,
   webinarStandardCommunications,
 } from "@workspace/db";
+import { PROVISIONAL_GOVERNANCE } from "./governance-quarantine";
 
 export const BUILD_STATUSES = ["Not Started", "Drafted", "In Review", "Published"] as const;
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -273,6 +274,8 @@ function readinessRows(graph: Awaited<ReturnType<typeof loadCampaignGraph>>) {
       releaseState: dependencyReadiness === "Blocked" ? "Draft" : (detail?.releaseState ?? "Draft"),
       releasedAt: dependencyReadiness === "Blocked" ? null : (detail?.releasedAt?.toISOString?.() ?? detail?.releasedAt ?? null),
       externalSending: false,
+      releaseMode: "planning_only",
+      governance: PROVISIONAL_GOVERNANCE,
       ctaIds: linkedCtaIds,
       landingPageIds: directPageIds,
       blockers: deduped,
@@ -355,7 +358,15 @@ export async function releaseCommunication(campaignId: string, communicationId: 
   const [updated] = await executor.update(communicationDetails).set({
     releaseState: "Released", releasedAt: new Date(), updatedAt: new Date(),
   }).where(and(eq(communicationDetails.campaignId, campaignId), eq(communicationDetails.communicationId, communicationId))).returning();
-  return { ...readiness, releaseState: updated.releaseState, releasedAt: updated.releasedAt?.toISOString() ?? null, externalSending: false };
+  return {
+    ...readiness,
+    releaseState: updated.releaseState,
+    releasedAt: updated.releasedAt?.toISOString() ?? null,
+    externalSending: false,
+    externalPublishing: false,
+    releaseMode: "planning_only",
+    governance: PROVISIONAL_GOVERNANCE,
+  };
 }
 
 export async function assertCampaignDeliverablesReady(campaignId: string, executor: any = db) {

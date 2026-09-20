@@ -27,6 +27,7 @@ import { Layers, Download, Loader2, CheckCircle2, AlertCircle, ChevronDown, Save
 import { useToast } from '@/hooks/use-toast';
 
 import { CommunicationDeliverablesEditor } from '../delivery/CommunicationDeliverablesEditor';
+import { ProvisionalBadge, ProvisionalNotice } from '../governance/ProvisionalNotice';
 
 type ContentField = keyof WebinarStandardContent;
 type LocalValidation = { valid: boolean; message?: string };
@@ -421,6 +422,7 @@ export default function WebinarStandardPanel({
           {' '}These are planning drafts; emails are not sent automatically.
         </p>
       </div>
+      <ProvisionalNotice compact />
       <div className="bg-card border border-border rounded-md shadow-sm p-4 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold">Campaign Launch</h3>
@@ -632,14 +634,17 @@ export default function WebinarStandardPanel({
                                   required={variant.inUse}
                                 />
                                 {key === 'internalAssetName' && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 mt-2"
-                                    onClick={() => updateContent(key, generateName(communication.key, variant.name || `Variant ${variant.slot}`))}
-                                  >
-                                    Generate
-                                  </Button>
+                                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8"
+                                      onClick={() => updateContent(key, generateName(communication.key, variant.name || `Variant ${variant.slot}`))}
+                                    >
+                                      Generate draft name
+                                    </Button>
+                                    {content[key] && <ProvisionalBadge />}
+                                  </div>
                                 )}
                               </div>
                             );
@@ -695,7 +700,7 @@ export default function WebinarStandardPanel({
               <Save className="w-4 h-4 mr-2" /> Save drafts
             </Button>
             <Button onClick={() => void handleExport()} disabled={isSaving} variant="default" className="shrink-0">
-              <Download className="w-4 h-4 mr-2" /> Export Standard JSON
+              <Download className="w-4 h-4 mr-2" /> Download provisional draft
             </Button>
           </div>
         </div>

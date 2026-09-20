@@ -796,7 +796,7 @@ paths:
         - {$ref: "#/components/parameters/SessionId"}
       responses:
         "200":
-          description: Deployable JSON for active variants only
+          description: Provisional local planning JSON for active variants only; not an external publication or governance-approved output.
           content:
             application/json:
               schema: {$ref: "#/components/schemas/WebinarStandardExport"}
@@ -818,12 +818,12 @@ paths:
             schema: {$ref: "#/components/schemas/UtmInput"}
       responses:
         "200":
-          description: Generated parameter set; no destination was supplied and nothing was persisted
+          description: Provisional generated parameter set; no destination was supplied and nothing was persisted. It is not governance-approved or final.
           content:
             application/json:
               schema: {$ref: "#/components/schemas/UtmGenerationResponse"}
         "201":
-          description: Generated and persisted link
+          description: Provisional generated and persisted local link. It is not governance-approved, final, or externally published.
           content:
             application/json:
               schema: {$ref: "#/components/schemas/UtmGenerationResponse"}
@@ -838,7 +838,7 @@ paths:
             application/json:
               schema: {$ref: "#/components/schemas/UtmGenerationError"}
         "422":
-          description: Governance validation failure
+          description: Governance validation or final/approval issuance restriction
           content:
             application/json:
               schema: {$ref: "#/components/schemas/UtmGenerationError"}
@@ -856,7 +856,7 @@ paths:
             enum: [activities-csv, utm-csv, json, plan]
       responses:
         "200":
-          description: Export file
+          description: Provisional local planning export only; never an external publication or governance-approved output.
           content:
             text/plain:
               schema: {type: string}
@@ -1079,7 +1079,7 @@ paths:
             schema: {$ref: "#/components/schemas/GovernanceActorReason"}
       responses:
         "200":
-          description: Committed approved candidates
+          description: Committed candidates whose provisional business review is complete; this does not grant governance approval.
           content:
             application/json:
               schema: {$ref: "#/components/schemas/TaxonomyImportBatchResponse"}
@@ -1273,7 +1273,7 @@ components:
         status: {type: string}
     CampaignSummary:
       type: object
-      required: [id, name, scope, region, audience, outcome, lifecycle, readiness, timing, owner, updatedAt]
+      required: [id, name, scope, region, audience, outcome, lifecycle, readiness, timing, owner, updatedAt, governance]
       properties:
         id: {type: string, format: uuid}
         parentId: {type: [string, "null"], format: uuid}
@@ -1288,6 +1288,7 @@ components:
         owner: {type: string}
         rowVersion: {type: integer, minimum: 1}
         updatedAt: {type: string}
+        governance: {$ref: "#/components/schemas/ProvisionalGovernanceMetadata"}
     CampaignInput:
       type: object
       required: [name, scope, audience, outcome]
@@ -1347,7 +1348,7 @@ components:
         y: {type: number}
     Activity:
       type: object
-      required: [id, name, type, audience, region, timing, status, owner, conflict, position]
+      required: [id, name, type, audience, region, timing, status, owner, conflict, position, generatedNameGovernance]
       properties:
         id: {type: string, format: uuid}
         name: {type: string}
@@ -1366,6 +1367,7 @@ components:
         answers: {type: object, additionalProperties: true}
         overrides: {type: object, additionalProperties: true}
         generatedName: {type: [string, "null"]}
+        generatedNameGovernance: {$ref: "#/components/schemas/ProvisionalGovernanceMetadata"}
         namingInput: {type: [string, "null"]}
         effectiveInheritance: {type: object, additionalProperties: true}
     ActivityInput:
@@ -1387,11 +1389,12 @@ components:
         webinarSetup: {$ref: "#/components/schemas/WebinarSetup"}
     GovernedChannel:
       type: object
-      required: [id, displayName, type]
+      required: [id, displayName, type, governance]
       properties:
         id: {$ref: "#/components/schemas/GovernedChannelId"}
         displayName: {type: string}
         type: {type: string, enum: [paid, organic, email, event, app]}
+        governance: {$ref: "#/components/schemas/ProvisionalGovernanceMetadata"}
     GovernedChannelId:
       type: string
       enum: [psg, psl, disp, orglin, adv, eml, emlc, emlp, evlv, evind, evvrt, app, mcp]
@@ -1403,19 +1406,21 @@ components:
         options: {type: array, items: {type: string}}
     ActivityTypeConfiguration:
       type: object
-      required: [id, displayName, namingTemplate, requiredFields, allowedOverrides]
+      required: [id, displayName, namingTemplate, requiredFields, allowedOverrides, governance]
       properties:
         id: {type: string}
         displayName: {type: string}
         namingTemplate: {type: string}
         requiredFields: {type: array, items: {$ref: "#/components/schemas/ActivityRequiredField"}}
         allowedOverrides: {type: array, items: {type: string}}
+        governance: {$ref: "#/components/schemas/ProvisionalGovernanceMetadata"}
     ActivityModelCatalog:
       type: object
-      required: [channels, activityTypes]
+      required: [channels, activityTypes, governance]
       properties:
         channels: {type: array, items: {$ref: "#/components/schemas/GovernedChannel"}}
         activityTypes: {type: array, items: {$ref: "#/components/schemas/ActivityTypeConfiguration"}}
+        governance: {$ref: "#/components/schemas/ProvisionalGovernanceMetadata"}
     ActivityNameRenderInput:
       type: object
       required: [template, builtins, answers]
@@ -1426,9 +1431,60 @@ components:
         answers: {type: object, additionalProperties: true}
     ActivityNameRenderResponse:
       type: object
-      required: [name]
+      required: [name, governance]
       properties:
         name: {type: string}
+        governance: {$ref: "#/components/schemas/ProvisionalGovernanceMetadata"}
+    ProvisionalGovernanceMetadata:
+      type: object
+      description: >
+        Mandatory quarantine metadata for values migrated from Campaign Governance
+        Foundation. It is not evidence of governance approval and remains present
+        even when local validation succeeds.
+      required:
+        - label
+        - sourceEnvironment
+        - verificationStatus
+        - governanceApproved
+        - publishingEligible
+        - finalCodeIssuanceAvailable
+        - externalPublishing
+        - externalSending
+        - requiresBusinessValidation
+        - message
+      properties:
+        label:
+          type: string
+          enum: ["PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED"]
+          description: Label that clients must display beside generated or migrated output.
+        sourceEnvironment:
+          type: string
+          enum: [development]
+        verificationStatus:
+          type: string
+          enum: [provisional]
+        governanceApproved:
+          type: boolean
+          enum: [false]
+        publishingEligible:
+          type: boolean
+          enum: [false]
+        finalCodeIssuanceAvailable:
+          type: boolean
+          enum: [false]
+        externalPublishing:
+          type: boolean
+          enum: [false]
+        externalSending:
+          type: boolean
+          enum: [false]
+        requiresBusinessValidation:
+          type: boolean
+          enum: [true]
+        message:
+          type: string
+          description: Returned when a caller requests final or approved issuance.
+          enum: ["Final code issuance is not currently available pending remediation of the source governance system."]
     DeliveryStatus:
       type: string
       enum: [Known, Estimated, Decision needed, Not applicable, Confirmed]
@@ -1946,7 +2002,7 @@ components:
           pattern: "^701[A-Za-z0-9]{12}([A-Za-z0-9]{3})?$"
     UtmLink:
       type: object
-      required: [id, destinationUrl, fullUrl, taxonomyVersion, validation, status]
+      required: [id, destinationUrl, fullUrl, taxonomyVersion, validation, status, governance]
       properties:
         id: {type: string, format: uuid}
         destinationUrl: {type: string}
@@ -1954,9 +2010,10 @@ components:
         taxonomyVersion: {type: string}
         validation: {type: string}
         status: {type: string}
+        governance: {$ref: "#/components/schemas/ProvisionalGovernanceMetadata"}
     UtmGenerationResponse:
       type: object
-      required: [id, destinationUrl, fullUrl, taxonomyVersion, parameters, automationName, validation, status, message]
+      required: [id, destinationUrl, fullUrl, taxonomyVersion, parameters, automationName, validation, status, message, governance]
       properties:
         id: {type: [string, "null"], format: uuid}
         destinationUrl: {type: [string, "null"]}
@@ -1969,6 +2026,7 @@ components:
         validation: {type: string}
         status: {type: string}
         message: {type: [string, "null"]}
+        governance: {$ref: "#/components/schemas/ProvisionalGovernanceMetadata"}
     UtmGenerationError:
       type: object
       required: [error]
@@ -2009,7 +2067,7 @@ components:
         summary: {type: object, additionalProperties: {type: integer}}
     Governance:
       type: object
-      required: [version, activityTypes, taxonomyTerms, namingExamples]
+      required: [version, activityTypes, taxonomyTerms, namingExamples, governance]
       properties:
         version: {type: string}
         activityTypes:
@@ -2021,6 +2079,7 @@ components:
         namingExamples:
           type: array
           items: {type: string}
+        governance: {$ref: "#/components/schemas/ProvisionalGovernanceMetadata"}
     AdapterStatus:
       type: object
       required: [airtable, ai]
@@ -2519,7 +2578,7 @@ components:
         reason: {type: string, minLength: 1}
     TaxonomyTerm:
       type: object
-      required: [id, versionId, category, label, shortcode, stableKey, legacyCodes, sourceMetadata, isDeprecated]
+      required: [id, versionId, category, label, shortcode, stableKey, legacyCodes, sourceMetadata, isDeprecated, source_environment, verification_status, publishing_eligible, source_reference, requires_business_validation, governance]
       properties:
         id: {type: string, format: uuid}
         versionId: {type: string, format: uuid}
@@ -2535,6 +2594,22 @@ components:
         sourceMetadata:
           type: object
           additionalProperties: true
+        source_environment:
+          type: string
+          enum: [development]
+        verification_status:
+          type: string
+          enum: [provisional]
+        publishing_eligible:
+          type: boolean
+          enum: [false]
+        source_reference:
+          type: string
+          enum: ["Campaign Governance Foundation, migrated via audit"]
+        requires_business_validation:
+          type: boolean
+          enum: [true]
+        governance: {$ref: "#/components/schemas/ProvisionalGovernanceMetadata"}
         isDeprecated: {type: boolean}
         deprecatedAt: {type: string, format: date-time, nullable: true}
         deprecationReason: {type: string, nullable: true}
@@ -2542,7 +2617,7 @@ components:
         updatedAt: {type: string, format: date-time}
     TaxonomyTermsResponse:
       type: object
-      required: [version, versionId, categories, terms]
+      required: [version, versionId, categories, terms, governance]
       properties:
         version: {type: string}
         versionId: {type: string, format: uuid}
@@ -2552,6 +2627,7 @@ components:
         terms:
           type: array
           items: {$ref: "#/components/schemas/TaxonomyTerm"}
+        governance: {$ref: "#/components/schemas/ProvisionalGovernanceMetadata"}
     TaxonomyTermMutation:
       allOf:
         - {$ref: "#/components/schemas/GovernanceActorReason"}
@@ -2617,13 +2693,35 @@ components:
     TaxonomyImportCandidate:
       type: object
       additionalProperties: true
+      required: [status]
+      properties:
+        status:
+          type: string
+          description: >
+            Provisional import workflow state returned by the API. Legacy
+            approved rows are remapped to business_review_complete and do not
+            represent governance approval.
+          enum: [business_review_complete, rejected, staged, conflict, committed]
+        metadata:
+          type: object
+          additionalProperties: true
+          properties:
+            businessReviewComplete:
+              type: boolean
+              description: Draft business review completion only; never governance approval or finality.
     TaxonomyImportReview:
       allOf:
         - {$ref: "#/components/schemas/GovernanceActorReason"}
         - type: object
           required: [status]
           properties:
-            status: {type: string, enum: [approved, rejected, staged, conflict]}
+            status:
+              type: string
+              description: >
+                business_review_complete records provisional draft review.
+                approved is retained only so typed callers receive the server's
+                explicit quarantine rejection; it is never accepted as approval.
+              enum: [business_review_complete, rejected, staged, conflict, approved]
             note: {type: string}
             resolveConflict: {type: boolean}
             payload: {type: object, additionalProperties: true}

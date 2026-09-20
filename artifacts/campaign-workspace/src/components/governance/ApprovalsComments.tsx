@@ -3,20 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MessageSquare, ThumbsUp, Send, Loader2, Plus } from 'lucide-react';
+import { MessageSquare, ThumbsUp, Send, Loader2, Lock } from 'lucide-react';
 import {
   RecordType,
   useListGovernanceComments,
   useCreateGovernanceComment,
   useListGovernanceApprovals,
-  useCreateGovernanceApproval,
-  useUpdateGovernanceApproval,
   getListGovernanceCommentsQueryOptions,
   getListGovernanceApprovalsQueryOptions,
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
-
-type ApprovalStatus = 'pending' | 'in_review' | 'approved' | 'rejected';
 
 type ApprovalRecord = {
   id: string;
@@ -66,8 +62,6 @@ function asComment(value: unknown): CommentRecord | null {
   return item as CommentRecord;
 }
 
-const approvalStatuses: ApprovalStatus[] = ['pending', 'in_review', 'approved', 'rejected'];
-
 export default function ApprovalsComments({ recordType, recordId }: { recordType: RecordType; recordId: string }) {
   const queryClient = useQueryClient();
   const target = { recordType, recordId };
@@ -84,18 +78,10 @@ export default function ApprovalsComments({ recordType, recordId }: { recordType
     },
   });
   const createComment = useCreateGovernanceComment();
-  const createApproval = useCreateGovernanceApproval();
-  const updateApproval = useUpdateGovernanceApproval();
 
   const [commentBody, setCommentBody] = useState('');
   const [commentActor, setCommentActor] = useState('');
   const [commentReason, setCommentReason] = useState('');
-  const [approvalOpen, setApprovalOpen] = useState(false);
-  const [stage, setStage] = useState('');
-  const [approver, setApprover] = useState('');
-  const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>('pending');
-  const [approvalActor, setApprovalActor] = useState('');
-  const [approvalReason, setApprovalReason] = useState('');
   const [error, setError] = useState('');
 
   const invalidate = () => {
@@ -129,56 +115,6 @@ export default function ApprovalsComments({ recordType, recordId }: { recordType
     );
   };
 
-  const handleCreateApproval = () => {
-    setError('');
-    if (!stage.trim() || !approver.trim() || !approvalActor.trim() || !approvalReason.trim()) {
-      setError('Approval stage, approver, actor, and reason are required.');
-      return;
-    }
-    createApproval.mutate(
-      {
-        data: {
-          recordType,
-          recordId,
-          stage: stage.trim(),
-          status: approvalStatus,
-          approver: approver.trim(),
-          actor: approvalActor.trim(),
-          reason: approvalReason.trim(),
-        },
-      },
-      {
-        onSuccess: () => {
-          setApprovalOpen(false);
-          invalidate();
-        },
-        onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : 'Unable to create the approval.'),
-      },
-    );
-  };
-
-  const handleApprovalStatus = (approval: ApprovalRecord, status: ApprovalStatus) => {
-    setError('');
-    if (!approvalActor.trim() || !approvalReason.trim()) {
-      setError('Enter the self-declared actor and reason before changing approval status.');
-      return;
-    }
-    updateApproval.mutate(
-      {
-        id: approval.id,
-        data: {
-          status,
-          actor: approvalActor.trim(),
-          reason: approvalReason.trim(),
-        },
-      },
-      {
-        onSuccess: invalidate,
-        onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : 'Unable to update the approval.'),
-      },
-    );
-  };
-
   const comments = useMemo(() => (commentsQuery.data ?? []).map(asComment).filter((value): value is CommentRecord => Boolean(value)), [commentsQuery.data]);
   const approvals = useMemo(() => (approvalsQuery.data ?? []).map(asApproval).filter((value): value is ApprovalRecord => Boolean(value)), [approvalsQuery.data]);
   const items = [
@@ -190,7 +126,7 @@ export default function ApprovalsComments({ recordType, recordId }: { recordType
   if (isLoading) {
     return (
       <Card className="shadow-sm">
-        <CardHeader><CardTitle>Approvals & Comments</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Review history & comments</CardTitle></CardHeader>
         <CardContent className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></CardContent>
       </Card>
     );
@@ -199,8 +135,8 @@ export default function ApprovalsComments({ recordType, recordId }: { recordType
   return (
     <Card className="shadow-sm">
       <CardHeader>
-        <CardTitle>Approvals & Comments</CardTitle>
-        <CardDescription>Target: {recordType} / {recordId}</CardDescription>
+        <CardTitle>Review history & comments</CardTitle>
+        <CardDescription>Target: {recordType} / {recordId}. Approval actions are disabled while source data is quarantined.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">{error}</div>}
@@ -210,13 +146,13 @@ export default function ApprovalsComments({ recordType, recordId }: { recordType
           </div>
         )}
         {items.length === 0 ? (
-          <div className="text-sm text-muted-foreground text-center py-6 border border-dashed rounded-md">No comments or approvals yet.</div>
+          <div className="text-sm text-muted-foreground text-center py-6 border border-dashed rounded-md">No comments or historical review records yet.</div>
         ) : (
           <div className="max-h-64 overflow-auto space-y-4 pr-2">
             {items.map((item) => (
-              <div key={`${item.itemType}-${item.id}`} className={`flex gap-3 text-sm ${item.itemType === 'approval' ? 'bg-green-50/50 p-2 rounded border border-green-100' : ''}`}>
+              <div key={`${item.itemType}-${item.id}`} className={`flex gap-3 text-sm ${item.itemType === 'approval' ? 'bg-amber-50/50 p-2 rounded border border-amber-200' : ''}`}>
                 <div className="mt-0.5 shrink-0">
-                  {item.itemType === 'approval' ? <ThumbsUp className="h-4 w-4 text-green-600" /> : <MessageSquare className="h-4 w-4 text-muted-foreground" />}
+                  {item.itemType === 'approval' ? <ThumbsUp className="h-4 w-4 text-amber-700" /> : <MessageSquare className="h-4 w-4 text-muted-foreground" />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -226,15 +162,9 @@ export default function ApprovalsComments({ recordType, recordId }: { recordType
                   </div>
                   {item.itemType === 'approval' ? (
                     <div className="mt-1 flex items-center gap-2">
-                      <select
-                        className="h-7 rounded-md border border-input bg-transparent px-2 text-xs"
-                        value={approvalStatuses.includes(item.status as ApprovalStatus) ? item.status : 'pending'}
-                        onChange={(event) => handleApprovalStatus(item, event.target.value as ApprovalStatus)}
-                        disabled={updateApproval.isPending}
-                      >
-                        {approvalStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-                      </select>
-                      <span className="text-xs text-muted-foreground">Status</span>
+                      <span className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-[10px] font-semibold uppercase text-amber-900">
+                        Historical: {item.status} · quarantined
+                      </span>
                     </div>
                   ) : (
                     <div className="text-muted-foreground mt-0.5">{item.body}</div>
@@ -269,22 +199,9 @@ export default function ApprovalsComments({ recordType, recordId }: { recordType
           </Button>
         </div>
 
-        <div className="border-t border-border pt-3">
-          <Button variant="outline" size="sm" onClick={() => setApprovalOpen((value) => !value)}><Plus className="mr-2 h-4 w-4" />New approval</Button>
-          {approvalOpen && (
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <Input value={stage} onChange={(event) => setStage(event.target.value)} placeholder="Stage" />
-              <Input value={approver} onChange={(event) => setApprover(event.target.value)} placeholder="Approver" />
-              <select className="h-9 rounded-md border border-input bg-transparent px-3 text-sm" value={approvalStatus} onChange={(event) => setApprovalStatus(event.target.value as ApprovalStatus)}>
-                {approvalStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-              </select>
-              <Input value={approvalActor} onChange={(event) => setApprovalActor(event.target.value)} placeholder="Actor (self-declared)" />
-              <Input className="sm:col-span-2" value={approvalReason} onChange={(event) => setApprovalReason(event.target.value)} placeholder="Reason for approval record or status change" />
-              <Button className="sm:col-span-2" onClick={handleCreateApproval} disabled={createApproval.isPending}>
-                {createApproval.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Create approval
-              </Button>
-            </div>
-          )}
+        <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>Governance approval and final status changes are unavailable pending remediation of Campaign Governance Foundation and business validation. Comments remain available for review work.</span>
         </div>
       </CardContent>
     </Card>

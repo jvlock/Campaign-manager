@@ -6,12 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * business_review_complete records provisional draft review. approved is retained only so typed callers receive the server's explicit quarantine rejection; it is never accepted as approval.
+ */
 export type TaxonomyImportReviewStatus = typeof TaxonomyImportReviewStatus[keyof typeof TaxonomyImportReviewStatus];
 
 
 export const TaxonomyImportReviewStatus = {
-  approved: 'approved',
+  business_review_complete: 'business_review_complete',
   rejected: 'rejected',
   staged: 'staged',
   conflict: 'conflict',
+  approved: 'approved',
 } as const;

@@ -5,7 +5,11 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { ProvisionalGovernanceMetadata } from './provisionalGovernanceMetadata';
+import type { TaxonomyTermSourceEnvironment } from './taxonomyTermSourceEnvironment';
 import type { TaxonomyTermSourceMetadata } from './taxonomyTermSourceMetadata';
+import type { TaxonomyTermSourceReference } from './taxonomyTermSourceReference';
+import type { TaxonomyTermVerificationStatus } from './taxonomyTermVerificationStatus';
 
 export interface TaxonomyTerm {
   id: string;
@@ -18,6 +22,12 @@ export interface TaxonomyTerm {
   supersededBy?: string | null;
   legacyCodes: string[];
   sourceMetadata: TaxonomyTermSourceMetadata;
+  source_environment: TaxonomyTermSourceEnvironment;
+  verification_status: TaxonomyTermVerificationStatus;
+  publishing_eligible: false;
+  source_reference: TaxonomyTermSourceReference;
+  requires_business_validation: true;
+  governance: ProvisionalGovernanceMetadata;
   isDeprecated: boolean;
   deprecatedAt?: Date | null;
   deprecationReason?: string | null;

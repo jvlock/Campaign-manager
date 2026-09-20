@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ActivityRequiredField } from './activityRequiredField';
+import type { ProvisionalGovernanceMetadata } from './provisionalGovernanceMetadata';
 
 export interface ActivityTypeConfiguration {
   id: string;
@@ -13,4 +14,5 @@ export interface ActivityTypeConfiguration {
   namingTemplate: string;
   requiredFields: ActivityRequiredField[];
   allowedOverrides: string[];
+  governance: ProvisionalGovernanceMetadata;
 }

@@ -9,6 +9,58 @@ export interface HealthStatus {
   status: string;
 }
 
+/**
+ * Label that clients must display beside generated or migrated output.
+ */
+export type ProvisionalGovernanceMetadataLabel = typeof ProvisionalGovernanceMetadataLabel[keyof typeof ProvisionalGovernanceMetadataLabel];
+
+
+export const ProvisionalGovernanceMetadataLabel = {
+  'PROVISIONAL_/_DRAFT_—_NOT_GOVERNANCE_APPROVED': 'PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED',
+} as const;
+
+export type ProvisionalGovernanceMetadataSourceEnvironment = typeof ProvisionalGovernanceMetadataSourceEnvironment[keyof typeof ProvisionalGovernanceMetadataSourceEnvironment];
+
+
+export const ProvisionalGovernanceMetadataSourceEnvironment = {
+  development: 'development',
+} as const;
+
+export type ProvisionalGovernanceMetadataVerificationStatus = typeof ProvisionalGovernanceMetadataVerificationStatus[keyof typeof ProvisionalGovernanceMetadataVerificationStatus];
+
+
+export const ProvisionalGovernanceMetadataVerificationStatus = {
+  provisional: 'provisional',
+} as const;
+
+/**
+ * Returned when a caller requests final or approved issuance.
+ */
+export type ProvisionalGovernanceMetadataMessage = typeof ProvisionalGovernanceMetadataMessage[keyof typeof ProvisionalGovernanceMetadataMessage];
+
+
+export const ProvisionalGovernanceMetadataMessage = {
+  Final_code_issuance_is_not_currently_available_pending_remediation_of_the_source_governance_system: 'Final code issuance is not currently available pending remediation of the source governance system.',
+} as const;
+
+/**
+ * Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.
+ */
+export interface ProvisionalGovernanceMetadata {
+  /** Label that clients must display beside generated or migrated output. */
+  label: ProvisionalGovernanceMetadataLabel;
+  sourceEnvironment: ProvisionalGovernanceMetadataSourceEnvironment;
+  verificationStatus: ProvisionalGovernanceMetadataVerificationStatus;
+  governanceApproved: false;
+  publishingEligible: false;
+  finalCodeIssuanceAvailable: false;
+  externalPublishing: false;
+  externalSending: false;
+  requiresBusinessValidation: true;
+  /** Returned when a caller requests final or approved issuance. */
+  message: ProvisionalGovernanceMetadataMessage;
+}
+
 export interface CampaignSummary {
   id: string;
   /** @nullable */
@@ -25,6 +77,7 @@ export interface CampaignSummary {
   /** @minimum 1 */
   rowVersion?: number;
   updatedAt: string;
+  governance: ProvisionalGovernanceMetadata;
 }
 
 export type CampaignInputScope = typeof CampaignInputScope[keyof typeof CampaignInputScope];
@@ -157,6 +210,7 @@ export interface Activity {
   overrides?: ActivityOverrides;
   /** @nullable */
   generatedName?: string | null;
+  generatedNameGovernance: ProvisionalGovernanceMetadata;
   /** @nullable */
   namingInput?: string | null;
   effectiveInheritance?: ActivityEffectiveInheritance;
@@ -194,6 +248,7 @@ export interface UtmLink {
   taxonomyVersion: string;
   validation: string;
   status: string;
+  governance: ProvisionalGovernanceMetadata;
 }
 
 export type DeliveryStatus = typeof DeliveryStatus[keyof typeof DeliveryStatus];
@@ -420,6 +475,7 @@ export interface GovernedChannel {
   id: GovernedChannelId;
   displayName: string;
   type: GovernedChannelType;
+  governance: ProvisionalGovernanceMetadata;
 }
 
 export interface ActivityRequiredField {
@@ -433,11 +489,13 @@ export interface ActivityTypeConfiguration {
   namingTemplate: string;
   requiredFields: ActivityRequiredField[];
   allowedOverrides: string[];
+  governance: ProvisionalGovernanceMetadata;
 }
 
 export interface ActivityModelCatalog {
   channels: GovernedChannel[];
   activityTypes: ActivityTypeConfiguration[];
+  governance: ProvisionalGovernanceMetadata;
 }
 
 export type ActivityNameRenderInputBuiltins = { [key: string]: unknown };
@@ -452,6 +510,7 @@ export interface ActivityNameRenderInput {
 
 export interface ActivityNameRenderResponse {
   name: string;
+  governance: ProvisionalGovernanceMetadata;
 }
 
 export type DeliverableBuildStatus = typeof DeliverableBuildStatus[keyof typeof DeliverableBuildStatus];
@@ -923,6 +982,7 @@ export interface UtmGenerationResponse {
   status: string;
   /** @nullable */
   message: string | null;
+  governance: ProvisionalGovernanceMetadata;
 }
 
 export type UtmGenerationErrorError = {
@@ -963,6 +1023,7 @@ export interface Governance {
   activityTypes: string[];
   taxonomyTerms: GovernanceTaxonomyTermsItem[];
   namingExamples: string[];
+  governance: ProvisionalGovernanceMetadata;
 }
 
 export type AdapterStatusAirtable = { [key: string]: unknown };
@@ -1593,6 +1654,27 @@ export interface GovernanceActorReason {
 
 export type TaxonomyTermSourceMetadata = { [key: string]: unknown };
 
+export type TaxonomyTermSourceEnvironment = typeof TaxonomyTermSourceEnvironment[keyof typeof TaxonomyTermSourceEnvironment];
+
+
+export const TaxonomyTermSourceEnvironment = {
+  development: 'development',
+} as const;
+
+export type TaxonomyTermVerificationStatus = typeof TaxonomyTermVerificationStatus[keyof typeof TaxonomyTermVerificationStatus];
+
+
+export const TaxonomyTermVerificationStatus = {
+  provisional: 'provisional',
+} as const;
+
+export type TaxonomyTermSourceReference = typeof TaxonomyTermSourceReference[keyof typeof TaxonomyTermSourceReference];
+
+
+export const TaxonomyTermSourceReference = {
+  'Campaign_Governance_Foundation,_migrated_via_audit': 'Campaign Governance Foundation, migrated via audit',
+} as const;
+
 export interface TaxonomyTerm {
   id: string;
   versionId: string;
@@ -1604,6 +1686,12 @@ export interface TaxonomyTerm {
   supersededBy?: string | null;
   legacyCodes: string[];
   sourceMetadata: TaxonomyTermSourceMetadata;
+  source_environment: TaxonomyTermSourceEnvironment;
+  verification_status: TaxonomyTermVerificationStatus;
+  publishing_eligible: false;
+  source_reference: TaxonomyTermSourceReference;
+  requires_business_validation: true;
+  governance: ProvisionalGovernanceMetadata;
   isDeprecated: boolean;
   deprecatedAt?: string | null;
   deprecationReason?: string | null;
@@ -1616,6 +1704,7 @@ export interface TaxonomyTermsResponse {
   versionId: string;
   categories: string[];
   terms: TaxonomyTerm[];
+  governance: ProvisionalGovernanceMetadata;
 }
 
 export type TaxonomyTermMutationAction = typeof TaxonomyTermMutationAction[keyof typeof TaxonomyTermMutationAction];
@@ -1670,7 +1759,32 @@ export type TaxonomyImportInput = GovernanceActorReason & {
 
 export type TaxonomyImportBatchResponseBatch = { [key: string]: unknown };
 
-export interface TaxonomyImportCandidate { [key: string]: unknown }
+/**
+ * Provisional import workflow state returned by the API. Legacy approved rows are remapped to business_review_complete and do not represent governance approval.
+ */
+export type TaxonomyImportCandidateStatus = typeof TaxonomyImportCandidateStatus[keyof typeof TaxonomyImportCandidateStatus];
+
+
+export const TaxonomyImportCandidateStatus = {
+  business_review_complete: 'business_review_complete',
+  rejected: 'rejected',
+  staged: 'staged',
+  conflict: 'conflict',
+  committed: 'committed',
+} as const;
+
+export type TaxonomyImportCandidateMetadata = {
+  /** Draft business review completion only; never governance approval or finality. */
+  businessReviewComplete?: boolean;
+  [key: string]: unknown;
+ };
+
+export interface TaxonomyImportCandidate {
+  /** Provisional import workflow state returned by the API. Legacy approved rows are remapped to business_review_complete and do not represent governance approval. */
+  status: TaxonomyImportCandidateStatus;
+  metadata?: TaxonomyImportCandidateMetadata;
+  [key: string]: unknown;
+ }
 
 export interface TaxonomyImportBatchResponse {
   batch: TaxonomyImportBatchResponseBatch;
@@ -1678,19 +1792,24 @@ export interface TaxonomyImportBatchResponse {
   idempotent?: boolean;
 }
 
+/**
+ * business_review_complete records provisional draft review. approved is retained only so typed callers receive the server's explicit quarantine rejection; it is never accepted as approval.
+ */
 export type TaxonomyImportReviewStatus = typeof TaxonomyImportReviewStatus[keyof typeof TaxonomyImportReviewStatus];
 
 
 export const TaxonomyImportReviewStatus = {
-  approved: 'approved',
+  business_review_complete: 'business_review_complete',
   rejected: 'rejected',
   staged: 'staged',
   conflict: 'conflict',
+  approved: 'approved',
 } as const;
 
 export type TaxonomyImportReviewPayload = { [key: string]: unknown };
 
 export type TaxonomyImportReview = GovernanceActorReason & {
+  /** business_review_complete records provisional draft review. approved is retained only so typed callers receive the server's explicit quarantine rejection; it is never accepted as approval. */
   status: TaxonomyImportReviewStatus;
   note?: string;
   resolveConflict?: boolean;

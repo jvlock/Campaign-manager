@@ -11,6 +11,7 @@ import TaxonomyTerms from '@/components/governance/TaxonomyTerms';
 import StagedImports from '@/components/governance/StagedImports';
 import AuditLog from '@/components/governance/AuditLog';
 import ApprovalsComments from '@/components/governance/ApprovalsComments';
+import { ProvisionalNotice } from '@/components/governance/ProvisionalNotice';
 
 export default function Governance() {
   const { data: governance } = useGetGovernance();
@@ -36,8 +37,9 @@ export default function Governance() {
     <div className="flex-1 overflow-auto p-6 md:p-10 space-y-8">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Governance</h1>
-        <p className="text-muted-foreground">Taxonomy, naming conventions, and system integrations.</p>
+        <p className="text-muted-foreground">Quarantined taxonomy, draft naming conventions, and source-system status.</p>
       </div>
+      <ProvisionalNotice />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
@@ -48,8 +50,8 @@ export default function Governance() {
           <AuditLog />
           <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle>Governance record</CardTitle>
-              <CardDescription>Select an actual current taxonomy term or version for approvals and comments.</CardDescription>
+              <CardTitle>Quarantined source record</CardTitle>
+              <CardDescription>Select a taxonomy term or version to review history and add comments. Governance approval is disabled.</CardDescription>
             </CardHeader>
             <CardContent>
               {isTermsLoading ? (
@@ -78,9 +80,9 @@ export default function Governance() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Code className="h-5 w-5 text-primary" />
-                Adapter Status
+                Source & adapter status
               </CardTitle>
-              <CardDescription>Downstream platform sync health</CardDescription>
+              <CardDescription>Operational connectivity only; this does not confer governance approval. External publishing remains disabled.</CardDescription>
             </CardHeader>
             <CardContent>
               {isAdaptersLoading ? (

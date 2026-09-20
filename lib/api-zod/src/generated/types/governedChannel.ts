@@ -7,9 +7,11 @@
  */
 import type { GovernedChannelId } from './governedChannelId';
 import type { GovernedChannelType } from './governedChannelType';
+import type { ProvisionalGovernanceMetadata } from './provisionalGovernanceMetadata';
 
 export interface GovernedChannel {
   id: GovernedChannelId;
   displayName: string;
   type: GovernedChannelType;
+  governance: ProvisionalGovernanceMetadata;
 }

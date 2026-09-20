@@ -41,6 +41,7 @@ import ActivityTasksPanel from './ActivityTasksPanel';
 import ActivityTaskSettingsPanel from './ActivityTaskSettingsPanel';
 
 import { CommunicationDeliverablesEditor } from '../delivery/CommunicationDeliverablesEditor';
+import { ProvisionalBadge, ProvisionalNotice } from '../governance/ProvisionalNotice';
 
 interface ActivityConfigDrawerProps {
   campaignId: string;
@@ -352,6 +353,7 @@ export default function ActivityConfigDrawer({
 
       <ScrollArea className="flex-1">
         <div className="p-6 space-y-6">
+          <ProvisionalNotice compact />
           {visibleError && (
             <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
               {visibleError}
@@ -467,7 +469,10 @@ export default function ActivityConfigDrawer({
 
             {typeConfig && (
               <div className="p-3 bg-muted/30 rounded-md border border-border mt-4">
-                <div className="text-xs text-muted-foreground font-semibold mb-1">Generated Name Preview</div>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground font-semibold mb-1">
+                  Generated name preview
+                  <ProvisionalBadge />
+                </div>
                  <div className="text-sm font-mono break-all">
                    {renderNameMutation.isPending ? 'Rendering…' : namePreview || '—'}
                  </div>

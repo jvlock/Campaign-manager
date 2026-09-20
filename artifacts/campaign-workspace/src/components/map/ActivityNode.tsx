@@ -2,6 +2,7 @@ import { Handle, Position } from '@xyflow/react';
 import { Activity } from '@workspace/api-client-react';
 import { AlertTriangle, Clock, User, Mail, CheckSquare, Link2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ProvisionalBadge } from '@/components/governance/ProvisionalNotice';
 
 type ActivityNodeData = Activity & {
   communications?: any[];
@@ -58,7 +59,10 @@ export default function ActivityNode({ data }: { data: ActivityNodeData }) {
       </div>
 
       <div className="p-3 space-y-3">
-        <h3 className="font-semibold text-foreground leading-tight text-sm">{data.name}</h3>
+        <div className="space-y-1.5">
+          <h3 className="font-semibold text-foreground leading-tight text-sm">{data.name}</h3>
+          <ProvisionalBadge />
+        </div>
 
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

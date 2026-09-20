@@ -130,12 +130,12 @@ test("names an ungoverned channel and inserts nothing", async () => {
   assert.equal(after.length, before.length);
 });
 
-test("distinguishes unapproved and inactive governed channels", async () => {
-  const unapproved = await post({ channel: `Unapproved_${marker}` });
-  assert.equal(unapproved.status, 422);
-  assert.equal(unapproved.body.error.code, "not_approved");
-  assert.equal(unapproved.body.error.field, "channel");
-  assert.equal(unapproved.body.error.message, `channel "Unapproved_${marker}" is not an approved active channel value`);
+test("allows unapproved active values for provisional preview but rejects inactive values", async () => {
+  const unapproved = await post({ ...governedRequest(), channel: `Unapproved_${marker}` });
+  assert.equal(unapproved.status, 200);
+  assert.equal(unapproved.body.governance.governanceApproved, false);
+  assert.equal(unapproved.body.governance.publishingEligible, false);
+  assert.match(unapproved.body.governance.label, /PROVISIONAL/);
   const inactive = await post({ channel: `Inactive_${marker}` });
   assert.equal(inactive.status, 422);
   assert.equal(inactive.body.error.code, "inactive");
@@ -148,12 +148,47 @@ test("returns parameters without destination and does not persist", async () => 
   assert.equal(result.status, 200);
   assert.equal(result.body.fullUrl, null);
   assert.equal(result.body.id, null);
-  assert.equal(result.body.message, "Destination URL is required to build the full link.");
+  assert.match(result.body.message, /^Destination URL is required to build the full link\..*PROVISIONAL/);
+  assert.equal(result.body.governance.governanceApproved, false);
   assert.equal(result.body.parameters.utm_source, "google-ads");
   assert.equal(result.body.parameters.utm_medium, "paid-search");
   assert.equal(result.body.parameters.utm_term, "{keyword}");
   assert.equal(JSON.stringify(result.body).includes("undefined"), false);
   assert.equal((await db.select().from(utmLinks).where(eq(utmLinks.campaignId, campaignId))).length, 0);
+});
+
+test("rejects direct final and approved aliases with the remediation message", async () => {
+  for (const finality of [
+    { final: true },
+    { isFinal: "yes" },
+    { approved: true },
+    { approvalStatus: "approved" },
+    { governanceApproved: true },
+    { official: true },
+    { publishExternally: true },
+  ]) {
+    const result = await post({ ...governedRequest(), ...finality });
+    assert.equal(result.status, 409);
+    assert.equal(result.body.error.code, "final_code_issuance_unavailable");
+    assert.equal(
+      result.body.error.message,
+      "Final code issuance is not currently available pending remediation of the source governance system.",
+    );
+  }
+});
+
+test("provisional UTM CSV export carries labels and cannot imply external eligibility", async () => {
+  const response = await fetch(`${base}/campaigns/${campaignId}/export/utm-csv`);
+  const text = await response.text();
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("x-governance-status"), "provisional-not-approved");
+  assert.match(text, /Provisional label/);
+  assert.match(text, /Governance approved,External publishing eligible/);
+  for (const query of ["final=true", "approval_status=approved", "mode=official"]) {
+    const rejected = await fetch(`${base}/campaigns/${campaignId}/export/utm-csv?${query}`);
+    assert.equal(rejected.status, 409);
+    assert.match(await rejected.text(), /Final code issuance is not currently available/);
+  }
 });
 
 test("resolves stable keys and parent-scopes repeated campaign shortcodes", async () => {

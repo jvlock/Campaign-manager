@@ -5,6 +5,16 @@ export type FoundationTaxonomySeedRow = {
   displayName: string;
 };
 
+export const foundationQuarantineMetadata = {
+  source_environment: "development",
+  verification_status: "provisional",
+  publishing_eligible: false,
+  source_reference: "Campaign Governance Foundation, migrated via audit",
+  requires_business_validation: true,
+  sourceLabel: "Campaign Governance Foundation quarantined migration",
+  codeProvenance: "foundation_migrated_provisional",
+} as const;
+
 export const foundationProductLines: readonly FoundationTaxonomySeedRow[] = [
   { tagCode: "analytics", parentStableKey: null, stableKey: "product_line:analytics", displayName: "Analytics" },
   { tagCode: "climate", parentStableKey: null, stableKey: "climate", displayName: "Climate" },
@@ -113,7 +123,19 @@ export const foundationSubcampaigns: readonly FoundationTaxonomySeedRow[] = [
 ] as const;
 
 export const foundationTaxonomySeed = [
-  ...foundationProductLines.map((row) => ({ ...row, category: "product_line" as const })),
-  ...foundationCampaignShortcodes.map((row) => ({ ...row, category: "campaign_shortcode" as const })),
-  ...foundationSubcampaigns.map((row) => ({ ...row, category: "subcampaign" as const })),
+  ...foundationProductLines.map((row) => ({
+    ...row,
+    category: "product_line" as const,
+    sourceMetadata: foundationQuarantineMetadata,
+  })),
+  ...foundationCampaignShortcodes.map((row) => ({
+    ...row,
+    category: "campaign_shortcode" as const,
+    sourceMetadata: foundationQuarantineMetadata,
+  })),
+  ...foundationSubcampaigns.map((row) => ({
+    ...row,
+    category: "subcampaign" as const,
+    sourceMetadata: foundationQuarantineMetadata,
+  })),
 ] as const;

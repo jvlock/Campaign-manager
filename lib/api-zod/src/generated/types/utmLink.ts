@@ -5,6 +5,7 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { ProvisionalGovernanceMetadata } from './provisionalGovernanceMetadata';
 
 export interface UtmLink {
   id: string;
@@ -13,4 +14,5 @@ export interface UtmLink {
   taxonomyVersion: string;
   validation: string;
   status: string;
+  governance: ProvisionalGovernanceMetadata;
 }

@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useQueryClient } from '@tanstack/react-query';
+import { ProvisionalNotice } from '@/components/governance/ProvisionalNotice';
 
 export default function CampaignDeliverablesTab({ campaign }: { campaign: any }) {
   const { data, isLoading, error } = useGetCampaignDeliverables(campaign.id);
@@ -47,6 +48,10 @@ export default function CampaignDeliverablesTab({ campaign }: { campaign: any })
 
   return (
     <div className="space-y-8 pb-20">
+      <ProvisionalNotice compact />
+      <p className="-mt-5 text-xs text-muted-foreground">
+        “Published” below is an internal content-build status only. It does not publish externally or confer governance approval.
+      </p>
       <OutstandingBlockers outstanding={data.outstanding} />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

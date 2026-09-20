@@ -2,8 +2,8 @@
 
 The canonical runtime catalog is defined once in
 `artifacts/api-server/src/lib/activity-model.ts` and exposed by
-`GET /api/activity-model/catalog`. It contains thirteen channels and twelve
-production activity configurations. Test-fixture prefixes are rejected by the
+`GET /api/activity-model/catalog`. It contains thirteen provisional channels and
+twelve provisional activity configurations. Test-fixture prefixes are rejected by the
 catalog integrity validator.
 
 ## Naming
@@ -31,10 +31,12 @@ campaign transition to `Live` is the applicable publication boundary, where
 persisted MCP data is recursively checked again. Governed event activities may
 link a webinar setup; existing legacy Webinar behavior is unchanged.
 
-Canonical channel terms are values, not approvals. The migration adds no
-approval, source, or medium metadata. This implementation follows the supplied
-specification; unavailable Campaign Governance Foundation source files were not
-represented as inspected or parity-tested.
+Canonical channel terms are provisional values, not approvals. Their persisted
+metadata marks them as development-sourced, publishing-ineligible, and requiring
+business validation. The twelve static activity configurations share that
+provisional boundary at the API layer; they are not persisted in this database.
+Unavailable Campaign Governance Foundation source files were not represented as
+inspected, parity-tested, or governance-approved.
 
 Communication channels are nullable. New or changed non-null values must use a
 canonical channel ID, while unchanged historical values remain readable. No

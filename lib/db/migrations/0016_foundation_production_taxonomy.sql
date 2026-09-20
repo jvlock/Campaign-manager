@@ -1,5 +1,6 @@
--- User-supplied Campaign Governance Foundation production taxonomy.
--- Registration is not approval: this migration creates no approval rows.
+-- Quarantined Campaign Governance Foundation migration.
+-- These development-sourced values are provisional, ineligible for publishing,
+-- and require business validation. Registration is not approval.
 ALTER TABLE taxonomy_terms ADD COLUMN IF NOT EXISTS stable_key text;
 
 DROP INDEX IF EXISTS taxonomy_terms_version_shortcode_uq;
@@ -19,7 +20,7 @@ CREATE INDEX IF NOT EXISTS taxonomy_terms_hierarchy_lookup_idx
 UPDATE taxonomy_terms
 SET is_deprecated = true,
     deprecated_at = COALESCE(deprecated_at, now()),
-    deprecation_reason = COALESCE(deprecation_reason, 'Replaced by user-supplied Campaign Governance Foundation production taxonomy'),
+    deprecation_reason = COALESCE(deprecation_reason, 'Replaced by quarantined Campaign Governance Foundation migration'),
     updated_at = now()
 WHERE stable_key IS NULL
   AND version_id = (
@@ -161,7 +162,15 @@ $seed$, E'\n') AS line
 DO $$
 DECLARE
   current_version_id uuid;
-  seed_source_metadata jsonb := '{"sourceLabel":"Campaign Governance Foundation production taxonomy (user-supplied)","codeProvenance":"foundation_production_user_supplied"}'::jsonb;
+  seed_source_metadata jsonb := '{
+    "source_environment":"development",
+    "verification_status":"provisional",
+    "publishing_eligible":false,
+    "source_reference":"Campaign Governance Foundation, migrated via audit",
+    "requires_business_validation":true,
+    "sourceLabel":"Campaign Governance Foundation quarantined migration",
+    "codeProvenance":"foundation_migrated_provisional"
+  }'::jsonb;
 BEGIN
   SELECT id INTO current_version_id
   FROM taxonomy_versions
@@ -270,7 +279,7 @@ BEGIN
     changed.id,
     'seed_update',
     'system:migration',
-    'Correct user-supplied Campaign Governance Foundation production taxonomy term',
+    'Register quarantined Campaign Governance Foundation provisional taxonomy term',
     changed.before_state,
     to_jsonb(term),
     '{"actorProvenance":"declared","source":"migration:0016_foundation_production_taxonomy"}'::jsonb

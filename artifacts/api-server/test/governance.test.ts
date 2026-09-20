@@ -189,7 +189,7 @@ test("import staging exposes conflicts and committed candidates are idempotent",
   const override = await fetch(`${baseUrl}/governance/imports/${secondBatchJson.batch.id}/candidates/${secondBatchJson.candidates[0].id}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ actor: "governance-test", reason: "Attempt an unsafe override", status: "approved", resolveConflict: true }),
+    body: JSON.stringify({ actor: "governance-test", reason: "Attempt an unsafe override", status: "business_review_complete", resolveConflict: true }),
   });
   assert.equal(override.status, 200);
   const unsafeCommit = await fetch(`${baseUrl}/governance/imports/${secondBatchJson.batch.id}/commit`, {
@@ -217,7 +217,7 @@ test("import staging exposes conflicts and committed candidates are idempotent",
   const reviewed = await fetch(`${baseUrl}/governance/imports/${stagedJson.batch.id}/candidates/${candidate.id}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ actor: "governance-test", reason: "Candidate is valid", status: "approved" }),
+    body: JSON.stringify({ actor: "governance-test", reason: "Candidate is valid", status: "business_review_complete" }),
   });
   assert.equal(reviewed.status, 200);
   const committed = await fetch(`${baseUrl}/governance/imports/${stagedJson.batch.id}/commit`, {
@@ -267,7 +267,7 @@ test("stable-key import replay preserves UUID and stable identity", async () => 
     const reviewed = await fetch(`${baseUrl}/governance/imports/${body.batch.id}/candidates/${body.candidates[0].id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ actor: "governance-test", reason: "Approve isolated stable-key fixture", status: "approved" }),
+      body: JSON.stringify({ actor: "governance-test", reason: "Complete business review for isolated stable-key fixture", status: "business_review_complete" }),
     });
     assert.equal(reviewed.status, 200);
     const committed = await fetch(`${baseUrl}/governance/imports/${body.batch.id}/commit`, {
@@ -368,7 +368,7 @@ test("import rejects an ambiguous parent shortcode instead of choosing arbitrari
   await fetch(`${baseUrl}/governance/imports/${body.batch.id}/candidates/${body.candidates[0].id}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ actor: "governance-test", reason: "Approve ambiguity fixture", status: "approved" }),
+    body: JSON.stringify({ actor: "governance-test", reason: "Complete business review for ambiguity fixture", status: "business_review_complete" }),
   });
   const committed = await fetch(`${baseUrl}/governance/imports/${body.batch.id}/commit`, {
     method: "POST",
@@ -412,4 +412,150 @@ test("polymorphic approvals validate target record types", async () => {
   const approval = await created.json();
   assert.equal(approval.recordType, "campaign");
   assert.equal(approval.recordId, campaignId);
+
+  for (const status of ["approved", "final", "official"]) {
+    const rejected = await fetch(`${baseUrl}/governance/approvals`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        actor: "governance-test",
+        reason: "Quarantine must reject governance finality",
+        recordType: "campaign",
+        recordId: campaignId,
+        stage: "governance",
+        status,
+        approver: "reviewer",
+      }),
+    });
+    assert.equal(rejected.status, 409);
+    assert.match((await rejected.json()).error, /Final code issuance is not currently available/);
+  }
+
+  await db.insert(approvals).values({
+    recordType: "campaign",
+    recordId: campaignId,
+    campaignId,
+    stage: "historical",
+    status: "approved",
+    approver: "legacy-system",
+  });
+  const listed = await fetch(`${baseUrl}/governance/approvals?recordType=campaign&recordId=${campaignId}`);
+  assert.equal(listed.status, 200);
+  const oldApproved = (await listed.json()).find((row: any) => row.stage === "historical");
+  assert.equal(oldApproved.status, "provisional");
+  assert.equal(oldApproved.governanceApproved, false);
+  assert.equal(oldApproved.approvalEffective, false);
+});
+
+test("taxonomy imports reject approval aliases and provenance escalation", async () => {
+  for (const candidate of [
+    { sourceKey: "approved-write", category: "channel", label: "Approved write", shortcode: "NOAPP", status: "approved" },
+    {
+      sourceKey: "production-override",
+      category: "channel",
+      label: "Production override",
+      shortcode: "NOPROD",
+      sourceMetadata: { source_environment: "production", publishing_eligible: true },
+    },
+  ]) {
+    const response = await fetch(`${baseUrl}/governance/imports`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        actor: "governance-test",
+        reason: "Quarantine import regression",
+        versionId,
+        sourceName: "quarantine regression",
+        candidates: [candidate],
+      }),
+    });
+    assert.equal(response.status, 409);
+    assert.match((await response.json()).error, /Final code issuance is not currently available/);
+  }
+
+  const staged = await fetch(`${baseUrl}/governance/imports`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      actor: "governance-test",
+      reason: "Stage a provisional business-review candidate",
+      versionId,
+      sourceName: "quarantine business review",
+      candidates: [{ sourceKey: "business-review", category: "channel", label: "Draft candidate", shortcode: "DRAFTONLY" }],
+    }),
+  });
+  assert.equal(staged.status, 201);
+  const stagedBody = await staged.json();
+  const candidate = stagedBody.candidates[0];
+  const approvedAlias = await fetch(`${baseUrl}/governance/imports/${stagedBody.batch.id}/candidates/${candidate.id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      actor: "governance-test",
+      reason: "Explicit approval must be rejected",
+      status: "approved",
+    }),
+  });
+  assert.equal(approvedAlias.status, 409);
+  const reviewed = await fetch(`${baseUrl}/governance/imports/${stagedBody.batch.id}/candidates/${candidate.id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      actor: "governance-test",
+      reason: "Business review remains available",
+      status: "business_review_complete",
+    }),
+  });
+  assert.equal(reviewed.status, 200);
+  const reviewedBody = await reviewed.json();
+  assert.equal(reviewedBody.status, "business_review_complete");
+  assert.equal(reviewedBody.governanceApproved, false);
+});
+
+test("taxonomy term create and update reject hidden finality and source metadata escalation", async () => {
+  const rejectedCreate = await fetch(`${baseUrl}/governance/terms`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      actor: "governance-test",
+      reason: "Reject hidden approval",
+      versionId,
+      category: "channel",
+      label: "Hidden approval",
+      shortcode: "HIDDEN_APPROVAL",
+      approval_status: "approved",
+    }),
+  });
+  assert.equal(rejectedCreate.status, 409);
+  assert.match((await rejectedCreate.json()).error, /Final code issuance is not currently available/);
+
+  const created = await fetch(`${baseUrl}/governance/terms`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      actor: "governance-test",
+      reason: "Create provisional update fixture",
+      versionId,
+      category: "channel",
+      label: "Provisional fixture",
+      shortcode: "PROVISIONAL_FIXTURE",
+    }),
+  });
+  assert.equal(created.status, 201);
+  const term = await created.json();
+  const rejectedUpdate = await fetch(`${baseUrl}/governance/terms/${term.id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      actor: "governance-test",
+      reason: "Reject production metadata override",
+      source_metadata: {
+        source_environment: "production",
+        verification_status: "verified",
+        publishing_eligible: true,
+      },
+    }),
+  });
+  assert.equal(rejectedUpdate.status, 409);
+  assert.match((await rejectedUpdate.json()).error, /Final code issuance is not currently available/);
 });

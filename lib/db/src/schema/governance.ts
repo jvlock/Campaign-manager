@@ -20,7 +20,20 @@ const audit = {
 export type TaxonomyTermSourceMetadata = {
   sourceLabel?: string;
   codeProvenance?: string;
+  source_environment?: "development";
+  verification_status?: "provisional";
+  publishing_eligible?: false;
+  source_reference?: string;
+  requires_business_validation?: true;
   [key: string]: unknown;
+};
+
+export type GovernanceQuarantineMetadata = {
+  source_environment: "development";
+  verification_status: "provisional";
+  publishing_eligible: false;
+  source_reference: "Campaign Governance Foundation, migrated via audit";
+  requires_business_validation: true;
 };
 
 /**
@@ -81,6 +94,16 @@ export const governedChannels = pgTable("governed_channels", {
   id: text("id").primaryKey(),
   displayName: text("display_name").notNull(),
   type: text("type").notNull(),
+  sourceMetadata: jsonb("source_metadata")
+    .$type<TaxonomyTermSourceMetadata & GovernanceQuarantineMetadata>()
+    .default({
+      source_environment: "development",
+      verification_status: "provisional",
+      publishing_eligible: false,
+      source_reference: "Campaign Governance Foundation, migrated via audit",
+      requires_business_validation: true,
+    })
+    .notNull(),
   ...audit,
 });
 

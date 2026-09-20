@@ -56,7 +56,58 @@ test("catalog exposes the authoritative exact counts", async () => {
   assert.equal(result.status, 200);
   assert.equal(result.body.channels.length, 13);
   assert.equal(result.body.activityTypes.length, 12);
-  assert.deepEqual(result.body.channels[0], { id: "psg", displayName: "Paid Search: Google", type: "paid" });
+  assert.deepEqual(
+    { id: result.body.channels[0].id, displayName: result.body.channels[0].displayName, type: result.body.channels[0].type },
+    { id: "psg", displayName: "Paid Search: Google", type: "paid" },
+  );
+  assert.equal(result.body.channels[0].governance.governanceApproved, false);
+  assert.match(result.body.governance.label, /PROVISIONAL/);
+});
+
+test("bulk map and generated naming routes reject finality aliases", async () => {
+  const detail = await request(`/campaigns/${campaignId}`);
+  const blockedMap = await request(`/campaigns/${campaignId}/map`, "PUT", {
+    rowVersion: detail.body.rowVersion,
+    governance_approved: true,
+    activities: detail.body.map.activities.map((activity: any, index: number) => ({
+      ...activity,
+      ...(index === 0 ? { governance_approved: true } : {}),
+    })),
+    connections: detail.body.map.connections,
+  });
+  assert.equal(blockedMap.status, 409);
+  assert.equal(blockedMap.body.error.code, "final_code_issuance_unavailable");
+
+  const blockedName = await request("/activity-model/render-name", "POST", {
+    template: "{campaign}-{name}",
+    builtins: { campaign: "Campaign", mode: "final" },
+    answers: { name: "Draft" },
+  });
+  assert.equal(blockedName.status, 409);
+  assert.equal(blockedName.body.error.code, "final_code_issuance_unavailable");
+});
+
+test("campaign create and patch reject raw snake-case finality controls", async () => {
+  const create = await request("/campaigns", "POST", {
+    name: `Rejected campaign ${randomUUID().slice(0, 6)}`,
+    scope: "Global",
+    audience: "Test",
+    outcome: "Test",
+    approval_status: "approved",
+  });
+  assert.equal(create.status, 409);
+  assert.equal(create.body.error.code, "final_code_issuance_unavailable");
+
+  const detail = await request(`/campaigns/${campaignId}`);
+  const patch = await request(`/campaigns/${campaignId}`, "PATCH", {
+    rowVersion: detail.body.rowVersion,
+    name: "Must not be applied",
+    governance_status: "final",
+  });
+  assert.equal(patch.status, 409);
+  assert.equal(patch.body.error.code, "final_code_issuance_unavailable");
+  const unchanged = await request(`/campaigns/${campaignId}`);
+  assert.notEqual(unchanged.body.name, "Must not be applied");
 });
 
 test("migration retires only exact lowercase-category generic channels without deleting history", async () => {
