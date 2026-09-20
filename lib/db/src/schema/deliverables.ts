@@ -1,5 +1,9 @@
 import { foreignKey, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
-import { assets, campaigns, communications, landingPages } from "./campaign";
+import { campaigns, communications } from "./campaign";
+
+// Stage-one publishing: the four composite landing-page/asset foreign keys
+// are deferred until their parent UNIQUE constraints exist in production.
+// All columns and other relationships remain unchanged.
 
 const audit = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -21,11 +25,6 @@ export const ctas = pgTable("ctas", {
   ...audit,
 }, (table) => ({
   idCampaignUnique: unique("ctas_id_campaign_unique").on(table.id, table.campaignId),
-  landingPageCampaignFk: foreignKey({
-    columns: [table.landingPageId, table.campaignId],
-    foreignColumns: [landingPages.id, landingPages.campaignId],
-    name: "ctas_landing_page_campaign_fk",
-  }),
 }));
 
 export const communicationCtas = pgTable("communication_ctas", {
@@ -59,11 +58,6 @@ export const communicationLandingPages = pgTable("communication_landing_pages", 
     foreignColumns: [communications.id, communications.campaignId],
     name: "communication_landing_pages_communication_campaign_fk",
   }),
-  landingPageCampaignFk: foreignKey({
-    columns: [table.landingPageId, table.campaignId],
-    foreignColumns: [landingPages.id, landingPages.campaignId],
-    name: "communication_landing_pages_landing_page_campaign_fk",
-  }),
 }));
 
 export const landingPageContentAssets = pgTable("landing_page_content_assets", {
@@ -73,14 +67,4 @@ export const landingPageContentAssets = pgTable("landing_page_content_assets", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   pk: primaryKey({ columns: [table.landingPageId, table.contentAssetId], name: "landing_page_content_assets_pk" }),
-  landingPageCampaignFk: foreignKey({
-    columns: [table.landingPageId, table.campaignId],
-    foreignColumns: [landingPages.id, landingPages.campaignId],
-    name: "landing_page_content_assets_landing_page_campaign_fk",
-  }),
-  assetCampaignFk: foreignKey({
-    columns: [table.contentAssetId, table.campaignId],
-    foreignColumns: [assets.id, assets.campaignId],
-    name: "landing_page_content_assets_asset_campaign_fk",
-  }),
 }));

@@ -1,4 +1,4 @@
-import { boolean, integer, jsonb, numeric, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, integer, jsonb, numeric, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 const id = () => uuid("id").defaultRandom().primaryKey();
@@ -70,6 +70,7 @@ export const assets = pgTable("assets", {
   publishBy: text("publish_by"), ...audit,
 }, (table) => ({
   idCampaignUnique: unique("assets_id_campaign_unique").on(table.id, table.campaignId),
+  statusValid: check("assets_status_valid", sql`${table.status} IN ('Not Started', 'Drafted', 'In Review', 'Published', 'Confirmed')`),
 }));
 export const landingPages = pgTable("landing_pages", {
   id: id(), campaignId: uuid("campaign_id").notNull(), name: text("name").notNull(),
