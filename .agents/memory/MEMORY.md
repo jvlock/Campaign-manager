@@ -4,3 +4,4 @@
 - [Map round-trip compatibility](map-round-trip-compatibility.md) — full-map validation must accept unchanged legacy read shapes without allowing canonical activities to bypass their rules.
 - [Foundation taxonomy identity](taxonomy-source-identity.md) — repeated tag codes are real; use full stable keys and scoped parents, and preserve sourced rows outside partial imports.
 - [Deliverable readiness boundary](deliverable-readiness-boundary.md) — dependency readiness is not sending or hosting; linked CTAs are canonical, with atomic create-and-attach.
+- [Publish constraint introspection](publish-constraint-introspection.md) — unvalidated CHECK constraints can produce malformed publish SQL; inspect the generated diff.
