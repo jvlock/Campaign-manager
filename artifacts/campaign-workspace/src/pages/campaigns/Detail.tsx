@@ -12,7 +12,6 @@ import CampaignDeliverablesTab from './CampaignDeliverablesTab';
 import { useEffect, useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { ProvisionalNotice } from '@/components/governance/ProvisionalNotice';
 
 export default function CampaignDetail() {
   const [match, params] = useRoute('/campaigns/:id');
@@ -184,7 +183,6 @@ export default function CampaignDetail() {
             </Button>
           </div>
         </div>
-        <ProvisionalNotice compact />
       </div>
 
       {/* Tabs */}

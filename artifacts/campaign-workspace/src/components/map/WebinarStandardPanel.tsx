@@ -27,7 +27,7 @@ import { Layers, Download, Loader2, CheckCircle2, AlertCircle, ChevronDown, Save
 import { useToast } from '@/hooks/use-toast';
 
 import { CommunicationDeliverablesEditor } from '../delivery/CommunicationDeliverablesEditor';
-import { ProvisionalBadge, ProvisionalNotice } from '../governance/ProvisionalNotice';
+import { ProvisionalBadge } from '../governance/ProvisionalNotice';
 
 type ContentField = keyof WebinarStandardContent;
 type LocalValidation = { valid: boolean; message?: string };
@@ -422,7 +422,6 @@ export default function WebinarStandardPanel({
           {' '}These are planning drafts; emails are not sent automatically.
         </p>
       </div>
-      <ProvisionalNotice compact />
       <div className="bg-card border border-border rounded-md shadow-sm p-4 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold">Campaign Launch</h3>

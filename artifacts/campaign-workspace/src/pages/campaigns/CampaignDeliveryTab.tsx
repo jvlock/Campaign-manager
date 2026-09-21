@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CapacityManagementPanel from '@/components/delivery/CapacityManagementPanel';
 import OffsetDefaultsPanel from '@/components/delivery/OffsetDefaultsPanel';
-import { ProvisionalBadge, ProvisionalNotice } from '@/components/governance/ProvisionalNotice';
+import { ProvisionalBadge } from '@/components/governance/ProvisionalNotice';
 
 interface CampaignDeliveryTabProps {
   campaign: CampaignDetail;
@@ -270,7 +270,6 @@ export default function CampaignDeliveryTab({ campaign }: CampaignDeliveryTabPro
 
       <div className="pt-8 border-t border-border mt-8">
         <h2 className="text-lg font-semibold mb-4 text-foreground">UTM Links & Tracking</h2>
-        <ProvisionalNotice compact className="mb-3" />
         <div className="rounded-md border border-border bg-card overflow-x-auto shadow-sm">
           <table className="w-full text-sm text-left whitespace-nowrap">
             <thead className="bg-muted/50 text-muted-foreground font-medium border-b border-border text-xs uppercase tracking-wider">

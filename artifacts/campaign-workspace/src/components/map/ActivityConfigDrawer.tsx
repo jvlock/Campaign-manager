@@ -41,7 +41,7 @@ import ActivityTasksPanel from './ActivityTasksPanel';
 import ActivityTaskSettingsPanel from './ActivityTaskSettingsPanel';
 
 import { CommunicationDeliverablesEditor } from '../delivery/CommunicationDeliverablesEditor';
-import { ProvisionalBadge, ProvisionalNotice } from '../governance/ProvisionalNotice';
+import { ProvisionalBadge } from '../governance/ProvisionalNotice';
 
 interface ActivityConfigDrawerProps {
   campaignId: string;
@@ -353,7 +353,6 @@ export default function ActivityConfigDrawer({
 
       <ScrollArea className="flex-1">
         <div className="p-6 space-y-6">
-          <ProvisionalNotice compact />
           {visibleError && (
             <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
               {visibleError}

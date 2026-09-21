@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronDown, ChevronRight, History, Loader2 } from 'lucide-react';
 import { useListGovernanceTerms } from '@workspace/api-client-react';
-import { ProvisionalBadge, ProvisionalNotice } from './ProvisionalNotice';
+import { ProvisionalBadge } from './ProvisionalNotice';
 
 export default function TaxonomyTerms({ version }: { version?: string }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -44,7 +44,6 @@ export default function TaxonomyTerms({ version }: { version?: string }) {
         <CardDescription>Quarantined source terms retained for draft planning and business validation. {version && `(v${version})`}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ProvisionalNotice compact />
         {categories.length === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md">No taxonomy terms found.</div>
         ) : categories.map(cat => (

@@ -11,7 +11,6 @@ import TaxonomyTerms from '@/components/governance/TaxonomyTerms';
 import StagedImports from '@/components/governance/StagedImports';
 import AuditLog from '@/components/governance/AuditLog';
 import ApprovalsComments from '@/components/governance/ApprovalsComments';
-import { ProvisionalNotice } from '@/components/governance/ProvisionalNotice';
 
 export default function Governance() {
   const { data: governance } = useGetGovernance();
@@ -39,7 +38,6 @@ export default function Governance() {
         <h1 className="text-3xl font-bold tracking-tight">Governance</h1>
         <p className="text-muted-foreground">Quarantined taxonomy, draft naming conventions, and source-system status.</p>
       </div>
-      <ProvisionalNotice />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
