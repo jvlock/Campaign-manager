@@ -47,7 +47,7 @@ export default function CampaignDeliverablesTab({ campaign }: { campaign: any })
 
   return (
     <div className="space-y-8 pb-20">
-      <p className="-mt-5 text-xs text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         “Published” below is an internal content-build status only. It does not publish externally or confer governance approval.
       </p>
       <OutstandingBlockers outstanding={data.outstanding} />
