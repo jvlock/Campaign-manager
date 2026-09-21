@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "1.0",
+  "standardId": "WEB-STANDARD-001",
+  "standardVersion": "1.0-pilot-rc1",
+  "packageRevision": "RC1.1",
+  "packageRevisionNote": "RC1.1 is a packaging-only correction to the manifest's own evidence reporting. It does not alter standard version 1.0-pilot-rc1, any of the 106 rules, or any payload file. All four payload-file hashes below are identical to those recorded in the RC1 manifest.",
+  "ruleCount": 106,
+  "uniqueRuleIdCount": 106,
+  "duplicateRuleIdCount": 0,
+  "nullRequiredFieldCount": 0,
+  "placeholderTermCount": 0,
+  "invalidEnumerationCount": 0,
+  "nonBooleanExceptionEligibleCount": 0,
+  "semanticValidationCount": 14,
+  "semanticValidationPassedCount": 14,
+  "semanticValidationFailedCount": 0,
+  "semanticValidation": {
+    "registrationSuppressesFutureRecruitment": {
+      "pass": true,
+      "evidence": "WEB-REC-005 is a Mandatory blocker requiring a registered person be removed from all remaining recruitment sends."
+    },
+    "internalTestExcludedFromCustomerPathsAndReporting": {
+      "pass": true,
+      "evidence": "WEB-REC-008 excludes internal/test records from recruitment; WEB-FU-INT-001 excludes them from recruitment, attendance, follow-up, and reporting. Both are Mandatory blockers."
+    },
+    "noCommunicationScheduledInPast": {
+      "pass": true,
+      "evidence": "WEB-REC-011 and WEB-WIN-006 are both Mandatory blockers prohibiting any communication scheduled in the past or after the event has started."
+    },
+    "eventStatusAndParticipantStatusSeparate": {
+      "pass": true,
+      "evidence": "Governed by the archived implementation authorization, section 3, not by an individual rule ID in this catalog. No rule in this catalog references or requires a single combined status field; none was found to conflict with this separation."
+    },
+    "attendancePerRegistrant": {
+      "pass": true,
+      "evidence": "WEB-FU-UNK-001 through 003 operate on a per-person reconciliation basis, consistent with the per-registrant attendance model required by the archived authorization, section 3."
+    },
+    "attendedAbsentDistinctVariants": {
+      "pass": true,
+      "evidence": "WEB-FU-VAR-001 is a Mandatory blocker requiring distinct attended and absent message variants."
+    },
+    "attendanceUnknownCannotGenerateBothVariants": {
+      "pass": true,
+      "evidence": "WEB-FU-UNK-002 is a Mandatory blocker prohibiting conflicting attended and absent messages to the same person."
+    },
+    "sharedFollowUpAssetsPermitted": {
+      "pass": true,
+      "evidence": "WEB-FU-VAR-001's expected behavior explicitly permits a shared destination alongside distinct message variants."
+    },
+    "registrationTestingNonOverridable": {
+      "pass": true,
+      "evidence": "WEB-QA-003 and WEB-RDY-REC-002 both have exceptionEligible false."
+    },
+    "joinLinkVenueTestingNonOverridable": {
+      "pass": true,
+      "evidence": "WEB-QA-004 and WEB-RDY-RUN-001 both have exceptionEligible false."
+    },
+    "requiredConsentControlsNonOverridable": {
+      "pass": true,
+      "evidence": "WEB-SETUP-C07 has exceptionEligible false."
+    },
+    "governedNamingTaxonomyUtmNonBypassable": {
+      "pass": true,
+      "evidence": "WEB-QA-005, WEB-QA-006, and WEB-RDY-REC-008 are all Mandatory blockers with exceptionEligible false; no documented-dependency bypass remains."
+    },
+    "noRuleAuthorizesExternalSend": {
+      "pass": true,
+      "evidence": "No rule in this catalog authorizes or references live external delivery; every communication-oriented rule states required content and timing, not a live-send authorization. The pilot delivery boundary limiting all of this to preview and simulation is set by the archived implementation authorization, section 5, which this catalog does not override.",
+      "interpretiveNote": "Several rules (e.g. WEB-REG-001, WEB-FU-ATT-001) use the verb 'sent' to describe the required designed behavior once a communication channel is truly enabled. This describes what the standard requires of the behavior, not an authorization to enable real sending during the pilot; that authorization is withheld by the separate implementation authorization document, not granted by this catalog."
+    },
+    "noRuleAuthorizesDeployment": {
+      "pass": true,
+      "evidence": "No rule in this catalog references deployment, and deployment authorization is withheld by the archived implementation authorization, section 12 and its closing line."
+    }
+  },
+  "generatedAtUtc": "2026-09-21T22:50:04.906052+00:00",
+  "files": [
+    {
+      "filename": "docs/standards/webinar/WEB-STANDARD-001.rules.json",
+      "byteSize": 72206,
+      "sha256": "7abe547acf36d2f4b61c937f4ae192a3d30db52d5c2c947fd60d2c82b3c4f2e2"
+    },
+    {
+      "filename": "docs/standards/webinar/WEB-STANDARD-001.md",
+      "byteSize": 6895,
+      "sha256": "74d10b56c625db6ae203a5fe097f4586611650ff15e4882479d78a98f62ebf25"
+    },
+    {
+      "filename": "docs/standards/webinar/WEBINAR-PILOT-IMPLEMENTATION-AUTHORIZATION.md",
+      "byteSize": 13603,
+      "sha256": "87b0f5a4eefe5b52e516db16d1483d6e4025e5b54a658e3132f0267d3800a09f"
+    },
+    {
+      "filename": "docs/standards/webinar/CHANGELOG-RC1.md",
+      "byteSize": 41550,
+      "sha256": "b67a40ca7ad4a3be35d510c5b4eb1d0e29577d7471a1b05862697e53b5ddba0c"
+    }
+  ],
+  "manifestSelfHashNote": "This manifest does not include a hash of itself, since a file cannot deterministically hash its own final serialized contents without recursion. The ZIP archive's own SHA-256, reported separately outside this manifest, covers this manifest file along with every other payload file.",
+  "validationResult": "PASSED",
+  "validationSummary": "All required checks passed. Rule count is 106 with 106 unique IDs and zero duplicates. Zero required fields are null across all 106 rules; zero placeholder terms were used to achieve this. Zero non-conforming primaryRuleType, readinessStage, or validationMethod values remain. Zero non-boolean exceptionEligible values remain. All fourteen semantic validation checks pass. Registration testing, join-link or venue testing, required consent controls, and governed naming/taxonomy/UTM generation are all confirmed non-overridable, and no rule in this catalog authorizes a real external send or a deployment; both remain governed exclusively by the archived implementation authorization's pilot delivery boundary."
+}
