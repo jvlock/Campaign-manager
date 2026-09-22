@@ -227,7 +227,6 @@ export async function loadWebinarStandardCatalog(
       });
     }
   }
-  if (issues.length > 0) throw new CatalogLoadError(issues);
-  if (!result.ok) throw new CatalogLoadError(result.issues);
-  return result.catalog;
+  if (result.ok && issues.length === 0) return result.catalog;
+  throw new CatalogLoadError(issues);
 }

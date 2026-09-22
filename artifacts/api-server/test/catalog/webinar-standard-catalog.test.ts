@@ -49,8 +49,7 @@ function smallFixture(count: 1 | 2 = 1): InputCatalog {
 
 function issuesFor(input: unknown): readonly CatalogValidationIssue[] {
   const result = validateWebinarStandardCatalog(input);
-  assert.equal(result.ok, false, "invalid input must not produce a catalog");
-  if (result.ok) throw new Error("Expected validation issues");
+  if (result.ok) assert.fail("Expected validation issues, but invalid input produced a catalog");
   assert.ok(result.issues.length > 0);
   for (const issue of result.issues) {
     assert.equal(typeof issue.field, "string");
@@ -174,8 +173,7 @@ test("repeated loads are equivalent but independently allocated and recursively 
 test("pure validation defensively copies without freezing or changing caller-owned input", () => {
   const input = JSON.parse(catalogBytes.toString("utf8")) as InputCatalog;
   const result = validateWebinarStandardCatalog(input);
-  assert.equal(result.ok, true);
-  if (!result.ok) throw new Error(JSON.stringify(result.issues));
+  if (!result.ok) assert.fail(`Expected a valid catalog: ${JSON.stringify(result.issues)}`);
   assert.deepEqual(input, approved);
   assert.notEqual(result.catalog, input);
   assert.notEqual(result.catalog.rules, input.rules);
@@ -295,6 +293,40 @@ test("reports a missing stable rule ID", () => {
   const input = smallFixture();
   delete input.rules[0]!.ruleId;
   expectIssue(issuesFor(input), "missing_field", "ruleId", ["rules", 0, "ruleId"]);
+});
+
+test("rejects a well-formed but unauthorized rule ID", () => {
+  const input = smallFixture();
+  const rule = input.rules[0];
+  assert.ok(rule);
+  rule.ruleId = "WEB-SETUP-999";
+  expectIssue(issuesFor(input), "invalid_rule_id", "ruleId", ["rules", 0, "ruleId"], "WEB-SETUP-999");
+});
+
+test("loader preserves the pure validator's structured rule issues", async () => {
+  await withRepository(async (root) => {
+    const input = JSON.parse(catalogBytes.toString("utf8")) as InputCatalog;
+    const rule = input.rules[0];
+    assert.ok(rule);
+    rule.hierarchyLevel = "Invalid hierarchy";
+    const expectedIssues = issuesFor(input);
+    const bytes = Buffer.from(JSON.stringify(input));
+    const manifest = JSON.parse(JSON.stringify(approvedManifest)) as {
+      files: { filename: string; sha256: string; byteSize: number }[];
+    };
+    const record = manifest.files.find((file) => file.filename === catalogRelativePath);
+    assert.ok(record);
+    record.sha256 = createHash("sha256").update(bytes).digest("hex");
+    record.byteSize = bytes.length;
+    await writeFile(join(root, catalogRelativePath), bytes);
+    await writeFile(join(root, manifestRelativePath), JSON.stringify(manifest));
+    await assert.rejects(loadWebinarStandardCatalog({ repositoryRoot: root }), (error: unknown) => {
+      assert.ok(error instanceof CatalogLoadError);
+      assert.deepEqual(error.issues, expectedIssues);
+      expectIssue(error.issues, "invalid_enum", "hierarchyLevel", ["rules", 0, "hierarchyLevel"], "WEB-SETUP-001");
+      return true;
+    });
+  });
 });
 
 test("rejects an invalid stable rule ID", () => {
