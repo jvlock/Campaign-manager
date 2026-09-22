@@ -6,3 +6,5 @@
 - [Deliverable readiness boundary](deliverable-readiness-boundary.md) — dependency readiness is not sending or hosting; linked CTAs are canonical, with atomic create-and-attach.
 - [Publish constraint introspection](publish-constraint-introspection.md) — unvalidated CHECK constraints can produce malformed publish SQL; inspect the generated diff.
 - [Audience definition source](audience-definition-source.md) — use supplied CliCS segment/unit/role/persona mappings; geography is a later audience dimension, not campaign scope.
+- [Verification and commit policy](verification-commit-policy.md) — commits can be provisional; only passing every required gate establishes phase completion.
+- [Webinar readiness rationale](webinar-readiness-rationale.md) — historical recruitment defects must not create an implicit all-stage dependency chain.
