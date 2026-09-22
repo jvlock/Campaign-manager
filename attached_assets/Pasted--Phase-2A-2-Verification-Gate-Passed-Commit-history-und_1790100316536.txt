@@ -1,0 +1,17 @@
+# Phase 2A-2 — Verification Gate Passed
+
+## Commit history, under the revised policy
+
+The provisional evaluator commit `ece658360367b937a0716cfaec49a5a95699735c` remains untouched and is the direct parent of one follow-up commit, `6927f4b2d301e42e88403a257fc65b4481c16873`, "Correct registration suppression test fixture." Nothing was rewritten. The follow-up commit changes exactly one file, `test/evaluation/evaluators.test.ts`, and nothing else.
+
+## Full fresh verification, all ten items passed
+
+The isolated corrected `WEB-REC-005` test passes. The complete evaluator suite now passes twenty of twenty, up from nineteen with one failing, consistent with the fixture correction plus the one additional duplicate-ID test the instruction called for if that behavior lacked dedicated coverage. The registry suite passes nine of nine, unchanged. The structural, containment, and coverage suite passes eight of eight, unchanged. The rule-ID generator reports zero drift across all one hundred six IDs. The type check reports zero errors with incremental caching disabled, so nothing was skipped by a stale cache. The catalog-integrity suite passes sixty-five of sixty-five. The complete existing API suite passes sixty-nine of sixty-nine across fourteen files, unchanged from the original baseline. The frontend suite passes two of two. All five canonical standards-file hashes were recomputed just now and match exactly. Across every one of these, zero setup failures, zero teardown failures, zero skipped or cancelled tests, and the disposable database's twenty-one migrations, shutdown, and cleanup were all confirmed, with the temporary root's absence independently reconfirmed. Total across the full set: twenty distinct test files, one hundred seventy-three individual tests, all passing, which I recomputed myself from the individual rows rather than accepting the summary figure directly, and it reconciles exactly.
+
+One reporting item I do not have a confirmed answer to from this check specifically: whether duplicate communication-ID rejection already had dedicated coverage before this correction, or whether the new test is the first of its kind. The count increase from nineteen to twenty tests is consistent with a new test having been added, but I have not independently confirmed which case applies, and I am not asserting one over the other without that confirmation.
+
+## Classification
+
+Phase 2A-2's verification gate has passed, so I am reporting this phase complete under the standard we just agreed to: the gate, not the commit, decides. This remains partial rule-engine coverage, exactly as required to be stated: fifteen of one hundred six rule IDs implemented as evaluators, ninety-one still unimplemented, with the fourteen manifest semantic checks addressed as ten evaluator-backed, two structurally enforced, and two containment-verified. No readiness, exception, scheduling, database, route, UI, sending, publishing, or deployment work occurred.
+
+Stopping here as instructed. The next phase has not begun.
