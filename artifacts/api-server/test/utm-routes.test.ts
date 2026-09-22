@@ -2,17 +2,16 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
 import express from "express";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
-  approvals, campaigns, db, taxonomyTerms, taxonomyVersions, utmLinks,
+  approvals, campaigns, db, governedChannels, taxonomyTerms, taxonomyVersions, utmLinks,
 } from "@workspace/db";
 import campaignsRouter from "../src/routes/campaigns";
 
 const marker = randomUUID().slice(0, 8);
 const termIds: string[] = [];
 let campaignId = "";
-let canonicalChannelId = "";
-let canonicalChannelMetadata: Record<string, unknown> = {};
+let canonicalApprovalId = "";
 let productStableKey = "";
 let campaignStableKey = "";
 let subcampaignStableKey = "";
@@ -27,8 +26,23 @@ const post = async (body: unknown) => {
 };
 
 before(async () => {
-  const [version] = await db.select().from(taxonomyVersions).where(eq(taxonomyVersions.version, "2026.1"));
+  const fixtureVersionId = process.env.TEST_TAXONOMY_VERSION_ID;
+  const fixtureClockText = process.env.TEST_CLOCK;
+  assert.match(fixtureVersionId ?? "", /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  assert.ok(fixtureClockText, "TEST_CLOCK must be provided by the test bootstrap");
+  const fixtureClock = new Date(fixtureClockText);
+  assert.ok(Number.isFinite(fixtureClock.valueOf()), "TEST_CLOCK must be a valid timestamp");
+
+  const [version] = await db.select().from(taxonomyVersions).where(eq(taxonomyVersions.id, fixtureVersionId!));
   assert.ok(version);
+  assert.ok(version.effectiveAt <= fixtureClock);
+  assert.ok(version.deprecatedAt === null || version.deprecatedAt > fixtureClock);
+  const [{ now: rawDatabaseClock }] = await db.select({ now: sql<string>`now()` })
+    .from(taxonomyVersions).where(eq(taxonomyVersions.id, version.id));
+  const databaseClock = new Date(rawDatabaseClock);
+  assert.ok(Number.isFinite(databaseClock.valueOf()), "database clock must be a valid timestamp");
+  assert.ok(version.effectiveAt <= databaseClock);
+  assert.ok(version.deprecatedAt === null || version.deprecatedAt > databaseClock);
   const [campaign] = await db.insert(campaigns).values({
     name: `UTM route ${marker}`, scope: "Global", audience: "Test", outcome: "Test",
   }).returning();
@@ -68,17 +82,36 @@ before(async () => {
   await create("audience_segment", "Segment");
   await create("source", "Override");
   await create("display_partner", "Partner");
-  const [canonicalChannel] = await db.select().from(taxonomyTerms).where(eq(taxonomyTerms.shortcode, "psg"));
+  const existingCanonicalChannels = await db.select().from(taxonomyTerms).where(and(
+    eq(taxonomyTerms.versionId, version.id),
+    eq(taxonomyTerms.category, "channel"),
+    eq(taxonomyTerms.shortcode, "psg"),
+  ));
+  assert.equal(existingCanonicalChannels.length, 0);
+  const [canonicalDefinition] = await db.select().from(governedChannels).where(eq(governedChannels.id, "psg"));
+  assert.ok(canonicalDefinition);
+  const [canonicalChannel] = await db.insert(taxonomyTerms).values({
+    id: randomUUID(),
+    versionId: version.id,
+    category: "channel",
+    label: canonicalDefinition.displayName,
+    shortcode: canonicalDefinition.id,
+    sourceMetadata: {
+      ...canonicalDefinition.sourceMetadata,
+      canonicalActivityModel: true,
+      channelType: canonicalDefinition.type,
+    },
+  }).returning();
+  termIds.push(canonicalChannel.id);
   assert.ok(canonicalChannel);
-  canonicalChannelId = canonicalChannel.id;
-  canonicalChannelMetadata = canonicalChannel.sourceMetadata;
   await db.update(taxonomyTerms).set({
     sourceMetadata: { ...canonicalChannel.sourceMetadata, utmSource: "Google Ads", utmMedium: "Paid Search" },
   }).where(eq(taxonomyTerms.id, canonicalChannel.id));
-  await db.insert(approvals).values({
+  const [canonicalApproval] = await db.insert(approvals).values({
     recordType: "taxonomyTerm", recordId: canonicalChannel.id, stage: "Governance",
     status: "approved", approver: "test:declared",
-  });
+  }).returning();
+  canonicalApprovalId = canonicalApproval.id;
   for (const [name, isDeprecated] of [["Unapproved", false], ["Inactive", true]] as const) {
     const [term] = await db.insert(taxonomyTerms).values({
       versionId: version.id, category: "channel", label: `${name} ${marker}`,
@@ -97,13 +130,12 @@ before(async () => {
 });
 
 after(async () => {
-  await db.delete(utmLinks).where(eq(utmLinks.campaignId, campaignId));
-  await db.delete(approvals).where(inArray(approvals.recordId, termIds));
-  await db.delete(approvals).where(eq(approvals.recordId, canonicalChannelId));
-  await db.update(taxonomyTerms).set({ sourceMetadata: canonicalChannelMetadata }).where(eq(taxonomyTerms.id, canonicalChannelId));
-  await db.delete(taxonomyTerms).where(inArray(taxonomyTerms.id, termIds.reverse()));
-  await db.delete(campaigns).where(eq(campaigns.id, campaignId));
-  await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  if (campaignId) await db.delete(utmLinks).where(eq(utmLinks.campaignId, campaignId));
+  if (termIds.length > 0) await db.delete(approvals).where(inArray(approvals.recordId, termIds));
+  if (canonicalApprovalId) await db.delete(approvals).where(eq(approvals.id, canonicalApprovalId));
+  if (termIds.length > 0) await db.delete(taxonomyTerms).where(inArray(taxonomyTerms.id, termIds.reverse()));
+  if (campaignId) await db.delete(campaigns).where(eq(campaigns.id, campaignId));
+  if (server) await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
 const governedRequest = () => ({

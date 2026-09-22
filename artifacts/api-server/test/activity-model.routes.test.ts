@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { after, before, test } from "node:test";
 import express from "express";
-import { and, eq, inArray } from "drizzle-orm";
-import { activities, activityConnections, campaigns, campaignStrategy, db, taxonomyTerms } from "@workspace/db";
+import { eq, inArray, sql } from "drizzle-orm";
+import { activities, activityConnections, campaigns, campaignStrategy, db, taxonomyTerms, taxonomyVersions } from "@workspace/db";
 import campaignsRouter from "../src/routes/campaigns";
 
 let campaignId = "";
@@ -17,6 +18,14 @@ async function request(path: string, method = "GET", body?: unknown) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   return { status: response.status, body: await response.json() as any };
+}
+
+async function runHistoricalRetirementMigration0015() {
+  const migration = await readFile(
+    new URL("../../../lib/db/migrations/0015_activity_model_hardening.sql", import.meta.url),
+    "utf8",
+  );
+  await db.execute(sql.raw(migration));
 }
 
 before(async () => {
@@ -45,10 +54,12 @@ after(async () => {
     await db.delete(campaignStrategy).where(eq(campaignStrategy.campaignId, id));
     await db.delete(campaigns).where(eq(campaigns.id, id));
   }
-  await db.delete(activities).where(eq(activities.campaignId, campaignId));
-  await db.delete(campaignStrategy).where(eq(campaignStrategy.campaignId, campaignId));
-  await db.delete(campaigns).where(eq(campaigns.id, campaignId));
-  await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  if (campaignId) {
+    await db.delete(activities).where(eq(activities.campaignId, campaignId));
+    await db.delete(campaignStrategy).where(eq(campaignStrategy.campaignId, campaignId));
+    await db.delete(campaigns).where(eq(campaigns.id, campaignId));
+  }
+  if (server) await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
 test("catalog exposes the authoritative exact counts", async () => {
@@ -202,18 +213,44 @@ test("campaign create and patch reject raw snake-case finality controls", async 
 });
 
 test("migration retires only exact lowercase-category generic channels without deleting history", async () => {
-  const lowercaseLegacy = await db.select().from(taxonomyTerms).where(and(
-    eq(taxonomyTerms.category, "channel"),
-    inArray(taxonomyTerms.shortcode, ["EMAIL", "WEBINAR"]),
-  ));
-  assert.equal(lowercaseLegacy.length, 2);
-  assert.ok(lowercaseLegacy.every((term) => term.isDeprecated && term.deprecatedAt));
-  const [uppercaseHistorical] = await db.select().from(taxonomyTerms).where(and(
-    eq(taxonomyTerms.category, "Channel"),
-    eq(taxonomyTerms.shortcode, "EML"),
-  ));
-  assert.ok(uppercaseHistorical);
-  assert.equal(uppercaseHistorical.isDeprecated, false);
+  const fixtureVersionId = process.env.TEST_TAXONOMY_VERSION_ID;
+  assert.match(fixtureVersionId ?? "", /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  const [fixtureVersion] = await db.select().from(taxonomyVersions)
+    .where(eq(taxonomyVersions.id, fixtureVersionId!));
+  assert.ok(fixtureVersion);
+
+  const fixtureIds = [randomUUID(), randomUUID(), randomUUID()];
+  try {
+    await db.insert(taxonomyTerms).values([
+      {
+        id: fixtureIds[0], versionId: fixtureVersion.id, category: "channel",
+        label: "Email", shortcode: "EMAIL",
+      },
+      {
+        id: fixtureIds[1], versionId: fixtureVersion.id, category: "channel",
+        label: "Webinar", shortcode: "WEBINAR",
+      },
+      {
+        id: fixtureIds[2], versionId: fixtureVersion.id, category: "Channel",
+        label: "Email", shortcode: "EML",
+      },
+    ]);
+
+    await runHistoricalRetirementMigration0015();
+
+    const lowercaseLegacy = await db.select().from(taxonomyTerms).where(inArray(
+      taxonomyTerms.id,
+      fixtureIds.slice(0, 2),
+    ));
+    assert.equal(lowercaseLegacy.length, 2);
+    assert.ok(lowercaseLegacy.every((term) => term.isDeprecated && term.deprecatedAt));
+    const [uppercaseHistorical] = await db.select().from(taxonomyTerms)
+      .where(eq(taxonomyTerms.id, fixtureIds[2]));
+    assert.ok(uppercaseHistorical);
+    assert.equal(uppercaseHistorical.isDeprecated, false);
+  } finally {
+    await db.delete(taxonomyTerms).where(inArray(taxonomyTerms.id, fixtureIds));
+  }
 });
 
 test("creates MCP without a name, stores raw/generated separately, and map save never double-prefixes", async () => {
