@@ -139,8 +139,18 @@ test("branch chaining preserves IDs and rejects cycles", async () => {
     method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(map),
   });
   assert.equal(saved.status, 200);
-  const savedMap = await saved.json() as { rowVersion: number; activities: typeof map.activities };
-  assert.equal((savedMap as any).connections[1].parentBranchId, first);
+  const savedMap = await saved.json() as {
+    rowVersion: number;
+    activities: typeof map.activities;
+    connections: { id: string; parentBranchId: string | null }[];
+  };
+  assert.deepEqual(savedMap.connections.map((connection) => connection.id).sort(), [first, second].sort());
+  const rootConnection = savedMap.connections.find((connection) => connection.id === first);
+  const childConnection = savedMap.connections.find((connection) => connection.id === second);
+  assert.ok(rootConnection);
+  assert.ok(childConnection);
+  assert.equal(rootConnection.parentBranchId, null);
+  assert.equal(childConnection.parentBranchId, rootConnection.id);
   const cycle = await fetch(`${baseUrl}/campaigns/${campaignId}/map`, {
     method: "PUT",
     headers: { "content-type": "application/json" },
