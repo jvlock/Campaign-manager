@@ -23,24 +23,30 @@ const failureByStatus = {
   unimplemented: false,
 } as const satisfies Record<EvaluationStatus, boolean>;
 
-test("failure classifier covers every canonical type, eligibility value and evaluation status", () => {
+test("classifier matrix covers every declared primary rule type", () => {
   assert.deepEqual(Object.keys(blockingByType).sort(), [...PRIMARY_RULE_TYPES].sort());
+});
 
-  for (const primaryRuleType of PRIMARY_RULE_TYPES) {
-    const authenticRule = select((rule) => rule.primaryRuleType === primaryRuleType);
-    for (const exceptionEligible of [false, true] as const) {
-      for (const status of Object.keys(failureByStatus) as EvaluationStatus[]) {
+for (const primaryRuleType of PRIMARY_RULE_TYPES) {
+  for (const exceptionEligible of [false, true] as const) {
+    for (const status of Object.keys(failureByStatus) as EvaluationStatus[]) {
+      const expectedBlocking = blockingByType[primaryRuleType] && failureByStatus[status];
+      test(`${primaryRuleType}; status=${status}; exceptionEligible=${exceptionEligible}; expectedBlocking=${expectedBlocking}`, () => {
+        const authenticRule = select((rule) => rule.primaryRuleType === primaryRuleType);
         const result = finding(authenticRule, status);
         const classified = {
           ...result,
           rule: { ...result.rule, primaryRuleType, exceptionEligible },
         };
-        assert.equal(
-          isBlockingFailure(classified),
-          blockingByType[primaryRuleType] && failureByStatus[status],
-          `${primaryRuleType}; exceptionEligible=${exceptionEligible}; status=${status}`,
-        );
-      }
+        assert.equal(isBlockingFailure(classified), expectedBlocking);
+      });
     }
   }
+}
+
+test("WEB-SETUP-C06; Warning; status=fail; exceptionEligible=false; expectedBlocking=false", () => {
+  const rule = select((entry) => entry.ruleId === "WEB-SETUP-C06");
+  assert.equal(rule.primaryRuleType, "Warning");
+  assert.equal(rule.exceptionEligible, false);
+  assert.equal(isBlockingFailure(finding(rule, "fail")), false);
 });
