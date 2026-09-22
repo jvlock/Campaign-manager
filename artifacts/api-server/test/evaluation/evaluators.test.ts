@@ -23,7 +23,76 @@ test("REC-005 suppresses every remaining planned recruitment, including overdue"
     expectStatus("WEB-REC-005", { ...context, participant: makeParticipant({ registrationStatus }), communications: [makeCommunication()] }, "not_applicable");
   }
   expectStatus("WEB-REC-005", { ...context, participant: null }, "fail");
-  expectStatus("WEB-REC-005", { ...context, communications: [makeCommunication({ recipientIds: ["other-person"] }), makeCommunication({ kind: "registrant" })] }, "pass");
+  expectStatus("WEB-REC-005", { ...context, communications: [
+    makeCommunication({ communicationId: "recruitment-other-participant", recipientIds: ["other-person"] }),
+    makeCommunication({ communicationId: "registrant-confirmation", kind: "registrant" }),
+  ] }, "pass");
+
+  const registered = makeParticipant();
+  const eligible = makeParticipant({ participantId: "eligible-participant", registrationStatus: "not_registered" });
+  // The caller's snapshot is after registration. Recorded recruitment is history,
+  // not a remaining send; the evaluator does not infer a registration timestamp.
+  const historical = makeCommunication({
+    communicationId: "recruitment-before-registration",
+    state: "recorded",
+    recipientIds: [registered.participantId, eligible.participantId],
+    createdAtEpochMs: referenceTime - 120_000,
+    scheduledAtEpochMs: referenceTime - 60_000,
+    recordedAtEpochMs: referenceTime - 60_000,
+  });
+  const future = makeCommunication({
+    communicationId: "recruitment-after-registration",
+    recipientIds: [registered.participantId, eligible.participantId],
+    scheduledAtEpochMs: referenceTime + 60_000,
+  });
+  const snapshot = { ...context, participant: registered, communications: [historical, future] };
+  const original = structuredClone(snapshot);
+  const result = registry.evaluate("WEB-REC-005", snapshot);
+  assert.equal(result.status, "fail");
+  assert.equal(result.reason, "violation");
+  assert.equal(result.participantId, registered.participantId);
+  assert.equal(result.evidence.length, 1);
+  assert.ok(result.evidence[0]!.includes(`${future.communicationId}:`));
+  assert.ok(result.evidence.every((entry) => !entry.includes(historical.communicationId)));
+  expectStatus("WEB-REC-005", { ...snapshot, communications: [historical] }, "pass");
+
+  const otherResult = registry.evaluate("WEB-REC-005", { ...snapshot, participant: eligible });
+  assert.equal(otherResult.status, "not_applicable");
+  assert.equal(otherResult.reason, "condition_not_met");
+  assert.equal(otherResult.participantId, eligible.participantId);
+
+  // Supply the required suppression as recipient evidence, rather than asking
+  // this pure evaluator to modify recipients or suppress an entire communication.
+  const suppressed = {
+    ...snapshot,
+    communications: [historical, { ...future, recipientIds: [eligible.participantId] }],
+  };
+  expectStatus("WEB-REC-005", suppressed, "pass");
+  expectStatus("WEB-REC-005", { ...suppressed, participant: eligible }, "not_applicable");
+  assert.deepEqual(suppressed.communications[0], historical);
+  assert.equal(suppressed.communications[0]!.state, "recorded");
+  assert.ok(suppressed.communications[0]!.recipientIds.includes(registered.participantId));
+  assert.equal(suppressed.communications[1]!.state, "planned");
+  assert.deepEqual(suppressed.communications[1]!.recipientIds, [eligible.participantId]);
+  const expectedIds = ["recruitment-before-registration", "recruitment-after-registration"];
+  assert.deepEqual(snapshot.communications.map((communication) => communication.communicationId), expectedIds);
+  assert.deepEqual(suppressed.communications.map((communication) => communication.communicationId), expectedIds);
+  assert.equal(new Set(expectedIds).size, 2);
+  assert.deepEqual(snapshot, original);
+});
+
+test("REC-005 rejects duplicate communication IDs before evaluating suppression", () => {
+  const context = makeContext();
+  // Neither communication requires suppression. Only their duplicate identity
+  // makes this context invalid, even though they describe different messages.
+  const recruitment = makeCommunication({ communicationId: "duplicate-communication", recipientIds: ["other-person"] });
+  const registrant = makeCommunication({ communicationId: "duplicate-communication", kind: "registrant" });
+  expectStatus("WEB-REC-005", { ...context, communications: [recruitment] }, "pass");
+  expectStatus("WEB-REC-005", { ...context, communications: [registrant] }, "pass");
+  const result = registry.evaluate("WEB-REC-005", { ...context, communications: [recruitment, registrant] });
+  assert.equal(result.status, "fail");
+  assert.equal(result.reason, "invalid_context");
+  assert.deepEqual(result.evidence, ["Duplicate communication ID: duplicate-communication."]);
 });
 
 for (const audienceClass of ["internal", "test"] as const) {
