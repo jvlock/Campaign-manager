@@ -104,6 +104,7 @@ export function aggregateWebinarReadiness(
       passes: uniqueValid.filter((result) => result.status === "pass"),
       notApplicable, failedBlockers,
       failedNonBlocking: findings.filter((result) => result.status === "fail" && !isBlockingFailure(result)),
+      warnings: findings.filter((result) => result.status === "fail" && result.rule.primaryRuleType === "Warning"),
       exceptionResolvedBlockers: resolved, unresolvedRuleIds: unresolved,
       diagnosticCoveragePercent: assigned.length === 0 ? 100 : 100 * evaluated.length / assigned.length,
       issues: [...stageIssues].sort((a, b) => compareText(issueKey(a), issueKey(b))),

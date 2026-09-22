@@ -1,12 +1,29 @@
-import type { RuleId, WebinarStandardCatalog } from "../webinar-standard-catalog/types";
+import type { PrimaryRuleType, RuleId, WebinarStandardCatalog } from "../webinar-standard-catalog/types";
 import type { RuleEvaluationResult } from "../webinar-standard-evaluation/types";
 import { validateWebinarException } from "../webinar-standard-exceptions/validate";
 import type { ExceptionResolvedBlocker, ReadinessIssue } from "./types";
 import { compareText, isRecord } from "./safe-data";
 
+function assertNever(value: never): never {
+  throw new Error("Unknown primary rule type.");
+}
+
+/** Severity alone determines blocking; applicability is represented by result status. */
+function isBlockingType(type: PrimaryRuleType): boolean {
+  switch (type) {
+    case "Mandatory blocker":
+    case "Conditional blocker":
+      return true;
+    case "Warning":
+    case "Recommended default":
+    case "Optional":
+      return false;
+  }
+  return assertNever(type);
+}
+
 export function isBlockingFailure(result: RuleEvaluationResult): boolean {
-  return result.status === "fail" && (result.rule.primaryRuleType === "Mandatory blocker"
-    || result.rule.primaryRuleType === "Conditional blocker" || !result.rule.exceptionEligible);
+  return isBlockingType(result.rule.primaryRuleType) && result.status === "fail";
 }
 
 /** Internal helper; receives the owned data-only snapshot from the public boundary. */
@@ -28,7 +45,13 @@ export function resolveClaims(
       || typeof item.ruleId !== "string" || typeof item.exceptionId !== "string" || !item.exceptionId.trim()) {
       issue("invalid_exception_claim", isRecord(item) && typeof item.ruleId === "string" ? item.ruleId : null,
         "Each claim requires exactly one rule ID and one nonempty exception ID.");
-    } else claims.push({ ruleId: item.ruleId, exceptionId: item.exceptionId });
+    } else {
+      // Nonblocking rules need no exception. Their claims cannot affect readiness
+      // or consume an exception link belonging to a genuine blocker.
+      const rule = rules.get(item.ruleId);
+      if (rule && !isBlockingType(rule.primaryRuleType)) continue;
+      claims.push({ ruleId: item.ruleId, exceptionId: item.exceptionId });
+    }
   }
   const exceptions = new Map<string, unknown[]>();
   if (!Array.isArray(rawExceptions)) issue("invalid_exceptions", null, "Exception records must be an array.");

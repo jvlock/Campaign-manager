@@ -13,6 +13,7 @@ import {
 
 const aggregate = (value: unknown = input()) => aggregateWebinarReadiness(catalog, registry, value);
 const mandatory = select((r) => r.primaryRuleType === "Mandatory blocker" && r.readinessStage === "Ready to recruit");
+const eligibleMandatory = select((r) => r.primaryRuleType === "Mandatory blocker" && r.exceptionEligible);
 const conditional = select((r) => r.primaryRuleType === "Conditional blocker");
 const eligible = select((r) => r.exceptionEligible && /blocker/.test(r.primaryRuleType));
 const nonblocking = select((r) => r.exceptionEligible && r.primaryRuleType === "Recommended default");
@@ -66,8 +67,10 @@ test("empty results are missing and conservatively applicable", () => {
   }
 });
 
-test("mandatory and triggered conditional failures block", () => {
-  for (const rule of [mandatory, conditional]) {
+test("mandatory failures block regardless of exception eligibility, as do triggered conditional failures", () => {
+  assert.equal(mandatory.exceptionEligible, false);
+  assert.equal(eligibleMandatory.exceptionEligible, true);
+  for (const rule of [mandatory, eligibleMandatory, conditional]) {
     const result = stage(aggregate(withFinding(rule)), rule.readinessStage);
     assert.equal(result.status, "blocked");
     assert.ok(result.failedBlockers.some((r) => r.ruleId === rule.ruleId && r.status === "fail"));
@@ -88,16 +91,67 @@ test("exception-eligible recommended failures are nonblocking", () => {
   const result = stage(aggregate(withFinding(nonblocking)), nonblocking.readinessStage);
   assert.equal(result.status, "ready");
   assert.ok(result.failedNonBlocking.some((r) => r.ruleId === nonblocking.ruleId));
+  assert.equal(result.warnings.length, 0);
   assert.ok(!result.passes.some((r) => r.ruleId === nonblocking.ruleId));
 });
 
-test("non-exception-eligible warning, optional and recommended failures always block", () => {
+test("non-exception-eligible warning, optional and recommended failures are nonblocking", () => {
   for (const type of ["Warning", "Optional", "Recommended default"]) {
     const rule = select((r) => r.primaryRuleType === type && !r.exceptionEligible);
     const result = stage(aggregate(withFinding(rule)), rule.readinessStage);
-    assert.equal(result.status, "blocked", type);
-    assert.ok(result.failedBlockers.some((r) => r.ruleId === rule.ruleId));
+    assert.equal(result.status, "ready", type);
+    assert.ok(result.failedNonBlocking.some((r) => r.ruleId === rule.ruleId));
+    assert.ok(!result.failedBlockers.some((r) => r.ruleId === rule.ruleId));
+    assert.equal(result.warnings.some((r) => r.ruleId === rule.ruleId), type === "Warning");
   }
+});
+
+test("blockers and warnings are separately reported without warnings changing blocked status", () => {
+  const warning = select((r) => r.primaryRuleType === "Warning");
+  const blocker = select((r) => /blocker/.test(r.primaryRuleType) && r.readinessStage === warning.readinessStage);
+  const report = aggregate(input({
+    results: catalog.rules.map((r) => finding(r, [blocker.ruleId, warning.ruleId].includes(r.ruleId) ? "fail" : "pass")),
+  }));
+  const result = stage(report, warning.readinessStage);
+  assert.equal(result.status, "blocked");
+  assert.deepEqual(result.failedBlockers.map((r) => r.ruleId), [blocker.ruleId]);
+  assert.deepEqual(result.failedNonBlocking.map((r) => r.ruleId), [warning.ruleId]);
+  assert.deepEqual(result.warnings.map((r) => r.ruleId), [warning.ruleId]);
+});
+
+test("all canonical nonblocking failures are ready with full coverage, but missing coverage is incomplete", () => {
+  const nonblockingIds = new Set(catalog.rules
+    .filter((r) => ["Warning", "Optional", "Recommended default"].includes(r.primaryRuleType))
+    .map((r) => r.ruleId));
+  const results = catalog.rules.map((r) => finding(r, nonblockingIds.has(r.ruleId) ? "fail" : "pass"));
+  const complete = aggregate(input({ results }));
+  for (const result of complete.stages) {
+    assert.equal(result.status, "ready");
+    assert.equal(result.fullyEvaluated, true);
+    assert.ok(result.failedNonBlocking.every((finding) => nonblockingIds.has(finding.ruleId)));
+    assert.ok(result.warnings.every((warning) =>
+      result.failedNonBlocking.some((finding) => finding.ruleId === warning.ruleId)));
+  }
+
+  const omitted = select((r) => nonblockingIds.has(r.ruleId));
+  const incomplete = stage(aggregate(input({
+    results: results.filter((r) => r.ruleId !== omitted.ruleId),
+  })), omitted.readinessStage);
+  assert.equal(incomplete.status, "incomplete");
+  assert.ok(incomplete.missingRuleIds.includes(omitted.ruleId));
+});
+
+test("a blocker remains blocked when a separate result is missing", () => {
+  const missing = select((r) => r.readinessStage === mandatory.readinessStage && r.ruleId !== mandatory.ruleId);
+  const report = aggregate(input({
+    results: catalog.rules
+      .filter((r) => r.ruleId !== missing.ruleId)
+      .map((r) => finding(r, r.ruleId === mandatory.ruleId ? "fail" : "pass")),
+  }));
+  const result = stage(report, mandatory.readinessStage);
+  assert.equal(result.status, "blocked");
+  assert.ok(result.failedBlockers.some((r) => r.ruleId === mandatory.ruleId));
+  assert.ok(result.missingRuleIds.includes(missing.ruleId));
 });
 
 test("an explicit valid exception resolves a blocker but never converts its failure to a pass", () => {
@@ -193,9 +247,9 @@ test("one exception cannot be claimed for two failing rules", () => {
   }
 });
 
-test("invalid claimed exception for pass, nonblocking failure or missing finding makes origin incomplete", () => {
-  for (const kind of ["pass", "nonblocking", "missing"]) {
-    const rule = kind === "nonblocking" ? nonblocking : eligible;
+test("invalid claimed exception for a pass or missing finding makes origin incomplete", () => {
+  for (const kind of ["pass", "missing"]) {
+    const rule = eligible;
     const base = claimed(rule, { ...exception(rule), reviewer: "" });
     const results = kind === "pass" ? input().results : kind === "missing"
       ? catalog.rules.filter((r) => r.ruleId !== rule.ruleId).map((r) => finding(r)) : base.results;
@@ -204,6 +258,64 @@ test("invalid claimed exception for pass, nonblocking failure or missing finding
     assert.equal(result.status, "incomplete", kind);
     assert.ok(report.issues.length + result.issues.length > 0);
   }
+});
+
+test("claims targeting canonical nonblocking rules leave the report unchanged even with invalid documentary fields", () => {
+  for (const type of ["Warning", "Optional", "Recommended default"] as const) {
+    const rule = select((r) => r.primaryRuleType === type);
+    const baseline = aggregate(withFinding(rule));
+    const record = {
+      ...exception(rule),
+      businessJustification: "",
+      reviewer: "",
+      reviewerVerificationStatus: "not_recorded",
+      pilotAudit: { pilotReference: "", auditReference: "" },
+    };
+    assert.deepEqual(aggregate({
+      ...withFinding(rule),
+      exceptions: [record],
+      exceptionClaims: [{ ruleId: rule.ruleId, exceptionId: record.exceptionId }],
+    }), baseline, type);
+  }
+});
+
+test("WEB-SETUP-C06 remains a visible nonblocking warning", () => {
+  const rule = select((r) => r.ruleId === "WEB-SETUP-C06");
+  const result = stage(aggregate(withFinding(rule)), rule.readinessStage);
+  assert.equal(result.status, "ready");
+  assert.ok(result.failedNonBlocking.some((r) => r.ruleId === rule.ruleId));
+  assert.ok(result.warnings.some((r) => r.ruleId === rule.ruleId));
+  assert.ok(!result.failedBlockers.some((r) => r.ruleId === rule.ruleId));
+});
+
+test("WEB-EXC-001 cannot exempt its own failure", () => {
+  const rule = select((r) => r.ruleId === "WEB-EXC-001");
+  const report = aggregate(claimed(rule));
+  const result = stage(report, rule.readinessStage);
+  assert.equal(result.status, "blocked");
+  assert.equal(result.exceptionResolvedBlockers.length, 0);
+  assert.ok(result.failedBlockers.some((r) => r.ruleId === rule.ruleId));
+  assert.ok(report.issues.concat(result.issues).some((issue) => /self|itself/i.test(issue.message)));
+});
+
+test("a valid exception resolves only its own blocker and the other failure remains blocked", () => {
+  const other = select((r) =>
+    r.ruleId !== eligible.ruleId
+    && r.readinessStage === eligible.readinessStage
+    && /blocker/.test(r.primaryRuleType));
+  const base = claimed(eligible);
+  const report = aggregate({
+    ...base,
+    results: catalog.rules.map((r) =>
+      finding(r, [eligible.ruleId, other.ruleId].includes(r.ruleId) ? "fail" : "pass")),
+  });
+  const result = stage(report, eligible.readinessStage);
+  assert.equal(result.status, "blocked");
+  assert.deepEqual(result.exceptionResolvedBlockers.map((r) => r.ruleId), [eligible.ruleId]);
+  assert.ok(result.failedBlockers.some((r) => r.ruleId === eligible.ruleId));
+  assert.ok(result.failedBlockers.some((r) => r.ruleId === other.ruleId));
+  assert.ok(!result.unresolvedRuleIds.includes(eligible.ruleId));
+  assert.ok(result.unresolvedRuleIds.includes(other.ruleId));
 });
 
 test("missing claimed record leaves a failing blocker blocked with an explicit issue", () => {

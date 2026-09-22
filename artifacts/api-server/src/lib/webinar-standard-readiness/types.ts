@@ -57,6 +57,8 @@ export interface StageReadinessResult {
   readonly notApplicable: readonly RuleEvaluationResult[];
   readonly failedBlockers: readonly RuleEvaluationResult[];
   readonly failedNonBlocking: readonly RuleEvaluationResult[];
+  /** Warning failures remain visible as a subset of failedNonBlocking. */
+  readonly warnings: readonly RuleEvaluationResult[];
   readonly exceptionResolvedBlockers: readonly ExceptionResolvedBlocker[];
   readonly unresolvedRuleIds: readonly RuleId[];
   readonly diagnosticCoveragePercent: number;
