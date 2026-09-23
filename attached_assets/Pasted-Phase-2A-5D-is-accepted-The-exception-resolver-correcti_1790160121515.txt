@@ -1,0 +1,590 @@
+Phase 2A-5D is accepted. The exception-resolver correction is appropriate: invalid context is a malformed evaluation condition, not an eligible business-rule failure.
+
+One hygiene item carries forward: the intervening commit added the prior instruction upload, and the report does not say it was deleted. The next phase should audit and remove it if it contains only duplicated instructions.
+
+Next is the largest remaining batch: 26 Deliverables/QA evaluators, taking coverage from 68/106 to 94/106 and leaving 12.
+
+Give Replit this prompt:
+
+⸻
+
+Phase 2A-5E — Deliverables and QA Evaluator Coverage
+
+Implement the Deliverables/QA evaluator batch defined in the approved Phase 2A-5 evaluator coverage plan.
+
+This increment must add exactly the 26 missing evaluators assigned to the Deliverables/QA batch. It must reuse the verified catalog, evidence, evaluation, exception, readiness, scheduling, audience-state, and planning-time modules.
+
+Do not implement the two Governed Services evaluators or the ten Completion evaluators.
+
+1. Starting state
+
+Expected branch:
+
+feature/webinar-standard-engine
+
+Expected functional HEAD:
+
+4a51a55d1a9a8d4ec68df37d45f51345ea3acfe1
+
+Before changing anything, confirm:
+
+* branch, HEAD, direct parent, and tracked working-tree state;
+* the only permissible untracked file is the current instruction paste;
+* rule-ID generation reports 106 IDs and zero drift;
+* evaluator coverage is exactly 68/106, with 38 missing;
+* the 15 Registrant/Audience evaluators are registered;
+* all previous 53 evaluators remain registered;
+* non-incremental type checking passes;
+* the complete current baseline passes;
+* @js-temporal/polyfill remains pinned exactly to 0.5.1;
+* all five canonical webinar-document hashes match.
+
+The reported Phase 2A-5D baseline is:
+
+* 40 test files;
+* 1,540 top-level records;
+* seven nested subtests;
+* 1,546 individual leaf tests;
+* TAP total 1,547 when the runner includes its grouping record;
+* zero failures, skips, cancellations, TODOs, setup failures, teardown failures, or type errors;
+* all 21 migrations applied against a new disposable database with complete shutdown and cleanup.
+
+Report actual runner units separately. Do not force these counts; investigate and explain any legitimate difference.
+
+Do not stage or commit the current instruction paste or any unrelated file under attached_assets/. Use explicit allowlist staging.
+
+Do not treat .agents/memory/ as an authoritative requirements source, and do not add product-policy memory files.
+
+2. Moving-baseline and uploaded-instruction policy
+
+If HEAD has moved, inspect every intervening commit before proceeding.
+
+You may accept a moved HEAD only when every intervening change contains exclusively:
+
+* duplicate status or instruction material under attached_assets/; or
+* non-authoritative process notes under .agents/memory/.
+
+Stop if any intervening commit changes:
+
+* application or test code;
+* dependencies or configuration;
+* canonical standards;
+* the evaluator coverage plan;
+* product requirements or decisions;
+* database schema or migrations;
+* substantive verification evidence.
+
+Prior tracked instruction upload
+
+The direct parent of Phase 2A-5D, e6d34cbd65fbe17f194281e746397a0964526ef3, reportedly added only the Phase 2A-5D instruction upload.
+
+Before implementation:
+
+1. Enumerate every file added by that commit.
+2. Read each file completely.
+3. Confirm whether it contains only duplicated instructions already represented by authoritative repository artifacts and the Phase 2A-5D verification report.
+4. Search for references to its exact path and filename.
+5. Confirm it is not used by code, tests, configuration, generation, or runtime behavior.
+6. Record its size and SHA-256.
+
+If those conditions are satisfied, delete that tracked upload and record its original commit, deletion, and Git recoverability in the relevant verification inventory.
+
+If it contains unique source data, an unrecorded business decision, unique evidence, or any other substantive material, stop and report it rather than deleting it.
+
+Do not rewrite history.
+
+Do not stage or commit the current Phase 2A-5E instruction paste.
+
+3. Authoritative sources
+
+Use only:
+
+* docs/standards/webinar/WEB-STANDARD-001.rules.json
+* docs/standards/webinar/WEB-STANDARD-001.md
+* docs/standards/webinar/WEBINAR-PILOT-IMPLEMENTATION-AUTHORIZATION.md
+* docs/standards/webinar/CHANGELOG-RC1.md
+* docs/standards/webinar/manifest.json
+* docs/verification/phase-2a-5-evaluator-coverage-plan.md
+* existing verified catalog, evidence, evaluation, exception, readiness, scheduling, audience, and planning-time modules.
+
+The canonical catalog controls rule meaning. The coverage plan controls batch membership.
+
+Do not:
+
+* modify the canonical standard;
+* invent, rename, merge, or split rules;
+* change batch assignments;
+* implement later-batch rules;
+* treat uploaded prompts or memory files as authoritative requirements.
+
+4. Reconcile the exact batch before coding
+
+Mechanically derive the Deliverables/QA batch from the committed coverage plan and reconcile it against:
+
+* all 106 canonical rule IDs;
+* the 68 implemented evaluator IDs;
+* the 38 missing evaluator IDs;
+* generated rule identifiers;
+* the evaluator registry.
+
+Prove before implementation that:
+
+* exactly 26 unique missing rules belong to Deliverables/QA;
+* none is already implemented;
+* none belongs to Governed Services or Completion;
+* no ID is unknown;
+* adding them results in exactly 94 implemented evaluators and 12 missing evaluators.
+
+List the exact 26 IDs in the completion report.
+
+If the coverage plan does not produce exactly 26 unambiguous IDs, stop and report the discrepancy. Do not select rules through inference.
+
+5. Implementation contract
+
+Implement one explicit evaluator for each of the 26 rules.
+
+Each evaluator must:
+
+* be registered explicitly by canonical rule ID;
+* use the canonical catalog record for rule metadata;
+* accept immutable, typed context;
+* reuse existing domain and evidence types where appropriate;
+* return the established evaluation-result union;
+* preserve pass, fail, not applicable, evidence unavailable, invalid context, evaluator unavailable, and exception-resolution distinctions;
+* retain the original failed finding when a valid exception resolves an eligible blocker;
+* never convert missing evidence into a pass;
+* never treat configuration, a plan, or a declared intention as proof of completed QA or actual execution.
+
+Do not add:
+
+* a generic evaluator;
+* a rule-name or prefix interpreter;
+* a default-pass path;
+* hard-coded coverage totals;
+* duplicate scheduling or audience policy.
+
+6. Deliverable model
+
+Add or extend immutable context only as required by the 26 canonical rules.
+
+Where applicable, distinguish:
+
+* communication identity;
+* communication type and channel;
+* customer-facing variant;
+* deliverable identity;
+* asset identity;
+* landing-page or destination identity;
+* content version;
+* standard identifier and exact version;
+* webinar and occurrence scope;
+* lifecycle status;
+* owner;
+* due date;
+* approval status;
+* QA status;
+* test result;
+* operational observation;
+* evidence snapshot.
+
+Do not assume every rule requires every field. Derive applicability from the canonical trigger and validation method.
+
+Reject structural inconsistencies such as:
+
+* duplicate communication or deliverable IDs;
+* duplicate evidence IDs;
+* missing required relationships;
+* wrong webinar or occurrence scope;
+* conflicting versions;
+* a deliverable linked to an unknown communication;
+* a variant linked to the wrong audience state;
+* evidence created before the reviewed version existed;
+* evidence that claims to validate a different content version.
+
+Do not introduce database entities or persistence.
+
+7. Configuration, production, and evidence distinctions
+
+Maintain three distinct concepts:
+
+1. Configured or planned
+    A deliverable or QA activity is expected or represented in the plan.
+2. Produced or prepared
+    A concrete version of the deliverable exists.
+3. Verified or operationally observed
+    Valid evidence demonstrates that a defined check, approval, rendering, link test, accessibility review, registration test, venue test, or other required action occurred against that exact version and scope.
+
+A configured or produced deliverable does not automatically prove QA completion.
+
+A passing test against an earlier content version does not prove the current version is valid.
+
+A planned communication does not prove it was sent, rendered correctly, published, or delivered.
+
+8. Manual evidence requirements
+
+Reuse the Phase 2A-5B evidence framework.
+
+Manual evidence must contain, as applicable:
+
+* immutable evidence ID;
+* exact rule ID;
+* standard identifier and exact version;
+* webinar and occurrence scope;
+* communication, deliverable, asset, destination, or content-version scope;
+* review or observation type;
+* result;
+* description;
+* supplied-by record;
+* identityVerified: false;
+* observed or reviewed timestamp;
+* recorded timestamp;
+* validity or expiration;
+* source references;
+* notes.
+
+Manual evidence remains separate from exceptions.
+
+Reject evidence that is:
+
+* expired;
+* duplicated;
+* malformed;
+* scoped to the wrong rule;
+* scoped to the wrong standard or version;
+* scoped to the wrong webinar or occurrence;
+* scoped to the wrong deliverable or content version;
+* chronologically impossible;
+* contradicted by a later authoritative observation.
+
+If required evidence is absent, return evidence_unavailable, not pass.
+
+9. QA semantics
+
+Implement the exact QA behavior stated by each canonical rule.
+
+Where applicable, evaluate:
+
+* required deliverables exist;
+* required variants remain distinct;
+* required fields are populated;
+* registration behavior has been tested;
+* join links or venue details have been tested;
+* links and destinations correspond to the intended deliverable;
+* required consent controls exist;
+* test records are labelled and excluded appropriately;
+* rendered content or omission behavior matches the approved plan;
+* owners and due dates are present;
+* prerequisite findings are available;
+* required approval or review evidence applies to the exact current version.
+
+Do not broaden a rule beyond its canonical trigger.
+
+Existing evaluators remain authoritative for rules already implemented, including:
+
+* WEB-QA-003;
+* WEB-QA-004;
+* WEB-QA-005;
+* WEB-QA-006;
+* WEB-QA-008;
+* WEB-SETUP-C07;
+* WEB-WIN-007;
+* other previously implemented readiness or prerequisite rules.
+
+Do not duplicate or replace them. Consume their findings as prerequisites when a new rule requires them.
+
+10. Non-overridable controls
+
+Preserve the existing non-overridable treatment of:
+
+* registration testing;
+* join-link or venue testing;
+* required consent controls;
+* governed naming;
+* governed taxonomy;
+* governed UTM generation;
+* internal/test exclusion.
+
+An exception cannot replace missing evidence for these requirements.
+
+Do not implement the two Governed Services batch evaluators in this phase. Their absence must remain visible as missing coverage.
+
+If a Deliverables/QA rule depends on a Governed Services evaluator that is not yet implemented, represent the prerequisite as unavailable. Do not silently pass around it.
+
+11. Variants and shared assets
+
+Preserve:
+
+* attended, absent, and neutral communication variants as distinct;
+* recruitment touch identities as distinct;
+* confirmation, reminder, change, cancellation, waitlist, and follow-up obligations as distinct where the catalog requires them;
+* shared assets or destinations are permitted when the canonical rules allow them;
+* sharing an asset does not collapse communication variants or audience logic.
+
+Test both:
+
+* permitted shared-asset use; and
+* invalid variant collapse.
+
+12. Rule type and readiness behavior
+
+Use the corrected exhaustive rule-type classifier:
+
+* Mandatory blocker: blocking on failure;
+* Conditional blocker: blocking when applicable and failed;
+* Warning: visible, nonblocking;
+* Recommended default: visible, nonblocking;
+* Optional: visible, nonblocking.
+
+exceptionEligible controls exception resolution only. It does not determine whether a failed rule blocks.
+
+For evidence-unavailable results:
+
+* blocker evidence unavailable keeps the relevant stage incomplete;
+* advisory evidence unavailable remains visible but nonblocking;
+* unavailable evidence is not a failure;
+* unavailable evidence cannot be resolved by exception.
+
+Do not alter readiness dependency behavior.
+
+13. Scope containment
+
+This phase remains pure domain evaluation.
+
+Do not add:
+
+* database calls or schema changes;
+* migrations;
+* routes or controllers;
+* API contracts;
+* UI components;
+* provider credentials;
+* external-send methods;
+* environment-derived destinations;
+* implicit system-clock access;
+* publishing;
+* deployment;
+* live integration with email, webinar, calendar, page, asset, or measurement providers.
+
+Inputs must be supplied explicitly.
+
+Add structural tests proving these capabilities are absent.
+
+14. Registry and coverage
+
+After implementation:
+
+* registry coverage must equal exactly 94/106;
+* exactly 12 canonical rules must remain without evaluators;
+* all 26 new IDs must belong to Deliverables/QA;
+* all existing 68 evaluators must remain registered;
+* no duplicate, unknown, or extra ID may exist;
+* no generic fallback may exist;
+* readiness coverage must continue to derive from the actual registry.
+
+Add mechanical tests enforcing these conditions.
+
+15. Required tests
+
+Each material rule, state, and boundary must be an independently named test or subtest.
+
+Batch reconciliation
+
+Test:
+
+* exact 26 Deliverables/QA IDs;
+* no overlap with the existing 68;
+* no ID outside this batch;
+* resulting 94/106 coverage;
+* exactly 12 missing;
+* zero duplicates or unknown IDs.
+
+Per-rule evaluator behavior
+
+For each new evaluator, test as applicable:
+
+* pass;
+* genuine failure;
+* not applicable;
+* evidence unavailable;
+* invalid context;
+* wrong standard;
+* wrong version;
+* wrong webinar or occurrence;
+* wrong deliverable or content version;
+* malformed prerequisite;
+* eligible exception resolution;
+* ineligible exception rejection.
+
+Deliverable integrity
+
+Test:
+
+* required deliverable present;
+* required deliverable absent;
+* duplicate identity;
+* missing relationship;
+* incorrect communication relationship;
+* incorrect audience variant;
+* current content version;
+* stale evidence from a prior version;
+* permitted shared asset;
+* invalid variant collapse;
+* owner and deadline behavior when canonically required.
+
+QA evidence
+
+Test:
+
+* valid evidence for the exact reviewed version;
+* missing evidence;
+* expired evidence;
+* wrong-rule evidence;
+* wrong-standard evidence;
+* wrong-occurrence evidence;
+* wrong-deliverable evidence;
+* evidence predating the reviewed version;
+* contradictory later evidence;
+* identityVerified: false;
+* manual evidence remains distinct from exceptions.
+
+Blocker and advisory behavior
+
+Test:
+
+* failed Mandatory blocker blocks;
+* applicable failed Conditional blocker blocks;
+* inapplicable Conditional blocker does not block;
+* Warning failure remains visible and nonblocking;
+* Recommended-default failure remains visible and nonblocking;
+* Optional failure remains visible and nonblocking;
+* unavailable blocker evidence makes readiness incomplete;
+* unavailable advisory evidence remains visible and nonblocking;
+* exception eligibility does not alter rule-type classification.
+
+Prerequisites
+
+Test:
+
+* valid existing prerequisite finding;
+* failed prerequisite;
+* unavailable prerequisite;
+* invalid-context prerequisite;
+* missing Governed Services evaluator remains missing;
+* a missing prerequisite cannot silently pass;
+* an exception cannot replace unavailable prerequisite evidence.
+
+Containment
+
+Test the absence of:
+
+* sending;
+* provider SDKs or credentials;
+* database access;
+* routes;
+* UI;
+* publishing;
+* deployment;
+* environment access;
+* filesystem access;
+* implicit clocks;
+* generic evaluator fallback.
+
+16. Verification gate
+
+Run fresh:
+
+1. Deliverables/QA evaluator tests.
+2. Deliverables/QA registry and coverage tests.
+3. Deliverable-integrity tests.
+4. QA-evidence tests.
+5. Evidence-framework tests.
+6. Registrant/Audience evaluator tests.
+7. Scheduling evaluator tests.
+8. Audience-state planner tests.
+9. Scheduling planner tests.
+10. Business-day and planning-time tests.
+11. Planning and evaluator containment tests.
+12. Classifier tests.
+13. Readiness tests.
+14. Exception tests.
+15. Existing evaluator tests.
+16. Existing registry tests.
+17. Existing structural tests.
+18. Catalog-integrity tests.
+19. Rule-ID drift check.
+20. Non-incremental type check.
+21. Complete API suite against a newly created disposable database.
+22. Frontend regression suite.
+23. Preview smoke check.
+24. All five canonical-document hash checks.
+25. Exact dependency-pin verification for @js-temporal/polyfill version 0.5.1.
+
+Report separately:
+
+* test files;
+* top-level tests;
+* nested subtests;
+* individual leaf tests;
+* TAP grouping records;
+* failures;
+* skipped, cancelled, and TODO tests;
+* setup and teardown failures;
+* type errors;
+* all 21 migration results;
+* PostgreSQL shutdown;
+* socket removal;
+* temporary-directory removal;
+* independent confirmation that the disposable database root no longer exists.
+
+Do not force an expected aggregate test count. Calculate it from actual results.
+
+17. Commit policy
+
+A platform-created commit is provisional until every verification gate passes.
+
+Do not rewrite history.
+
+If a correction is required after a provisional commit, create a new follow-up commit. Do not amend or squash.
+
+Use explicit allowlist staging. Do not commit uploaded prompts or unrelated workspace files.
+
+Suggested commit title:
+
+Add webinar deliverable and QA evaluators
+
+18. Completion report
+
+Create:
+
+docs/verification/phase-2a-5e.md
+
+Report:
+
+* accepted starting commit;
+* every intervening commit and its exact contents;
+* ending commit and direct parent;
+* every changed file;
+* disposition of the instruction upload added by e6d34cbd...;
+* exact 26 Deliverables/QA evaluator IDs;
+* canonical rule type, readiness stage, exception eligibility, validation method, evidence dependency, and applicability for each;
+* context types and shared predicates added;
+* planning, production, verification, and operational-evidence distinctions;
+* manual-evidence behavior;
+* version-specific QA behavior;
+* prerequisite behavior;
+* permitted shared assets and preserved variant distinctions;
+* registry reconciliation;
+* final evaluator coverage of exactly 94/106;
+* exact list of the 12 missing evaluator IDs and their assigned remaining batches;
+* test counts and every verification result;
+* migration and cleanup results;
+* canonical hashes;
+* Temporal dependency-pin result;
+* confirmation that all prior 68 evaluators remain registered;
+* confirmation that no Governed Services or Completion evaluator was added;
+* confirmation that no canonical standard, database schema, migration, route, API contract, UI, sending, publishing, or deployment behavior changed;
+* any ambiguity, provisional commit, unexpected platform change, or unresolved dependency.
+
+Stop after reporting. Do not begin Governed Services, Completion, persistence, API, or UI work.
+
+⸻
