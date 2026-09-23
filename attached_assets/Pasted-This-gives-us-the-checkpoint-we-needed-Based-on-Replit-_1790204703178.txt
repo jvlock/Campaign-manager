@@ -1,0 +1,268 @@
+This gives us the checkpoint we needed. Based on Replit’s report, Phase 2B-0A is complete and database implementation for Phase 2B-1 has not begun. We can therefore reconcile the group structure before implementation, without undoing completed work.
+
+The important distinction is:
+
+* Roles determine what someone can do—Planner, Reviewer, Executor, etc.
+* Group membership determines where they can do it.
+
+The hierarchy must extend the approved authorization model, not replace it. A parent-team manager must not automatically become an exception approver or bypass readiness controls.
+
+Replace my earlier supplemental build prompt with the following assessment-only prompt. It preserves the accepted baseline and requires Replit to reconcile the new requirements with the existing Phase 2B-1 plan before changing the database.
+
+⸻
+
+Phase 2B-0B — Marketing Group Hierarchy and Integration Plan Reconciliation
+
+Objective and scope
+
+Assess and document how marketing team hierarchy, group workspaces, and consolidated calendars fit into the accepted webinar integration plan.
+
+This is a documentation and repository-verification increment only. Do not begin Phase 2B-1.
+
+Do not modify application code, tests, schema, migrations, routes, APIs, UI, dependencies, integrations, sending, publishing, or deployment.
+
+This Campaign Manager project is not part of the Stellaris portfolio.
+
+1. Confirm the accepted baseline
+
+Expected branch:
+
+feature/webinar-standard-engine
+
+Reported Phase 2B-0A acceptance commit:
+
+0d5c990ecbc4e1bf655b4071a13f6eb992dcf33f
+
+Read:
+
+* docs/verification/phase-2b-0-integration-assessment.md
+* docs/verification/phase-2b-0a-acceptance-and-owner-decisions.md
+* Applicable architecture, requirements, authorization, database, and migration documentation.
+* Any existing Phase 2B-1 instructions or implementation plan.
+
+Confirm current branch, HEAD, direct parent, tracked changes, and untracked files.
+
+If HEAD differs from the reported acceptance commit, inventory and classify every subsequent commit. Do not assume the reported state is still current.
+
+If implementation has already begun, or subsequent changes affect the accepted requirements, decisions, or verification baseline, stop and report the discrepancy before creating a competing plan. Do not revert or rewrite history.
+
+Do not stage instruction uploads or unrelated files.
+
+2. Preserve accepted decisions and controls
+
+The Phase 2B-0A owner decisions remain binding:
+
+* Distinct approved neutral follow-up for unknown attendance.
+* Governance Foundation authority and provenance requirements.
+* Minimum authorization roles and separation of duties.
+* Differentiated retention.
+* Active legacy sessions unchanged through completion.
+
+Also preserve:
+
+* Request-local completion diagnostics.
+* Exact release fingerprints.
+* Complete, deterministic whole-population results.
+* Isolation of concurrent requests.
+* All canonical webinar standards and evaluator IDs.
+
+This increment must not reopen or silently supersede these decisions.
+
+3. New business requirements
+
+Assess support for:
+
+1. A parent marketing team containing multiple smaller marketing groups.
+2. Each group having one or more members and a separate workspace.
+3. People belonging to multiple groups.
+4. Group-specific campaigns, activities, tasks, drafts, and calendar views.
+5. A consolidated parent-team calendar that aggregates authorized activities without copying them.
+6. Stable group identities that survive renaming and organizational changes.
+7. Explicit cross-group collaboration without duplicate activities or double-counted costs.
+8. Archiving groups while preserving historical records.
+
+Support two organizational levels initially. Assess a practical extension path for additional levels without building that functionality now.
+
+Organizational ownership must remain separate from product, geography, audience, and governed campaign classification.
+
+4. Reconcile with the existing data model
+
+Inspect existing organization, team, workspace, membership, user, campaign, activity, session, communication, and calendar structures.
+
+For each requirement, classify the current model as:
+
+* Supported.
+* Partially supported.
+* Missing.
+* Conflicting.
+* Deferred.
+
+Recommend reuse or extension before proposing new entities.
+
+Document:
+
+* How each campaign and activity resolves to one owning group.
+* How creator, accountable person, owning group, and collaborating groups remain distinct.
+* Which child records inherit ownership and where explicit ownership is necessary.
+* How inconsistent parent-child ownership is prevented.
+* How cross-group campaigns coordinate separately owned activities.
+* How membership, ownership transfers, and archiving affect access.
+* Necessary constraints, indexes, and migration sequencing.
+
+Proposed entity names are not instructions to create parallel models.
+
+5. Extend—not replace—the approved authorization model
+
+Separate action permissions from organizational scope.
+
+Retain the approved roles:
+
+* Planner.
+* Exception Requester.
+* Independent Reviewer.
+* Operations Executor.
+* Administrator.
+* Read-only Viewer.
+
+Explain how these roles apply within authorized groups or parent-team scopes.
+
+Requirements:
+
+* Parent-team membership alone does not grant unrestricted child-group access.
+* Group leadership does not automatically grant exception approval or execution authority.
+* Self-approval remains prohibited, including when someone holds different roles in different groups.
+* An independent reviewer must also be authorized for the record being reviewed.
+* Administrators cannot bypass non-overridable controls.
+* Shared calendar visibility does not imply editing or approval rights.
+* Unverified identity or membership cannot support operational authorization.
+* Server-side enforcement must cover direct APIs, search, exports, background work, and calendar results.
+* Membership removal must revoke access unless another valid grant applies.
+* Concurrent operations must not leak records or diagnostics between groups.
+
+Identify unresolved visibility decisions. Recommend restricted defaults rather than silently granting broader access.
+
+6. Define calendar rollup behavior
+
+The master calendar is an authorized view of underlying activities, not a duplicate calendar database.
+
+Document:
+
+* Which activity records supply calendar entries.
+* How communications and milestones remain linked.
+* How shared activities appear once.
+* How date, status, ownership, and cancellation changes propagate.
+* How time zones are handled.
+* How filters and pagination preserve complete results.
+* Which summary fields may be visible without access to restricted details.
+* How budgets and activity totals avoid double-counting.
+
+Distinguish tentative plans from approved and live activities. Do not assume draft details should be visible to sibling groups.
+
+Defer calendar UI implementation and advanced audience-conflict detection.
+
+7. Protect legacy sessions and existing records
+
+Do not automatically migrate active legacy sessions.
+
+Distinguish an organizational access association from a migration to the new webinar standard. Explain whether ownership can be associated without changing legacy behavior, stored evidence, or historical fingerprints.
+
+Do not infer record ownership solely from the creator or assign all historical records to an arbitrary group.
+
+Propose:
+
+* A verified ownership-mapping process.
+* Controlled handling of unresolved ownership.
+* Compatibility through legacy-session completion.
+* A safe transition for newly created sessions.
+* Recovery and rollback considerations.
+
+Any conflict with the approved legacy policy must be reported, not resolved through an undocumented exception.
+
+8. Account for future scope without implementing it
+
+Assess whether the proposed foundation can support:
+
+* Content activation.
+* Long-term nurture.
+* Display and paid social.
+* In-person events.
+* Conference participation.
+* Future campaign and person-specific sales enablement.
+
+Limit this assessment to shared ownership, authorization, activity references, and approved-content references.
+
+Do not build these modules, create speculative participant-data stores, or duplicate authoritative CRM information.
+
+9. Produce a reconciled implementation sequence
+
+Create:
+
+docs/verification/phase-2b-0b-group-hierarchy-impact-and-plan.md
+
+Include:
+
+* Verified repository state and baseline references.
+* Existing-model inventory relevant to hierarchy.
+* Requirement-to-model mapping.
+* Proposed ownership and membership model.
+* Action-permission versus group-scope matrix.
+* Calendar rollup contract.
+* Legacy compatibility and migration considerations.
+* Dependencies and unresolved owner decisions.
+* Security, retention, and concurrency implications.
+* Acceptance-test scenarios.
+* Recommended changes to the existing Phase 2B-1 sequence.
+
+For each proposed change, state:
+
+* What remains unchanged.
+* What must precede affected database implementation.
+* What can be implemented within the existing phase.
+* What should be deferred.
+* What requires an owner decision.
+
+Reference existing assessments rather than duplicating their full contents. Preserve stable requirement IDs; give genuinely new requirements distinct IDs outside the canonical webinar evaluator registry.
+
+The previous authorization to begin Phase 2B-1 remains recorded historically. This instruction places its start on hold pending review of this reconciliation. Do not alter the prior acceptance record to erase that history.
+
+10. Verification and commit policy
+
+Use the repository’s established documentation-only verification process. At minimum:
+
+* Verify ancestry and the exact changed-file set.
+* Confirm the accepted assessment and owner-decision record are unchanged.
+* Verify all five canonical hashes against the accepted baseline.
+* Confirm no canonical rule-ID or evaluator-registry changes.
+* Confirm the exact Temporal dependency pin is unchanged.
+* Confirm no application, test, schema, migration, configuration, or dependency changes.
+
+Run any additional gates required by the existing repository policy. Clearly distinguish checks freshly run from previously reported results. Do not present historical test or migration results as fresh verification.
+
+Commit only:
+
+docs/verification/phase-2b-0b-group-hierarchy-impact-and-plan.md
+
+Suggested title:
+
+Assess marketing group hierarchy before webinar integration
+
+Do not commit instruction uploads or unrelated files.
+
+11. Completion report
+
+Report:
+
+* Starting and ending commits and direct parent.
+* Every changed file.
+* Existing structures that can be reused.
+* Proposed database and authorization changes.
+* Effect on the planned Phase 2B-1 work.
+* Required owner decisions and recommended defaults.
+* Fresh verification results.
+* Confirmation that no implementation occurred.
+
+Stop after reporting. Do not begin Phase 2B-1 or implement the hierarchy.
+
+⸻
+
+This adds one focused reconciliation step—not a restart—and prevents the new hierarchy from conflicting with the authorization, legacy-session, and concurrency decisions already accepted.
