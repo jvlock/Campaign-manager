@@ -5,6 +5,15 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+export type OrganizationAccessErrorError = {
+  code: string;
+  message: string;
+};
+
+export interface OrganizationAccessError {
+  error: OrganizationAccessErrorError;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -1879,6 +1888,26 @@ export interface GovernanceAuditEvent {
   metadata?: GovernanceAuditEventMetadata;
   createdAt: string;
 }
+
+/**
+ * Trusted authentication is not configured or cannot verify the request; protected operations are disabled (AUTHENTICATION_UNAVAILABLE).
+ */
+export type AuthenticationUnavailableResponse = OrganizationAccessError;
+
+/**
+ * Verified authentication is required.
+ */
+export type AuthenticationRequiredResponse = OrganizationAccessError;
+
+/**
+ * Legacy or otherwise unapproved operations are disabled, even for a verified principal (403).
+ */
+export type ScopedOperationUnavailableResponse = OrganizationAccessError;
+
+/**
+ * Record not found or not visible to the verified principal.
+ */
+export type RecordUnavailableResponse = OrganizationAccessError;
 
 /**
  * Invalid request

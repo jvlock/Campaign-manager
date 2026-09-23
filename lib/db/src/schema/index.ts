@@ -24,3 +24,4 @@ export * from "./webinar";
 export * from "./webinar-standard";
 export * from "./communication-details";
 export * from "./deliverables";
+export * from "./organization";

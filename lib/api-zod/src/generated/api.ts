@@ -204,6 +204,85 @@ export const HealthCheckResponse = zod.object({
 })
 
 
+/**
+ * Bounded authorized campaign summaries only; no legacy nested campaign detail or child records.
+ */
+
+
+
+export const ListOrganizationCampaignsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "parentId": zod.string().uuid().nullish(),
+  "name": zod.string(),
+  "scope": zod.string(),
+  "region": zod.string(),
+  "audience": zod.string(),
+  "outcome": zod.string(),
+  "lifecycle": zod.string(),
+  "readiness": zod.number().int(),
+  "timing": zod.string(),
+  "owner": zod.string(),
+  "rowVersion": zod.number().int().min(1).optional(),
+  "updatedAt": zod.string(),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
+})
+export const ListOrganizationCampaignsResponse = zod.array(ListOrganizationCampaignsResponseItem)
+
+
+/**
+ * Bounded authorized campaign summary only; no legacy nested campaign detail or child records.
+ */
+export const GetOrganizationCampaignParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+export const GetOrganizationCampaignResponse = zod.object({
+  "id": zod.string().uuid(),
+  "parentId": zod.string().uuid().nullish(),
+  "name": zod.string(),
+  "scope": zod.string(),
+  "region": zod.string(),
+  "audience": zod.string(),
+  "outcome": zod.string(),
+  "lifecycle": zod.string(),
+  "readiness": zod.number().int(),
+  "timing": zod.string(),
+  "owner": zod.string(),
+  "rowVersion": zod.number().int().min(1).optional(),
+  "updatedAt": zod.string(),
+  "governance": zod.object({
+  "label": zod.enum(['PROVISIONAL / DRAFT — NOT GOVERNANCE APPROVED']).describe('Label that clients must display beside generated or migrated output.'),
+  "sourceEnvironment": zod.enum(['development']),
+  "verificationStatus": zod.enum(['provisional']),
+  "governanceApproved": zod.literal(false),
+  "publishingEligible": zod.literal(false),
+  "finalCodeIssuanceAvailable": zod.literal(false),
+  "externalPublishing": zod.literal(false),
+  "externalSending": zod.literal(false),
+  "requiresBusinessValidation": zod.literal(true),
+  "message": zod.enum(['Final code issuance is not currently available pending remediation of the source governance system.']).describe('Returned when a caller requests final or approved issuance.')
+}).describe('Mandatory quarantine metadata for values migrated from Campaign Governance Foundation. It is not evidence of governance approval and remains present even when local validation succeeds.\n')
+})
+
+
+/**
+ * Disabled legacy endpoint. Use bounded organizational campaign reads once authorized and provisioned.
+ * @deprecated
+ */
 
 
 
@@ -237,6 +316,10 @@ export const ListCampaignsResponseItem = zod.object({
 export const ListCampaignsResponse = zod.array(ListCampaignsResponseItem)
 
 
+/**
+ * Disabled legacy endpoint.
+ * @deprecated
+ */
 
 
 
@@ -458,6 +541,10 @@ export const CreateCampaignResponse = zod.object({
 }))
 
 
+/**
+ * Disabled legacy endpoint. Use bounded organizational campaign reads once authorized and provisioned.
+ * @deprecated
+ */
 export const GetCampaignParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
@@ -673,6 +760,10 @@ export const GetCampaignResponse = zod.object({
 }))
 
 
+/**
+ * Disabled legacy endpoint.
+ * @deprecated
+ */
 export const UpdateCampaignParams = zod.object({
   "id": zod.coerce.string().uuid()
 })

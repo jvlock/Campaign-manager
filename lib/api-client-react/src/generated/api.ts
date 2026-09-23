@@ -31,6 +31,8 @@ import type {
   ActivityTaskUpdate,
   AdapterStatus,
   AttendanceResultInput,
+  AuthenticationRequiredResponse,
+  AuthenticationUnavailableResponse,
   BadRequestResponse,
   CampaignDeliverables,
   CampaignDelivery,
@@ -74,6 +76,7 @@ import type {
   OwnerCapacitiesUpdate,
   OwnerCapacity,
   Portfolio,
+  RecordUnavailableResponse,
   RegistrationResultInput,
   ResolveGovernanceTermParams,
   ScheduleRecomputeInput,
@@ -83,6 +86,7 @@ import type {
   ScheduleRuleUpdate,
   ScheduledInstance,
   ScheduledInstanceAdjustment,
+  ScopedOperationUnavailableResponse,
   SyntheticPersonInput,
   TaskDefault,
   TaskDefaultsUpdate,
@@ -829,6 +833,154 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+export const getListOrganizationCampaignsUrl = () => {
+
+
+
+
+  return `/api/organization/campaigns`
+}
+
+/**
+ * Bounded authorized campaign summaries only; no legacy nested campaign detail or child records.
+ */
+export const listOrganizationCampaigns = async ( options?: Parameters<typeof customFetch>[1]): Promise<CampaignSummary[]> => {
+
+  return customFetch<CampaignSummary[]>(getListOrganizationCampaignsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListOrganizationCampaignsQueryKey = () => {
+    return [
+    `/api/organization/campaigns`
+    ] as const;
+    }
+
+
+export const getListOrganizationCampaignsQueryOptions = <TData = Awaited<ReturnType<typeof listOrganizationCampaigns>>, TError = ErrorType<AuthenticationRequiredResponse | ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListOrganizationCampaignsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrganizationCampaigns>>> = ({ signal }) => listOrganizationCampaigns({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrganizationCampaigns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListOrganizationCampaignsQueryResult = NonNullable<Awaited<ReturnType<typeof listOrganizationCampaigns>>>
+export type ListOrganizationCampaignsQueryError = ErrorType<AuthenticationRequiredResponse | ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>
+
+
+
+export function useListOrganizationCampaigns<TData = Awaited<ReturnType<typeof listOrganizationCampaigns>>, TError = ErrorType<AuthenticationRequiredResponse | ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListOrganizationCampaignsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetOrganizationCampaignUrl = (id: string,) => {
+
+
+
+
+  return `/api/organization/campaigns/${id}`
+}
+
+/**
+ * Bounded authorized campaign summary only; no legacy nested campaign detail or child records.
+ */
+export const getOrganizationCampaign = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<CampaignSummary> => {
+
+  return customFetch<CampaignSummary>(getGetOrganizationCampaignUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOrganizationCampaignQueryKey = (id: string,) => {
+    return [
+    `/api/organization/campaigns/${id}`
+    ] as const;
+    }
+
+
+export const getGetOrganizationCampaignQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationCampaign>>, TError = ErrorType<AuthenticationRequiredResponse | ScopedOperationUnavailableResponse | RecordUnavailableResponse | AuthenticationUnavailableResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationCampaign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOrganizationCampaignQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOrganizationCampaign>>> = ({ signal }) => getOrganizationCampaign(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationCampaign>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOrganizationCampaignQueryResult = NonNullable<Awaited<ReturnType<typeof getOrganizationCampaign>>>
+export type GetOrganizationCampaignQueryError = ErrorType<AuthenticationRequiredResponse | ScopedOperationUnavailableResponse | RecordUnavailableResponse | AuthenticationUnavailableResponse>
+
+
+
+export function useGetOrganizationCampaign<TData = Awaited<ReturnType<typeof getOrganizationCampaign>>, TError = ErrorType<AuthenticationRequiredResponse | ScopedOperationUnavailableResponse | RecordUnavailableResponse | AuthenticationUnavailableResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationCampaign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOrganizationCampaignQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getListCampaignsUrl = () => {
 
 
@@ -837,6 +989,10 @@ export const getListCampaignsUrl = () => {
   return `/api/campaigns`
 }
 
+/**
+ * Disabled legacy endpoint. Use bounded organizational campaign reads once authorized and provisioned.
+ * @deprecated
+ */
 export const listCampaigns = async ( options?: Parameters<typeof customFetch>[1]): Promise<CampaignSummary[]> => {
 
   return customFetch<CampaignSummary[]>(getListCampaignsUrl(),
@@ -859,7 +1015,7 @@ export const getListCampaignsQueryKey = () => {
     }
 
 
-export const getListCampaignsQueryOptions = <TData = Awaited<ReturnType<typeof listCampaigns>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListCampaignsQueryOptions = <TData = Awaited<ReturnType<typeof listCampaigns>>, TError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -878,11 +1034,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListCampaignsQueryResult = NonNullable<Awaited<ReturnType<typeof listCampaigns>>>
-export type ListCampaignsQueryError = ErrorType<unknown>
+export type ListCampaignsQueryError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>
 
 
+/**
+ * @deprecated
+ */
 
-export function useListCampaigns<TData = Awaited<ReturnType<typeof listCampaigns>>, TError = ErrorType<unknown>>(
+export function useListCampaigns<TData = Awaited<ReturnType<typeof listCampaigns>>, TError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -908,6 +1067,10 @@ export const getCreateCampaignUrl = () => {
   return `/api/campaigns`
 }
 
+/**
+ * Disabled legacy endpoint.
+ * @deprecated
+ */
 export const createCampaign = async (campaignInput: CampaignInput, options?: Parameters<typeof customFetch>[1]): Promise<CampaignDetail> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
@@ -939,7 +1102,7 @@ return customFetch<CampaignDetail>(getCreateCampaignUrl(),
 
 export const getCreateCampaignMutationKey = () => ['createCampaign'] as const;
 
-export const getCreateCampaignMutationOptions = <TError = ErrorType<unknown>,
+export const getCreateCampaignMutationOptions = <TError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCampaign>>, TError,CreateCampaignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createCampaign>>, TError,CreateCampaignMutationVariables, TContext> => {
 
@@ -968,10 +1131,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateCampaignMutationResult = NonNullable<Awaited<ReturnType<typeof createCampaign>>>
     export type CreateCampaignMutationBody = BodyType<CampaignInput>
-    export type CreateCampaignMutationError = ErrorType<unknown>
+    export type CreateCampaignMutationError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>
     export type CreateCampaignMutationVariables = {data: BodyType<CampaignInput>}
 
-    export const useCreateCampaign = <TError = ErrorType<unknown>,
+    /**
+ * @deprecated
+ */
+export const useCreateCampaign = <TError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCampaign>>, TError,CreateCampaignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createCampaign>>,
@@ -990,6 +1156,10 @@ export const getGetCampaignUrl = (id: string,) => {
   return `/api/campaigns/${id}`
 }
 
+/**
+ * Disabled legacy endpoint. Use bounded organizational campaign reads once authorized and provisioned.
+ * @deprecated
+ */
 export const getCampaign = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<CampaignDetail> => {
 
   return customFetch<CampaignDetail>(getGetCampaignUrl(id),
@@ -1012,7 +1182,7 @@ export const getGetCampaignQueryKey = (id: string,) => {
     }
 
 
-export const getGetCampaignQueryOptions = <TData = Awaited<ReturnType<typeof getCampaign>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCampaign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetCampaignQueryOptions = <TData = Awaited<ReturnType<typeof getCampaign>>, TError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCampaign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1031,11 +1201,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetCampaignQueryResult = NonNullable<Awaited<ReturnType<typeof getCampaign>>>
-export type GetCampaignQueryError = ErrorType<unknown>
+export type GetCampaignQueryError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>
 
 
+/**
+ * @deprecated
+ */
 
-export function useGetCampaign<TData = Awaited<ReturnType<typeof getCampaign>>, TError = ErrorType<unknown>>(
+export function useGetCampaign<TData = Awaited<ReturnType<typeof getCampaign>>, TError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>>(
  id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCampaign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -1061,6 +1234,10 @@ export const getUpdateCampaignUrl = (id: string,) => {
   return `/api/campaigns/${id}`
 }
 
+/**
+ * Disabled legacy endpoint.
+ * @deprecated
+ */
 export const updateCampaign = async (id: string,
     campaignUpdate: CampaignUpdate, options?: Parameters<typeof customFetch>[1]): Promise<CampaignDetail> => {
 
@@ -1093,7 +1270,7 @@ return customFetch<CampaignDetail>(getUpdateCampaignUrl(id),
 
 export const getUpdateCampaignMutationKey = () => ['updateCampaign'] as const;
 
-export const getUpdateCampaignMutationOptions = <TError = ErrorType<unknown>,
+export const getUpdateCampaignMutationOptions = <TError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCampaign>>, TError,UpdateCampaignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateCampaign>>, TError,UpdateCampaignMutationVariables, TContext> => {
 
@@ -1122,10 +1299,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateCampaignMutationResult = NonNullable<Awaited<ReturnType<typeof updateCampaign>>>
     export type UpdateCampaignMutationBody = BodyType<CampaignUpdate>
-    export type UpdateCampaignMutationError = ErrorType<unknown>
+    export type UpdateCampaignMutationError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>
     export type UpdateCampaignMutationVariables = {id: string;data: BodyType<CampaignUpdate>}
 
-    export const useUpdateCampaign = <TError = ErrorType<unknown>,
+    /**
+ * @deprecated
+ */
+export const useUpdateCampaign = <TError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCampaign>>, TError,UpdateCampaignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateCampaign>>,

@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { createServer, type Server } from "node:http";
 import { after, before, test } from "node:test";
 import { and, eq, inArray } from "drizzle-orm";
-import app from "../src/app";
+import app from "./helpers/legacy-app";
 import {
   activities,
   audiences,

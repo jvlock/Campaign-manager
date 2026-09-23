@@ -19,7 +19,7 @@ import {
 } from "@workspace/db/schema/webinar";
 import { evaluateWebinarPerson } from "../src/lib/webinar";
 import { recomputeWebinarDeliveryAnchor } from "../src/lib/delivery";
-import app from "../src/app";
+import app from "./helpers/legacy-app";
 
 let server: Server;
 let baseUrl: string;

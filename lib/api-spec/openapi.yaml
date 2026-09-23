@@ -3,10 +3,12 @@ info:
   title: Api
   version: 0.1.0
   description: Campaign Operating Workspace API
+x-access-policy: "Only /healthz is public. Protected endpoints return 503 AUTHENTICATION_UNAVAILABLE when trusted authentication is unavailable. After verification, legacy endpoints are disabled with 403 scoped_operation_unavailable. Only bounded /organization/campaigns reads may be enabled subject to authorization and provisioning."
 servers:
   - url: /api
 tags:
   - name: health
+  - name: organization
   - name: campaigns
   - name: delivery
   - name: planning
@@ -118,10 +120,52 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/HealthStatus"}
+  /organization/campaigns:
+    get:
+      operationId: listOrganizationCampaigns
+      tags: [organization]
+      description: Bounded authorized campaign summaries only; no legacy nested campaign detail or child records.
+      responses:
+        "200":
+          description: Campaign summaries visible to the verified organizational principal
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/CampaignSummary"}
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/ScopedOperationUnavailable"
+        "503":
+          $ref: "#/components/responses/AuthenticationUnavailable"
+  /organization/campaigns/{id}:
+    get:
+      operationId: getOrganizationCampaign
+      tags: [organization]
+      description: Bounded authorized campaign summary only; no legacy nested campaign detail or child records.
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+      responses:
+        "200":
+          description: Visible campaign summary
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CampaignSummary"}
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/ScopedOperationUnavailable"
+        "404":
+          $ref: "#/components/responses/RecordUnavailable"
+        "503":
+          $ref: "#/components/responses/AuthenticationUnavailable"
   /campaigns:
     get:
       operationId: listCampaigns
       tags: [campaigns]
+      deprecated: true
+      description: Disabled legacy endpoint. Use bounded organizational campaign reads once authorized and provisioned.
       responses:
         "200":
           description: Campaigns
@@ -130,9 +174,15 @@ paths:
               schema:
                 type: array
                 items: {$ref: "#/components/schemas/CampaignSummary"}
+        "403":
+          $ref: "#/components/responses/ScopedOperationUnavailable"
+        "503":
+          $ref: "#/components/responses/AuthenticationUnavailable"
     post:
       operationId: createCampaign
       tags: [campaigns]
+      deprecated: true
+      description: Disabled legacy endpoint.
       requestBody:
         required: true
         content:
@@ -144,10 +194,16 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/CampaignDetail"}
+        "403":
+          $ref: "#/components/responses/ScopedOperationUnavailable"
+        "503":
+          $ref: "#/components/responses/AuthenticationUnavailable"
   /campaigns/{id}:
     get:
       operationId: getCampaign
       tags: [campaigns]
+      deprecated: true
+      description: Disabled legacy endpoint. Use bounded organizational campaign reads once authorized and provisioned.
       parameters:
         - {$ref: "#/components/parameters/Id"}
       responses:
@@ -156,9 +212,15 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/CampaignDetail"}
+        "403":
+          $ref: "#/components/responses/ScopedOperationUnavailable"
+        "503":
+          $ref: "#/components/responses/AuthenticationUnavailable"
     patch:
       operationId: updateCampaign
       tags: [campaigns]
+      deprecated: true
+      description: Disabled legacy endpoint.
       parameters:
         - {$ref: "#/components/parameters/Id"}
       requestBody:
@@ -172,6 +234,10 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/CampaignDetail"}
+        "403":
+          $ref: "#/components/responses/ScopedOperationUnavailable"
+        "503":
+          $ref: "#/components/responses/AuthenticationUnavailable"
   /campaigns/{id}/map:
     put:
       operationId: saveCampaignMap
@@ -1250,6 +1316,30 @@ components:
       required: true
       schema: {type: string, format: uuid}
   responses:
+    AuthenticationUnavailable:
+      description: Trusted authentication is not configured or cannot verify the request; protected operations are disabled (AUTHENTICATION_UNAVAILABLE).
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/OrganizationAccessError"}
+          example: {error: {code: AUTHENTICATION_UNAVAILABLE, message: "Trusted authentication is unavailable; organizational operations are disabled."}}
+    AuthenticationRequired:
+      description: Verified authentication is required.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/OrganizationAccessError"}
+          example: {error: {code: authentication_required, message: "Verified authentication is required."}}
+    ScopedOperationUnavailable:
+      description: Legacy or otherwise unapproved operations are disabled, even for a verified principal (403).
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/OrganizationAccessError"}
+          example: {error: {code: scoped_operation_unavailable, message: "This operation is not enabled by the organizational authorization foundation."}}
+    RecordUnavailable:
+      description: Record not found or not visible to the verified principal.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/OrganizationAccessError"}
+          example: {error: {code: record_unavailable, message: "Record unavailable."}}
     BadRequest:
       description: Invalid request
       content:
@@ -1266,6 +1356,16 @@ components:
         application/json:
           schema: {$ref: "#/components/schemas/Error"}
   schemas:
+    OrganizationAccessError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: {type: string}
+            message: {type: string}
     HealthStatus:
       type: object
       required: [status]
