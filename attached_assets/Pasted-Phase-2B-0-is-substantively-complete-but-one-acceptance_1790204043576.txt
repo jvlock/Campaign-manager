@@ -1,0 +1,304 @@
+Phase 2B-0 is substantively complete, but one acceptance gate remains: the unexplained lineage between the original Phase 2A commit and Phase 2B-0’s parent. The screenshot errors are unrelated system noise and can be ignored.
+
+Send Replit this prompt:
+
+⸻
+
+Phase 2B-0A — Baseline Reconciliation and Owner Decision Record
+
+Complete the final acceptance gate for Phase 2B-0 before beginning implementation.
+
+This is a documentation and repository-verification increment only.
+
+Do not modify application code, tests, schema, migrations, routes, APIs, UI, dependencies, integrations, sending, publishing, or deployment.
+
+1. Expected state
+
+Expected branch:
+
+feature/webinar-standard-engine
+
+Phase 2A functional baseline:
+
+12784a94bc46f86b1a37009c1ae83049554b057b
+
+Phase 2B-0 assessment commit:
+
+09b8c9fdebfb3c3d051991d12e7693149a3e56f2
+
+Reported direct parent:
+
+2ee7bc56440c6c249adb3992f239544324425c4b
+
+Assessment:
+
+docs/verification/phase-2b-0-integration-assessment.md
+
+Confirm the current branch, HEAD, direct parent, tracked working-tree state, and untracked files.
+
+Do not stage or commit the current instruction upload or unrelated files.
+
+2. Reconcile the commit lineage
+
+The Phase 2B-0 summary does not explain the commits between the Phase 2A functional baseline and the Phase 2B-0 parent.
+
+Establish whether:
+
+12784a94bc46f86b1a37009c1ae83049554b057b
+
+is an ancestor of:
+
+2ee7bc56440c6c249adb3992f239544324425c4b
+
+List every intervening commit in chronological order, including:
+
+* full hash;
+* direct parent;
+* commit title;
+* authoring and commit timestamps;
+* every changed file;
+* change classification;
+* whether the change was tracked or subsequently superseded;
+* whether it affected the Phase 2A verified baseline.
+
+Acceptable intervening changes are limited to:
+
+* duplicate instruction or status uploads under attached_assets/;
+* non-authoritative process notes under .agents/memory/;
+* documentation-only records that do not change requirements, verification evidence, or implementation.
+
+Stop and report without making changes if any intervening commit affected:
+
+* application or test code;
+* configuration or dependencies;
+* canonical standards;
+* requirements or decisions;
+* verification evidence;
+* evaluator behavior or registry;
+* database schema or migrations;
+* routes or APIs;
+* UI;
+* external integrations;
+* sending, publishing, or deployment.
+
+Do not rewrite, squash, reset, or otherwise alter history.
+
+3. Record the owner decisions
+
+If the lineage is acceptable, record the following owner decisions.
+
+Decision 1 — Neutral follow-up
+
+A distinct neutral follow-up variant is approved for cases where attendance remains unknown after the authorized attendance-reconciliation period.
+
+Requirements:
+
+* It must not state or imply that the recipient attended.
+* It must not state or imply that the recipient was absent.
+* It must remain distinct from the attended and absent variants.
+* It may provide the webinar recording, related content, or an authorized next step.
+* The concept is approved, but customer-facing copy must still pass the normal content and compliance approval process.
+* A placeholder or unapproved draft cannot be used for live sending.
+* If approved neutral content is unavailable when required, live follow-up readiness remains blocked.
+
+Do not write the customer-facing copy in this increment.
+
+Decision 2 — Foundation authority and provenance
+
+The Governance Foundation remains authoritative for:
+
+* governed taxonomy;
+* standardized internal naming;
+* campaign codes;
+* UTM generation;
+* applicable governed classifications.
+
+A Foundation result can support operational readiness only when the record includes:
+
+* producing service or authoritative repository;
+* exact service or ruleset version;
+* effective taxonomy version;
+* request or transaction reference;
+* input fingerprint;
+* calculation timestamp;
+* result provenance;
+* status and validity;
+* applicable activity, communication, and content references.
+
+Manual entry, locally recreated logic, or a documented dependency cannot substitute for governed Foundation output.
+
+When Foundation is unavailable:
+
+* draft planning may continue;
+* existing valid governed results may be displayed according to their validity rules;
+* Foundation-dependent operational readiness must fail closed;
+* sending or publishing cannot bypass the missing governed result.
+
+The implementation must distinguish:
+
+1. evaluator implemented;
+2. governed observation available;
+3. live Foundation integration connected.
+
+Decision 3 — Minimum authorization roles
+
+The minimum authorization model must support:
+
+* Planner: Creates and edits webinar plans and submits evidence.
+* Exception Requester: Requests an exception but cannot approve the same request.
+* Independent Reviewer: Approves or denies eligible exceptions and required evidence.
+* Operations Executor: Performs authorized operational actions only after readiness requirements are satisfied.
+* Administrator: Manages access and configuration but cannot override non-overridable rules merely because the user is an administrator.
+* Read-only Viewer: Can inspect plans, findings, readiness, and audit history without changing them.
+
+Controls:
+
+* Real authentication must supply the user identity.
+* Self-approval of exceptions is prohibited.
+* Exception request and approval must remain separate auditable actions.
+* WEB-EXC-001 and other non-overridable controls cannot be bypassed by any role.
+* Unverified names or manually entered reviewer identities cannot support live approval.
+* Readiness overrides outside the approved exception mechanism are prohibited.
+* Authorization must be enforced server-side, not only in the UI.
+
+If current authentication cannot support these controls, operational execution remains disabled.
+
+Decision 4 — Retention
+
+Apply differentiated retention, subject to any longer MSCI legal, privacy, records-management, or litigation-hold requirement:
+
+Record category	Baseline retention
+Exceptions, approvals, denials and separation-of-duties evidence	7 years
+Standard version, evaluator fingerprint, release fingerprint and provenance	7 years
+Operational execution and suppression audit records	7 years
+Completion and material readiness snapshots used for an operational decision	7 years
+Recomputable evaluation diagnostics not used as decision evidence	24 months
+Temporary request-local diagnostics	Do not persist beyond operational troubleshooting needs
+Participant PII	Governed by its authoritative source and applicable corporate privacy schedule
+
+Additional requirements:
+
+* Do not duplicate participant PII merely to support evaluation.
+* Prefer durable identifiers, hashes, and authoritative-source references where sufficient.
+* Deletion of source PII must not destroy required non-PII audit evidence.
+* Legal holds override scheduled deletion.
+* Retention periods must be configurable rather than embedded throughout application code.
+
+Decision 5 — Legacy sessions
+
+Record the Phase 2B-0 recommendation as the approved policy:
+
+* Active legacy sessions remain unchanged through completion.
+* They are not automatically migrated to the new standard.
+* Historical communications and outcomes remain auditable.
+* The new standard applies to newly created sessions after the authorized cutover.
+* Any future legacy migration requires a separate assessed and approved migration plan.
+
+4. Concurrent-execution requirements
+
+Record the following architectural requirements identified by Phase 2B-0:
+
+* Completion diagnostics must be request-local and must not rely on mutable shared state.
+* Release fingerprints must identify the exact standard version, evaluator registry, implementation release, and relevant governed dependencies.
+* Whole-population operations must return complete, deterministic result sets rather than silently truncating, sampling, or returning only the first page.
+* Concurrent requests must not leak diagnostics, evidence, exceptions, or results between webinars or users.
+
+These requirements are binding for future implementation but must not be implemented in this increment.
+
+5. Documentation deliverable
+
+Create:
+
+docs/verification/phase-2b-0a-acceptance-and-owner-decisions.md
+
+Include:
+
+* branch and repository state;
+* ancestry result;
+* complete intervening-commit inventory;
+* changed-file classifications;
+* determination of whether the moving-baseline policy was satisfied;
+* references to the Phase 2A and Phase 2B-0 verification reports;
+* the five owner decisions above;
+* concurrent-execution requirements;
+* remaining external dependencies;
+* explicit Phase 2B-0 acceptance status;
+* authorization to proceed to Phase 2B-1 only if every gate passes.
+
+Reference the Phase 2B-0 assessment rather than duplicating its complete inventory.
+
+Do not modify the Phase 2B-0 assessment or canonical webinar standards.
+
+6. Verification
+
+After creating the decision record, run fresh:
+
+1. Git ancestry and changed-file verification.
+2. Rule-ID drift check.
+3. Non-incremental type check.
+4. Complete catalog, evaluator, exception, readiness, scheduling, audience, completion, API, and frontend regression suites.
+5. Disposable-database verification using all 21 migrations.
+6. Database shutdown and cleanup verification.
+7. All five canonical document hash checks.
+8. Exact @js-temporal/polyfill pin check.
+9. Evaluator registry check confirming 106/106 canonical IDs.
+10. Source inspection confirming no application, test, schema, migration, route, API, UI, or dependency file changed in this increment.
+
+Report separately:
+
+* test files;
+* top-level runner records;
+* nested subtests;
+* individual leaf tests;
+* TAP grouping records;
+* failures;
+* skipped tests;
+* cancellations;
+* TODOs;
+* setup and teardown failures;
+* migration and cleanup results;
+* canonical hashes;
+* working-tree state.
+
+Do not force historical test counts if the current runner reports different totals. Explain any difference.
+
+7. Commit policy
+
+Commit only:
+
+docs/verification/phase-2b-0a-acceptance-and-owner-decisions.md
+
+Do not commit:
+
+* the current instruction upload;
+* unrelated attached_assets/ files;
+* untracked screenshots;
+* unrelated memory notes;
+* application or test changes.
+
+Suggested commit title:
+
+Record webinar integration owner decisions
+
+A platform-generated commit remains provisional until verification passes.
+
+8. Completion report
+
+Report:
+
+* starting and ending commits;
+* direct parent;
+* complete ancestry determination;
+* every intervening commit and its classification;
+* every changed file;
+* owner decisions recorded;
+* verification results;
+* canonical hashes;
+* 106/106 evaluator coverage;
+* whether Phase 2B-0 is formally accepted;
+* whether Phase 2B-1 is authorized to begin;
+* confirmation that no implementation work occurred.
+
+Stop after reporting. Do not begin Phase 2B-1.
+
+⸻
