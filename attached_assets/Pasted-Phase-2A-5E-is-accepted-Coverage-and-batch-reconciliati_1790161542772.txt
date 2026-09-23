@@ -1,0 +1,506 @@
+Phase 2A-5E is accepted. Coverage and batch reconciliation are consistent, and the correction identifying the deleted upload as the Phase 2A-5C prompt is properly documented.
+
+Only 12 evaluators remain:
+
+* Governed Services: 2
+* Completion: 10
+
+The next increment should implement only the two Governed Services evaluators. That raises coverage to 96/106 while keeping the final Completion logic isolated.
+
+Give Replit this prompt:
+
+⸻
+
+Phase 2A-5F — Governed Services Evaluator Coverage
+
+Implement the Governed Services evaluator batch defined in the approved Phase 2A-5 evaluator coverage plan.
+
+This increment must add exactly the two missing evaluators assigned to Governed Services. It must evaluate immutable evidence and observations of governed outputs without creating external service integration.
+
+Do not implement the ten Completion evaluators.
+
+1. Starting state
+
+Expected branch:
+
+feature/webinar-standard-engine
+
+Expected functional HEAD:
+
+70c5c0552ecda6d27867bdf61537a6e06e49313b
+
+Before changing anything, confirm:
+
+* branch, HEAD, direct parent, and tracked working-tree state;
+* the only permissible untracked file is the current instruction paste;
+* rule-ID generation reports 106 IDs and zero drift;
+* evaluator coverage is exactly 94/106, with 12 missing;
+* all previous 94 evaluators remain registered;
+* non-incremental type checking passes;
+* the complete current baseline passes;
+* @js-temporal/polyfill remains pinned exactly to 0.5.1;
+* all five canonical webinar-document hashes match.
+
+The reported Phase 2A-5E baseline is:
+
+* 44 test files;
+* 2,887 top-level records;
+* seven nested subtests;
+* 2,893 individual leaf tests;
+* TAP total 2,894 when the runner includes its grouping record;
+* zero failures, skips, cancellations, TODOs, setup failures, teardown failures, or type errors;
+* all 21 migrations applied against a new disposable database with complete shutdown and cleanup.
+
+Report actual runner units separately. Do not force these counts; explain any legitimate difference.
+
+Do not stage or commit the current instruction paste or any unrelated attached_assets/ file. Use explicit allowlist staging.
+
+Do not treat .agents/memory/ as an authoritative source, and do not add product-policy memory files.
+
+2. Moving-baseline policy
+
+If HEAD has moved, inspect every intervening commit before proceeding.
+
+You may accept a moved HEAD only if every intervening change contains exclusively:
+
+* duplicate status or instruction material under attached_assets/; or
+* non-authoritative process notes under .agents/memory/.
+
+Stop if an intervening commit changes:
+
+* application or test code;
+* dependencies or configuration;
+* canonical standards;
+* the evaluator coverage plan;
+* product requirements or decisions;
+* database schema or migrations;
+* substantive verification evidence.
+
+Do not rewrite history.
+
+Do not delete a tracked or untracked upload unless it has been read completely, hashed, searched for references, and confirmed to contain no unique source data, decision, requirement, or evidence.
+
+3. Authoritative sources
+
+Use only:
+
+* docs/standards/webinar/WEB-STANDARD-001.rules.json
+* docs/standards/webinar/WEB-STANDARD-001.md
+* docs/standards/webinar/WEBINAR-PILOT-IMPLEMENTATION-AUTHORIZATION.md
+* docs/standards/webinar/CHANGELOG-RC1.md
+* docs/standards/webinar/manifest.json
+* docs/verification/phase-2a-5-evaluator-coverage-plan.md
+* the verified catalog, evidence, evaluation, exception, readiness, scheduling, audience, planning-time, deliverable, and QA modules.
+
+The canonical catalog controls rule meaning. The coverage plan controls batch assignment.
+
+Do not:
+
+* modify the canonical standard;
+* invent, rename, merge, or split rules;
+* change batch assignments;
+* implement Completion rules;
+* use uploaded prompts or memory files as requirements.
+
+4. Reconcile the exact batch before coding
+
+Mechanically derive the Governed Services batch from the committed coverage plan and reconcile it against:
+
+* all 106 canonical IDs;
+* the 94 implemented evaluator IDs;
+* the 12 missing IDs;
+* generated rule identifiers;
+* the evaluator registry.
+
+Prove before implementation that:
+
+* exactly two unique missing rules belong to Governed Services;
+* neither is already implemented;
+* neither belongs to Completion;
+* no ID is unknown;
+* adding them produces exactly 96 implemented evaluators and ten missing evaluators.
+
+List the exact two IDs before implementation and in the completion report.
+
+If the coverage plan does not produce exactly two unambiguous IDs, stop and report the discrepancy.
+
+5. Implementation boundary
+
+Implement one explicit evaluator for each of the two rules.
+
+Each evaluator must:
+
+* be registered explicitly by canonical rule ID;
+* use the canonical catalog record for metadata;
+* accept immutable, typed context;
+* return the established evaluation-result union;
+* preserve pass, fail, not applicable, evidence unavailable, invalid context, evaluator unavailable, and exception-resolution distinctions;
+* never convert missing service evidence into a pass;
+* never claim a governed service was invoked merely because a value exists;
+* never accept manually entered text as proof of governed generation.
+
+Do not add:
+
+* external HTTP calls;
+* database access;
+* provider credentials;
+* environment-derived endpoints;
+* service clients;
+* route handlers;
+* a generic evaluator;
+* a default-pass path;
+* hard-coded coverage totals.
+
+This phase evaluates supplied governed-service evidence. It does not connect the application to the Governance Foundation.
+
+6. Governed-source boundary
+
+The Governance Foundation remains the authoritative source for applicable:
+
+* controlled taxonomy values;
+* standardized naming;
+* campaign codes;
+* UTM generation;
+* governed exclusions or validation outcomes identified by the canonical rules.
+
+The Campaign Manager may consume governed output but must not independently recreate, override, or silently repair it.
+
+Do not:
+
+* reproduce Foundation business logic inside an evaluator;
+* maintain a second taxonomy source of truth;
+* generate substitute campaign codes;
+* generate substitute UTM values;
+* accept locally invented “equivalent” values;
+* allow a documented dependency, exception, or manual approval to bypass required governed output.
+
+If the authoritative output is unavailable, return evidence_unavailable. Coverage implementation does not mean the operational Foundation connection exists.
+
+7. Governed-service observation model
+
+Add only the immutable context required by the two canonical rules.
+
+A governed-service observation should contain, where applicable:
+
+* immutable observation ID;
+* exact rule ID;
+* WEB-STANDARD-001 identifier and exact version;
+* governed service or capability identifier;
+* authoritative source identifier;
+* source version or effective taxonomy version;
+* webinar, campaign, activity, communication, or deliverable scope;
+* request or transaction reference;
+* input fingerprint or immutable request reference;
+* output value or output reference;
+* output type;
+* generation or validation status;
+* generated or observed timestamp;
+* recorded timestamp;
+* validity or expiration;
+* provenance references;
+* evidence supplier with identityVerified: false;
+* error or unavailable reason;
+* notes.
+
+Do not require fields irrelevant to a specific rule. Derive required fields from the canonical trigger and validation method.
+
+8. Validity requirements
+
+A governed-service observation may satisfy a rule only when it:
+
+* comes from the approved authoritative source;
+* matches the exact required service capability;
+* matches the exact standard identifier and version;
+* matches the correct campaign, webinar, activity, communication, or deliverable scope;
+* uses an effective, non-deprecated source version when the rule requires one;
+* corresponds to the exact current input or content version;
+* contains a successful governed result;
+* remains valid and unexpired;
+* is not contradicted by a later authoritative observation.
+
+Reject or return invalid context for:
+
+* duplicate observation IDs;
+* malformed timestamps;
+* future observations when chronologically impossible;
+* wrong standard or version;
+* wrong source;
+* wrong capability;
+* wrong webinar or communication;
+* wrong input fingerprint;
+* deprecated or ineffective source version;
+* mismatched output type;
+* contradictory simultaneous observations;
+* structurally invalid evidence.
+
+Return evidence_unavailable, rather than failure, when a required authoritative observation simply has not been supplied.
+
+Return failure only when valid evidence establishes that the governed requirement was not satisfied.
+
+9. Relationship to existing evaluators
+
+Reuse existing findings rather than replacing them, particularly:
+
+* WEB-QA-005;
+* WEB-QA-006;
+* WEB-RDY-REC-008;
+* any existing Setup, readiness, naming, taxonomy, campaign-code, or UTM prerequisite finding applicable to the two rules.
+
+The two new evaluators must supply the missing governed-service coverage identified by the coverage plan. They must not duplicate the existing semantic-control evaluators.
+
+Where an existing evaluator depends on these new findings:
+
+* a pass may satisfy that prerequisite;
+* a failure remains a failure;
+* evidence unavailable keeps the dependent stage incomplete;
+* invalid context remains invalid;
+* an exception cannot replace missing governed evidence.
+
+Do not change the corrected readiness classifier or stage dependencies.
+
+10. Evidence and exception handling
+
+Reuse the existing evidence framework.
+
+Governed observations remain distinct from:
+
+* manual evidence;
+* configuration;
+* planning outputs;
+* deliverables;
+* operational delivery observations;
+* exceptions.
+
+Exceptions:
+
+* cannot replace missing governed output;
+* cannot approve locally invented taxonomy, naming, campaign-code, or UTM values;
+* cannot resolve invalid context;
+* cannot exempt non-exception-eligible rules;
+* retain the original failed finding when legitimately applicable.
+
+If the canonical rule is non-exception-eligible, verify that no exception path can change its result.
+
+11. No false operational-completeness claim
+
+The following must remain explicit:
+
+* implementing an evaluator does not connect the governed service;
+* a test fixture is not production evidence;
+* a locally supplied output is not authoritative without provenance;
+* a planner result is not governed-service evidence;
+* evaluator coverage is not operational readiness;
+* the pilot cannot pass a governed prerequisite when its authoritative observation is missing.
+
+Add tests proving these distinctions.
+
+12. Scope containment
+
+This phase remains pure, deterministic, and in-memory.
+
+No new module may:
+
+* call an external service;
+* access the database;
+* access the filesystem;
+* access process environment;
+* read the system clock;
+* contain provider credentials;
+* expose sending or publishing behavior;
+* add routes or API handlers;
+* add UI;
+* deploy anything.
+
+All inputs must be explicit.
+
+Add structural containment tests proving these capabilities are absent.
+
+13. Registry and coverage
+
+After implementation:
+
+* registry coverage must equal exactly 96/106;
+* exactly ten canonical rules must remain without evaluators;
+* both new IDs must belong to Governed Services;
+* all previous 94 evaluators must remain registered;
+* no duplicate, unknown, or extra ID may exist;
+* no generic fallback may exist;
+* readiness coverage must continue to derive from the actual registry.
+
+Add mechanical tests enforcing these conditions.
+
+14. Required tests
+
+Each material case must be an independently named test or subtest.
+
+Batch reconciliation
+
+Test:
+
+* exact two Governed Services IDs;
+* no overlap with the existing 94;
+* no Completion ID included;
+* resulting 96/106 coverage;
+* exactly ten missing;
+* zero duplicate or unknown IDs.
+
+Per-rule evaluator behavior
+
+For each new evaluator, test as applicable:
+
+* valid authoritative observation;
+* valid evidence of noncompliance;
+* not applicable;
+* evidence unavailable;
+* invalid context;
+* wrong standard;
+* wrong standard version;
+* wrong source;
+* wrong capability;
+* wrong scope;
+* wrong current input or version;
+* expired observation;
+* deprecated source version;
+* contradictory observation;
+* eligible exception behavior if canonically allowed;
+* exception rejection if not allowed.
+
+Provenance and source authority
+
+Test:
+
+* approved authoritative source accepted;
+* local manual value rejected;
+* copied output without provenance rejected;
+* planner output rejected as service evidence;
+* test fixture not represented as production evidence;
+* exact input fingerprint or request reference;
+* later authoritative contradiction;
+* supplier identity remains explicitly unverified.
+
+Dependency behavior
+
+Test:
+
+* new finding correctly satisfies an existing prerequisite;
+* governed failure propagates correctly;
+* unavailable governed evidence keeps readiness incomplete;
+* invalid governed context remains invalid;
+* exception cannot replace missing governed evidence;
+* documented dependency does not create a bypass.
+
+Containment
+
+Test absence of:
+
+* HTTP or service clients;
+* provider credentials;
+* environment access;
+* filesystem access;
+* database access;
+* routes;
+* UI;
+* sending;
+* publishing;
+* deployment;
+* implicit clock access;
+* generic evaluator fallback.
+
+15. Verification gate
+
+Run fresh:
+
+1. Governed Services evaluator tests.
+2. Governed Services provenance tests.
+3. Governed Services registry and coverage tests.
+4. Deliverables/QA evaluator tests.
+5. Registrant/Audience evaluator tests.
+6. Scheduling evaluator tests.
+7. Evidence-framework tests.
+8. Audience-state planner tests.
+9. Scheduling planner tests.
+10. Business-day and planning-time tests.
+11. All containment tests.
+12. Classifier tests.
+13. Readiness tests.
+14. Exception tests.
+15. Existing evaluator tests.
+16. Existing registry tests.
+17. Existing structural tests.
+18. Catalog-integrity tests.
+19. Rule-ID drift check.
+20. Non-incremental type check.
+21. Complete API suite against a newly created disposable database.
+22. Frontend regression suite.
+23. Preview smoke check.
+24. All five canonical-document hash checks.
+25. Exact dependency-pin verification for @js-temporal/polyfill version 0.5.1.
+
+Report separately:
+
+* test files;
+* top-level tests;
+* nested subtests;
+* individual leaf tests;
+* TAP grouping records;
+* failures;
+* skipped, cancelled, and TODO tests;
+* setup and teardown failures;
+* type errors;
+* all 21 migration results;
+* PostgreSQL shutdown;
+* socket removal;
+* temporary-directory removal;
+* independent confirmation that the disposable database root no longer exists.
+
+Do not force an expected aggregate count. Calculate it from actual runner output.
+
+16. Commit policy
+
+A platform-created commit is provisional until every gate passes.
+
+Do not rewrite history.
+
+If a correction is required after a provisional commit, create a new follow-up commit. Do not amend or squash.
+
+Use explicit allowlist staging. Do not commit uploaded prompts or unrelated files.
+
+Suggested commit title:
+
+Add webinar governed-service evaluators
+
+17. Completion report
+
+Create:
+
+docs/verification/phase-2a-5f.md
+
+Report:
+
+* accepted starting commit;
+* intervening commits and their exact contents;
+* ending commit and direct parent;
+* every changed file;
+* exact two Governed Services evaluator IDs;
+* canonical rule type, readiness stage, exception eligibility, trigger, validation method, and evidence dependency for each;
+* governed-observation context added;
+* authoritative-source and provenance behavior;
+* handling of missing, invalid, deprecated, contradictory, and non-authoritative observations;
+* relationship to existing QA and readiness evaluators;
+* confirmation that no Foundation business logic was duplicated;
+* confirmation that no external Foundation integration was created;
+* registry reconciliation;
+* final coverage of exactly 96/106;
+* exact list of the ten remaining Completion evaluator IDs;
+* test counts and every verification result;
+* migration and cleanup results;
+* canonical hashes;
+* Temporal dependency-pin result;
+* confirmation that all prior 94 evaluators remain registered;
+* confirmation that no Completion evaluator was added;
+* confirmation that no canonical standard, database schema, migration, route, API contract, UI, sending, publishing, external-service call, or deployment behavior changed;
+* any ambiguity, provisional commit, unexpected platform change, or unresolved dependency.
+
+Stop after reporting. Do not begin Completion, persistence, API, UI, or deployment work.
+
+⸻
