@@ -1,0 +1,608 @@
+Phase 2A-5F is accepted. The authority boundary is correctly preserved: these evaluators verify governed observations without pretending the Foundation integration exists.
+
+The final evaluator batch contains the ten explicitly reconciled IDs. Completing it should produce **106/106 evaluator coverage**, but that will complete only the rule engine—not persistence, API/UI integration, external services, sending, or deployment.
+
+Give Replit this prompt:
+
+---
+
+# Phase 2A-5G — Completion Evaluators and Full Rule-Engine Coverage
+
+Implement the final Completion evaluator batch defined in the approved Phase 2A-5 evaluator coverage plan.
+
+This increment must add exactly these ten evaluators:
+
+```text
+WEB-FU-ATT-001
+WEB-FU-ABS-001
+WEB-FU-UNK-001
+WEB-FU-UNK-003
+WEB-RDY-COMP-001
+WEB-RDY-COMP-002
+WEB-RDY-COMP-003
+WEB-RDY-COMP-004
+WEB-EXC-001
+WEB-DONE-001
+```
+
+After this increment, the evaluator registry must contain exactly 106 canonical evaluator IDs with zero missing, duplicate, or unknown IDs.
+
+This completes evaluator coverage only. It must not add persistence, routes, API integration, UI, sending, publishing, deployment, authenticated approval, or external-service integration.
+
+## 1. Starting state
+
+Expected branch:
+
+`feature/webinar-standard-engine`
+
+Expected functional HEAD:
+
+`5e0e8f287642a06cf932d55ea2f8d8d5f815084a`
+
+Before changing anything, confirm:
+
+* branch, HEAD, direct parent, and tracked working-tree state;
+* the only permissible untracked file is the current instruction paste;
+* rule-ID generation reports 106 IDs and zero drift;
+* evaluator coverage is exactly 96/106;
+* the ten missing IDs are exactly the ten listed above;
+* all previous 96 evaluators remain registered;
+* non-incremental type checking passes;
+* the complete current baseline passes;
+* `@js-temporal/polyfill` remains pinned exactly to `0.5.1`;
+* all five canonical webinar-document hashes match.
+
+The reported Phase 2A-5F baseline is:
+
+* 46 test files;
+* 3,038 top-level records;
+* seven nested subtests;
+* 3,044 individual leaf tests;
+* TAP total 3,045 when the runner includes its grouping record;
+* zero failures, skips, cancellations, TODOs, setup failures, teardown failures, or type errors;
+* all 21 migrations applied against a new disposable database with complete shutdown and cleanup.
+
+Report actual runner units separately. Do not force these counts; investigate and explain any difference.
+
+Do not stage or commit the current instruction paste or unrelated files under `attached_assets/`. Use explicit allowlist staging.
+
+Do not treat `.agents/memory/` as authoritative requirements, and do not add product-policy memory files.
+
+## 2. Moving-baseline and repository-hygiene policy
+
+If HEAD has moved, inspect every intervening commit before proceeding.
+
+You may accept a moved HEAD only when every intervening change contains exclusively:
+
+* duplicate instruction or status material under `attached_assets/`; or
+* non-authoritative process notes under `.agents/memory/`.
+
+Stop if any intervening commit changes:
+
+* application or test code;
+* dependencies or configuration;
+* canonical standards;
+* the coverage plan;
+* product requirements or decisions;
+* database schema or migrations;
+* substantive verification evidence.
+
+Inspect the direct parent `9021a4f4478bd0565ef292f45649097e58fec6a8` and report its exact changed-file list.
+
+If it added a tracked instruction upload:
+
+1. Read the file completely.
+2. Record its path, size, and SHA-256.
+3. Search for references to its exact path and filename.
+4. Confirm it is not used by code, tests, configuration, generation, or runtime behavior.
+5. Confirm it contains no unique source data, decision, requirement, or evidence not preserved elsewhere.
+
+If all conditions are satisfied, delete it and document its original commit, deletion, and Git recoverability. Otherwise stop and report the finding.
+
+Do not rewrite history.
+
+## 3. Authoritative sources
+
+Use only:
+
+* `docs/standards/webinar/WEB-STANDARD-001.rules.json`
+* `docs/standards/webinar/WEB-STANDARD-001.md`
+* `docs/standards/webinar/WEBINAR-PILOT-IMPLEMENTATION-AUTHORIZATION.md`
+* `docs/standards/webinar/CHANGELOG-RC1.md`
+* `docs/standards/webinar/manifest.json`
+* `docs/verification/phase-2a-5-evaluator-coverage-plan.md`
+* the verified catalog, evidence, evaluation, exception, readiness, scheduling, audience, planning-time, deliverable, QA, and governed-service modules.
+
+The canonical catalog controls rule meaning. The coverage plan controls batch membership. The three recorded product decisions remain authoritative:
+
+1. Failed Warning, Recommended-default, and Optional rules remain visible but do not prevent Complete.
+2. Material-change notification uses the approved change categories and one-elapsed-hour limit.
+3. The attended and absent one-business-day follow-up clock begins at actual event completion.
+
+Do not modify the canonical standard or invent additional rules.
+
+## 4. Reconcile the final batch before coding
+
+Mechanically prove:
+
+* the ten listed IDs are canonical;
+* all ten are currently missing;
+* all ten belong to Completion;
+* none is already implemented;
+* none belongs to another batch;
+* the existing registry contains exactly 96 unique canonical IDs;
+* adding the ten produces exactly 106/106 coverage;
+* zero IDs remain missing.
+
+If any reconciliation differs, stop and report it before coding.
+
+## 5. Evaluation dependency analysis
+
+Before implementation, map the dependencies among the ten rules and the existing readiness aggregator.
+
+The design must be acyclic.
+
+No evaluator may require its own result, directly or indirectly.
+
+In particular:
+
+* `WEB-DONE-001` must not require a Complete-stage result if that Complete-stage result itself requires `WEB-DONE-001`.
+* A Complete-stage evaluator must not depend on a stage result whose calculation already depends on that same evaluator.
+* `WEB-EXC-001` cannot exempt itself.
+* An exception-validation result cannot require the exception resolution that it is being used to determine.
+
+Document the final evaluation order and dependency graph in the completion report.
+
+If the canonical requirements and existing aggregation design create an unresolved circular dependency, stop and report the exact cycle. Do not break it through a default pass, omitted dependency, or hard-coded result.
+
+## 6. Common implementation contract
+
+Implement one explicit evaluator for each of the ten rules.
+
+Each evaluator must:
+
+* be registered by its canonical rule ID;
+* use the canonical catalog record for metadata;
+* accept immutable, typed context;
+* return the established evaluation-result union;
+* preserve pass, fail, not applicable, evidence unavailable, invalid context, evaluator unavailable, and separate exception resolution;
+* never convert missing evidence into a pass;
+* never infer operational completion from a plan;
+* never infer full completion from evaluator coverage alone.
+
+Do not add:
+
+* a generic evaluator;
+* a prefix-based evaluator;
+* a default-pass path;
+* silent applicability assumptions;
+* hard-coded readiness or coverage results.
+
+## 7. Attended and absent follow-up deadlines
+
+Implement `WEB-FU-ATT-001` and `WEB-FU-ABS-001` using the existing business-day module.
+
+Required behavior:
+
+* the deadline begins at the actual event-completion instant;
+* the deadline is one business day in the webinar’s IANA time zone;
+* business days remain Monday through Friday;
+* no holiday calendar is introduced;
+* attendance-processing delay does not restart or extend the deadline;
+* a calculated deadline is an obligation deadline, not send authorization;
+* a planned follow-up does not prove that follow-up occurred;
+* operational completion requires appropriately scoped evidence when the canonical validation method requires it.
+
+Test:
+
+* weekday completion;
+* Friday completion;
+* weekend boundaries;
+* event-local time zone;
+* DST boundary where relevant;
+* completion exactly at deadline;
+* completion just before deadline;
+* completion just after deadline;
+* missing actual event-completion instant;
+* missing operational evidence;
+* wrong participant or variant evidence;
+* attended and absent variants remaining distinct;
+* shared destination permitted without collapsing variants.
+
+## 8. Attendance-unknown reconciliation
+
+Implement `WEB-FU-UNK-001` and `WEB-FU-UNK-003` using the existing audience and business-day modules.
+
+Preserve:
+
+* attendance unknown is an operational reconciliation state;
+* it is not a customer-facing attendance classification;
+* reconciliation is required before attended or absent treatment;
+* unknown attendance must never produce both attended and absent variants;
+* the approved neutral variant becomes eligible only after two business days unresolved;
+* the two-business-day clock uses the webinar’s IANA time zone;
+* no holiday calendar applies;
+* neutral eligibility is not send authorization;
+* later reconciliation to attended or absent suppresses any no-longer-applicable neutral obligation;
+* historical reconciliation delays remain visible for audit.
+
+Test:
+
+* reconciliation obligation created;
+* unresolved before two business days;
+* exact two-business-day boundary;
+* just before and after the boundary;
+* weekend boundary;
+* neutral variant only;
+* attended and absent variants absent while unknown;
+* later attended reconciliation;
+* later absent reconciliation;
+* contradictory attendance evidence;
+* wrong participant scope;
+* missing operational reconciliation evidence.
+
+## 9. Exception-mechanism evaluator
+
+Implement `WEB-EXC-001` by reusing the verified exception model and validator.
+
+Do not create a second exception mechanism.
+
+The evaluator must verify, as required by the canonical rule:
+
+* the exception references a real failed rule;
+* that originating rule is exception-eligible;
+* the exception is complete and structurally valid;
+* required justification and scope are present;
+* exact standard identifier and version match;
+* webinar, occurrence, rule, and finding scope match;
+* validity dates are coherent;
+* the reviewer or supplier remains explicitly unverified;
+* the original failed finding remains preserved;
+* resolution is represented separately as `resolvedByException`;
+* an incomplete or invalid exception does not satisfy the originating rule;
+* the original blocker remains active at its originating readiness stage;
+* this rule cannot exempt itself;
+* an exception cannot replace missing evidence;
+* an exception cannot resolve invalid context or evaluator unavailability;
+* an exception cannot override a non-exception-eligible rule.
+
+Where no exception has been invoked and the canonical trigger does not apply, return the catalog-supported non-applicable or passing result rather than inventing an exception requirement.
+
+Test every invalid and valid condition independently.
+
+## 10. Complete-stage rules
+
+Implement:
+
+```text
+WEB-RDY-COMP-001
+WEB-RDY-COMP-002
+WEB-RDY-COMP-003
+WEB-RDY-COMP-004
+```
+
+Derive each evaluator’s exact responsibility from its canonical trigger, expected behavior, validation method, failure message, and resolution guidance.
+
+Do not merge the four rules into a single generic completion evaluator.
+
+Where applicable, distinguish:
+
+* event completion state;
+* attendance reconciliation;
+* attended and absent follow-up obligations;
+* neutral follow-up eligibility or resolution;
+* cancellation and waitlist obligations;
+* unresolved operational evidence;
+* measurement obligations;
+* unresolved blocking findings;
+* exception inventories;
+* invalid or incomplete exceptions;
+* missing evaluator results;
+* prerequisite readiness findings.
+
+A Complete-stage result must not pass when a required blocker, operational obligation, or prerequisite remains unresolved.
+
+Warnings and advisory findings remain visible but do not block completion.
+
+## 11. Final completion rule
+
+Implement `WEB-DONE-001` using a complete, immutable evaluation snapshot.
+
+The snapshot must be bound to:
+
+* WEB-STANDARD-001 and its exact version;
+* one webinar and occurrence;
+* one calculation instant;
+* the canonical rule inventory;
+* the evaluator-registry version or fingerprint;
+* all required prerequisite findings;
+* the applicable evidence and exception snapshot.
+
+The evaluator must verify snapshot integrity, including:
+
+* no duplicate rule result;
+* no unknown rule ID;
+* no result for another standard or occurrence;
+* no stale or contradictory snapshot;
+* no silently missing prerequisite;
+* no evaluator-unavailable result for an applicable required rule;
+* no invalid-context result;
+* no evidence-unavailable result for an applicable blocker;
+* no unresolved applicable Mandatory or Conditional blocker;
+* no incomplete or invalid exception presented as resolution;
+* all applicable operational completion obligations resolved.
+
+### Advisory-rule decision
+
+Apply the approved product decision:
+
+* failed Warning rules remain visible but do not prevent Complete;
+* failed Recommended-default rules remain visible but do not prevent Complete;
+* failed Optional rules remain visible but do not prevent Complete;
+* unavailable evidence for an advisory rule remains visible but nonblocking;
+* advisory findings must not disappear from the completion result.
+
+Do not reinterpret “every applicable rule” as making advisory rules blocking. Completion requires resolution of applicable blocking requirements and operational obligations while retaining advisory findings.
+
+### Self-exclusion
+
+`WEB-DONE-001` must not require its own already-existing result.
+
+Use a documented, deterministic prerequisite set that excludes only the currently evaluated rule and avoids readiness cycles. Do not omit any other applicable rule merely to make the test pass.
+
+## 12. Completion outcome
+
+The completion result must distinguish:
+
+* complete;
+* incomplete due to unresolved blocker;
+* incomplete due to evidence unavailable;
+* incomplete due to operational obligation;
+* incomplete due to invalid context;
+* incomplete due to evaluator unavailable or missing prerequisite;
+* blocker resolved through a valid exception;
+* nonblocking advisory findings.
+
+Do not reduce the entire webinar standard to a percentage.
+
+Evaluator coverage may be reported as 106/106, but operational readiness remains four separately calculated stages.
+
+## 13. Coverage versus readiness
+
+After this phase:
+
+* evaluator implementation coverage should be 106/106;
+* this does not mean any particular webinar is ready or complete;
+* missing operational evidence may still prevent readiness;
+* missing Foundation observations may still prevent readiness;
+* unresolved blocking rules may still prevent readiness;
+* incomplete exceptions may still prevent readiness;
+* no runtime integrations have been created.
+
+Add tests proving a fully implemented registry can still produce incomplete readiness.
+
+## 14. Scope containment
+
+This phase remains pure and in-memory.
+
+Do not add:
+
+* database schema or persistence;
+* migrations;
+* routes or API handlers;
+* UI;
+* provider clients or credentials;
+* Foundation integration;
+* email or webinar-platform integration;
+* external sending;
+* publishing;
+* deployment;
+* environment-derived values;
+* filesystem access;
+* automatic system-clock access.
+
+Add structural tests proving these capabilities are absent.
+
+## 15. Registry and final coverage
+
+After implementation:
+
+* registry contains exactly 106 evaluator IDs;
+* every canonical ID has exactly one evaluator;
+* zero IDs remain missing;
+* zero duplicate or unknown IDs exist;
+* no generic fallback exists;
+* generated IDs and registry IDs match exactly;
+* readiness coverage is derived from the registry;
+* the coverage calculator reports 106 implemented and zero missing.
+
+Add mechanical tests that compare canonical, generated, and registered sets in both directions.
+
+## 16. Required tests
+
+Each material condition must be an independently named test or subtest.
+
+### Final reconciliation
+
+Test:
+
+* exact ten Completion IDs;
+* existing 96 unchanged;
+* final 106/106 coverage;
+* zero missing;
+* zero duplicate;
+* zero unknown;
+* no generic fallback.
+
+### Per-rule behavior
+
+For each evaluator, test as applicable:
+
+* pass;
+* genuine failure;
+* not applicable;
+* evidence unavailable;
+* invalid context;
+* wrong standard;
+* wrong version;
+* wrong webinar or occurrence;
+* malformed prerequisite;
+* exception behavior;
+* chronological boundaries.
+
+### Completion snapshot
+
+Test:
+
+* exact canonical inventory;
+* duplicate result;
+* unknown result;
+* missing required result;
+* wrong occurrence;
+* stale snapshot;
+* evaluator unavailable;
+* invalid context;
+* blocker evidence unavailable;
+* unresolved Mandatory blocker;
+* unresolved applicable Conditional blocker;
+* valid exception resolution;
+* invalid exception;
+* advisory failure retained but nonblocking;
+* advisory evidence unavailable retained but nonblocking;
+* full coverage with incomplete operational readiness;
+* genuinely complete occurrence.
+
+### Dependency-cycle protection
+
+Test:
+
+* `WEB-DONE-001` does not depend on itself;
+* Complete-stage rules do not create a cycle;
+* `WEB-EXC-001` cannot exempt itself;
+* dependency traversal fails explicitly if a future cycle is introduced.
+
+### Follow-up deadlines
+
+Test all one-business-day and two-business-day boundaries independently, including weekends and relevant DST behavior.
+
+### Containment
+
+Test absence of:
+
+* persistence;
+* database calls;
+* routes;
+* UI;
+* provider clients;
+* credentials;
+* external sends;
+* publishing;
+* deployment;
+* environment access;
+* filesystem access;
+* implicit clock access.
+
+## 17. Verification gate
+
+Run fresh:
+
+1. Completion evaluator tests.
+2. Completion snapshot and dependency tests.
+3. Follow-up deadline and reconciliation tests.
+4. Exception-mechanism evaluator tests.
+5. Final registry and 106/106 coverage tests.
+6. Governed Services evaluator tests.
+7. Deliverables/QA evaluator tests.
+8. Registrant/Audience evaluator tests.
+9. Scheduling evaluator tests.
+10. Evidence-framework tests.
+11. Audience-state planner tests.
+12. Scheduling planner tests.
+13. Business-day and planning-time tests.
+14. All containment tests.
+15. Classifier tests.
+16. Readiness tests.
+17. Existing exception tests.
+18. Existing evaluator tests.
+19. Existing registry tests.
+20. Existing structural tests.
+21. Catalog-integrity tests.
+22. Rule-ID drift check.
+23. Non-incremental type check.
+24. Complete API suite against a newly created disposable database.
+25. Frontend regression suite.
+26. Preview smoke check.
+27. All five canonical-document hash checks.
+28. Exact dependency-pin verification for `@js-temporal/polyfill` version `0.5.1`.
+
+Report separately:
+
+* test files;
+* top-level tests;
+* nested subtests;
+* individual leaf tests;
+* TAP grouping records;
+* failures;
+* skipped, cancelled, and TODO tests;
+* setup and teardown failures;
+* type errors;
+* all 21 migration results;
+* PostgreSQL shutdown;
+* socket removal;
+* temporary-directory removal;
+* independent confirmation that the disposable database root no longer exists.
+
+Do not force an expected aggregate test count. Calculate it from actual runner output.
+
+## 18. Commit policy
+
+A platform-created commit is provisional until every verification gate passes.
+
+Do not rewrite history.
+
+If a correction is required after a provisional commit, create a new follow-up commit. Do not amend or squash.
+
+Use explicit allowlist staging. Do not commit uploaded prompts or unrelated workspace files.
+
+Suggested commit title:
+
+`Complete webinar standard evaluator coverage`
+
+## 19. Completion report
+
+Create:
+
+`docs/verification/phase-2a-5g.md`
+
+Report:
+
+* accepted starting commit;
+* intervening commits and exact contents;
+* ending commit and direct parent;
+* every changed file;
+* disposition of any tracked instruction upload;
+* exact ten evaluators added;
+* canonical metadata and evidence dependency for each;
+* documented acyclic evaluation order;
+* one-business-day follow-up behavior;
+* two-business-day reconciliation behavior;
+* exception-mechanism behavior;
+* Complete-stage behavior;
+* `WEB-DONE-001` prerequisite set and self-exclusion;
+* advisory-rule treatment;
+* completion-outcome classifications;
+* final registry reconciliation;
+* final coverage of exactly 106/106 with zero missing;
+* evidence that full coverage does not imply operational readiness;
+* test counts and every verification result;
+* migration and cleanup results;
+* canonical hashes;
+* Temporal dependency-pin result;
+* confirmation that the prior 96 evaluators remain registered;
+* confirmation that no generic fallback exists;
+* confirmation that no canonical standard, database schema, migration, route, API contract, UI, external integration, sending, publishing, or deployment behavior changed;
+* any ambiguity, provisional commit, unexpected platform change, or unresolved dependency.
+
+Stop after reporting. Do not begin persistence, API, UI, deployment, or another activity standard.
+
+---
