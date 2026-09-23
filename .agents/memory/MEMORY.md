@@ -8,3 +8,4 @@
 - [Audience definition source](audience-definition-source.md) — use supplied CliCS segment/unit/role/persona mappings; geography is a later audience dimension, not campaign scope.
 - [Verification and commit policy](verification-commit-policy.md) — commits can be provisional; only passing every required gate establishes phase completion.
 - [Webinar readiness rationale](webinar-readiness-rationale.md) — historical recruitment defects must not create an implicit all-stage dependency chain.
+- [Pure planning boundary](pure-planning-boundary.md) — legacy weekend policies stay separate; overdue obligation deadlines are not backdated send schedules.

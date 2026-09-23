@@ -1,0 +1,367 @@
+Phase 2A-3 is now accepted. The evidence is internally consistent: 23 files, 431 tests, clean database lifecycle, unchanged canonical artifacts, and classifier behavior verified independently. The unexplained delivery provenance remains an audit note, but it does not invalidate the verified code.
+
+Give Replit this next prompt:
+
+⸻
+
+Phase 2A-4 — Shortened-Window Scheduling and Audience-State Planning
+
+Implement the pure, in-memory scheduling and audience-state planning layer for WEB-STANDARD-001.
+
+This phase creates communication plans and operational obligations only. It must not execute communications or create persistence, routes, UI, publishing, or deployment behavior.
+
+1. Starting state
+
+Expected branch:
+
+feature/webinar-standard-engine
+
+Expected HEAD:
+
+5f7d5b728dfa2194965d8d02c05c03563658f5e9
+
+Before changing anything, confirm:
+
+* branch, HEAD, parent, and clean working tree;
+* rule-ID generator: 106 IDs and zero drift;
+* non-incremental type check passes;
+* baseline: 23 test files and 431 tests passing;
+* evaluator coverage remains 15 of 106;
+* all five canonical webinar-document hashes match.
+
+If HEAD has moved, apply the established moving-baseline policy only to duplicate status or process material under attached_assets/ or .agents/memory/. Stop for substantive code, configuration, test, requirement, or canonical-document changes.
+
+Do not treat .agents/memory/ as an authoritative requirements source.
+
+2. Authoritative sources
+
+Use:
+
+* docs/standards/webinar/WEB-STANDARD-001.rules.json
+* docs/standards/webinar/WEB-STANDARD-001.md
+* docs/standards/webinar/WEBINAR-PILOT-IMPLEMENTATION-AUTHORIZATION.md
+* the verified catalog, evaluation, exception, and readiness modules.
+
+Do not modify the canonical standard, invent rule IDs, or duplicate its rule inventory.
+
+3. Scheduling input and output
+
+Create a pure scheduling module that accepts an immutable input containing at least:
+
+* calculation instant;
+* webinar start instant;
+* webinar IANA time zone;
+* event status;
+* standard identifier and exact version;
+* the four canonical recruitment-touch identities.
+
+Return an immutable plan containing:
+
+* selected shortened-window band;
+* every canonical recruitment touch;
+* disposition: scheduled, adjusted, or omitted;
+* scheduled UTC instant where applicable;
+* corresponding event-local date and time;
+* original standard offset;
+* adjustment or omission reason;
+* warning codes;
+* applicable canonical rule references;
+* confirmation that the output is planning-only and carries no send authorization.
+
+Every canonical touch must appear in the result. Omitted communications must never disappear silently.
+
+The module must not read the system clock, process environment, database, filesystem, or machine time zone. All temporal inputs must be explicit.
+
+4. Authoritative time semantics
+
+The webinar’s IANA time zone is authoritative.
+
+The normal 21-, 14-, 7-, and 1-day offsets are local calendar-day offsets preserving the webinar’s local wall-clock time. They are not fixed multiples of 24 elapsed hours.
+
+A daylight-saving transition may therefore produce a UTC difference of 23 or 25 hours for a one-calendar-day offset.
+
+Use deterministic “compatible” disambiguation for calculated local times:
+
+* nonexistent spring-forward time: move forward by the DST gap;
+* repeated fall-back time: choose the earlier occurrence.
+
+Expose any such adjustment in the result metadata. Do not perform it silently.
+
+Before adding a new date-time dependency, inspect the repository for an existing capable library. Reuse it when suitable. If no existing implementation can safely handle IANA zones and DST, report the dependency proposed and why before adding it.
+
+5. Shortened-window bands
+
+Calculate local calendar days remaining from the calculation date to the webinar date in the webinar’s time zone.
+
+Local calendar days remaining	Plan
+21 or more	Schedule all four standard touches at −21, −14, −7, and −1 local calendar days
+14–20	Omit the 21-day touch; adjust the 14-day touch to immediate; retain −7 and −1
+7–13	Omit the 21- and 14-day touches; adjust the 7-day touch to immediate; retain −1
+2–6	Omit the 21- and 14-day touches; adjust the 7-day touch to immediate; retain −1 only if it is at least 24 elapsed hours after the immediate touch
+0–1, before start	Omit the first three touches; adjust the 1-day touch to immediate; show compressed-window warning
+Event started, completed, or cancelled	Create no recruitment schedule; show every touch as omitted with the applicable reason
+
+“Immediate” means exactly the supplied calculation instant.
+
+For the 2–6-day band, the 24-hour separation test uses elapsed time, not local calendar-day difference.
+
+After calculating the plan, enforce these invariants:
+
+* no scheduled instant precedes the calculation instant;
+* no communication is scheduled at or after webinar start;
+* no duplicate communication identity;
+* no duplicate scheduled instant;
+* scheduled output is chronological;
+* adjusted and omitted touches remain visible;
+* no backdating.
+
+If a nominal touch falls in the past because of the exact local time, omit it with a specific reason. Do not silently shift it unless the shortened-window table explicitly calls for an immediate adjustment.
+
+6. Invalid inputs
+
+Reject explicitly:
+
+* invalid instant;
+* invalid IANA time zone;
+* duplicate touch identity;
+* missing standard identifier or version;
+* missing webinar start;
+* unsupported event status;
+* calculation instant at or after webinar start when an active recruitment plan is requested;
+* inconsistent or structurally invalid communication input.
+
+Do not coerce invalid input or substitute environment defaults.
+
+7. Audience-state planner
+
+Create a separate pure, immutable audience-state planning module.
+
+Preserve structural separation:
+
+* event status remains separate from participant status;
+* attendance is recorded and evaluated per registrant;
+* do not introduce a session-level attendance state.
+
+Model these states distinctly:
+
+* eligible non-registrant;
+* registered;
+* attended;
+* registered but absent;
+* attendance unknown;
+* waitlisted;
+* cancelled;
+* internal or test.
+
+The planner returns obligations, eligibility, suppressions, deadlines, and warnings. It does not send anything.
+
+Required behavior
+
+* Eligible non-registrants may receive only the calculated recruitment plan.
+* Registration immediately suppresses all future recruitment.
+* Registered participants receive:
+    * immediate confirmation;
+    * calendar and attendance information;
+    * 24-hour reminder when still in the future;
+    * 1-hour reminder when still in the future;
+    * change or cancellation notice when triggered.
+* Late registration never produces a reminder in the past.
+* Attended participants receive only the attended follow-up variant.
+* Registered-but-absent participants receive only the absent variant.
+* Attendance unknown creates a reconciliation obligation first.
+* Attendance unknown must never create both attended and absent variants.
+* When still unresolved after two business days, attendance unknown may create only the approved neutral variant.
+* Waitlisted participants receive waitlist confirmation and then promotion or closure obligations as triggered.
+* Cancelled participants receive cancellation confirmation and suppression from later customer paths.
+* Internal/test participants are excluded from customer communications and reporting.
+* Explicitly labelled test-send planning may be represented for QA but must not be classified as a customer path.
+* Shared follow-up assets are permitted, but attended, absent, and neutral communication variants remain distinct.
+
+8. Business-day convention
+
+For this pilot, a business day means Monday through Friday in the webinar’s IANA time zone.
+
+Do not introduce a holiday calendar.
+
+Expose this limitation in result metadata.
+
+Use it for:
+
+* attended follow-up due within one business day;
+* absent follow-up due within one business day;
+* attendance-unknown neutral eligibility after two business days.
+
+Return deadlines or eligibility instants, not an instruction to send.
+
+9. Relationship to existing rule and readiness modules
+
+Scheduling and audience results may reference canonical rule IDs, but:
+
+* do not add rules;
+* do not add the remaining 91 evaluators;
+* do not represent a scheduling result as a passed rule evaluation;
+* do not change readiness coverage;
+* do not permit scheduling to override suppression, exceptions, or readiness;
+* do not change the corrected readiness classifier;
+* keep evaluator coverage at 15 of 106.
+
+A missing evaluator remains missing coverage.
+
+10. Containment requirements
+
+No output type or module may contain:
+
+* provider credentials;
+* external-send methods;
+* deployment behavior;
+* publishing behavior;
+* database calls;
+* route handlers;
+* environment-derived destinations;
+* automatic clock access.
+
+Add structural containment tests proving these capabilities are absent.
+
+11. Required tests
+
+Shortened-window bands
+
+Test:
+
+* every band;
+* boundaries at 21, 20, 14, 13, 7, 6, 2, 1, and 0 local calendar days;
+* calculation instant equal to webinar start;
+* webinar already started;
+* completed event;
+* cancelled event;
+* every omitted touch remains visible;
+* no communication is scheduled in the past;
+* no communication at or after event start;
+* exact 24-hour separation boundary in the 2–6-day band;
+* just under and just over that boundary.
+
+Time zones and DST
+
+Use fixed IANA zones and instants covering:
+
+* spring-forward;
+* fall-back;
+* a zone without DST;
+* calculation and webinar on opposite sides of a transition;
+* preservation of local wall-clock time;
+* nonexistent local time adjustment;
+* repeated local time disambiguation;
+* invalid IANA-zone rejection;
+* independence from the machine’s time zone.
+
+Registrant timing
+
+Test:
+
+* immediate confirmation;
+* calendar information;
+* 24-hour reminder;
+* 1-hour reminder;
+* registration after the nominal 24-hour reminder;
+* registration after the nominal 1-hour reminder;
+* no backdated reminder;
+* event-change notification;
+* event-cancellation notification.
+
+Audience states
+
+Test:
+
+* registration suppresses recruitment;
+* cancellation suppresses subsequent customer paths;
+* internal/test exclusion;
+* explicitly labelled QA test planning;
+* attended variant only;
+* absent variant only;
+* unknown attendance reconciliation;
+* neutral variant only after two business days;
+* unknown never produces both attended and absent;
+* waitlist confirmation;
+* waitlist promotion;
+* waitlist closure;
+* shared asset with distinct variants;
+* duplicate participant or communication identity rejection.
+
+Quality properties
+
+Test:
+
+* deterministic output;
+* immutable input;
+* immutable result;
+* chronological ordering;
+* event/participant structural separation;
+* business-day weekend boundaries;
+* no implicit holiday behavior;
+* no send, database, route, publishing, or deployment capability.
+
+Each material boundary or state must be an independently named test or subtest. Do not hide large scenario tables inside one opaque aggregate test.
+
+12. Verification gate
+
+Run fresh:
+
+1. scheduling suite;
+2. audience-state suite;
+3. business-day suite;
+4. containment suite;
+5. classifier suite;
+6. readiness suite;
+7. exception suite;
+8. evaluator suite;
+9. registry suite;
+10. existing structural suite;
+11. catalog-integrity suite;
+12. rule-ID drift check;
+13. non-incremental type check;
+14. complete API suite against a new disposable database;
+15. frontend suite;
+16. all five canonical-document hash checks.
+
+Report test files, top-level tests, subtests, and individual tests separately.
+
+Explicitly report:
+
+* failures;
+* skipped, cancelled, and todo tests;
+* setup and teardown failures;
+* type errors;
+* all 21 migrations;
+* database shutdown and cleanup;
+* canonical hashes;
+* evaluator coverage.
+
+Do not force an expected aggregate count. Calculate it from the actual runner results.
+
+A platform-created commit is provisional until every gate passes. Do not rewrite history. If a follow-up correction is needed, use a new commit.
+
+Suggested commit title:
+
+Add webinar scheduling and audience-state planning
+
+13. Completion report
+
+Report:
+
+* accepted starting and ending commits;
+* every changed file;
+* dependency reused or added for IANA time-zone handling;
+* exact shortened-window behavior;
+* immediate-touch slot mapping;
+* DST disambiguation behavior;
+* audience-state behavior;
+* business-day limitation;
+* test counts and all verification results;
+* evaluator coverage, which must remain 15 of 106;
+* canonical-document hashes;
+* confirmation that no canonical standard, database, migration, route, API, UI, sending, publishing, or deployment behavior changed;
+* any ambiguity or unexpected platform-generated change.
+
+Stop after reporting. Do not begin the next phase.
+
+⸻
