@@ -33,7 +33,7 @@ type StructuralControlsHaveNoIds = Assert<
 const catalog = await loadWebinarStandardCatalog();
 const registry = createWebinarEvaluatorRegistry(catalog);
 
-test("coverage addresses 14 semantic checks as 10/2/2 but only 15 of 106 rules", async () => {
+test("coverage addresses 14 semantic checks as 10/2/2 with 38 of 106 rules implemented", async () => {
   const manifest = JSON.parse(await readFile(
     new URL("../../../../docs/standards/webinar/manifest.json", import.meta.url), "utf8",
   )) as { semanticValidation: Record<string, unknown> };
@@ -44,13 +44,14 @@ test("coverage addresses 14 semantic checks as 10/2/2 but only 15 of 106 rules",
   assert.equal(coverage.evaluatorBacked, 10);
   assert.equal(coverage.structurallyEnforced, 2);
   assert.equal(coverage.containmentVerified, 2);
-  assert.equal(coverage.implementedRuleCount, 15);
-  assert.equal(coverage.unimplementedRuleCount, 91);
+  assert.equal(coverage.implementedRuleCount, 38);
+  assert.equal(coverage.unimplementedRuleCount, 68);
   assert.equal(coverage.totalRuleCount, 106);
   assert.equal(coverage.ruleEngineCoverage, "partial");
   const mappedIds = new Set(SEMANTIC_CONTROLS.flatMap((control) =>
     control.classification === "evaluator_backed" ? [...control.ruleIds] : []));
-  assert.deepEqual(mappedIds, new Set(registry.implementedRuleIds));
+  assert.equal(mappedIds.size, 15);
+  assert.ok([...mappedIds].every(id => registry.implementedRuleIds.includes(id)));
   for (const control of SEMANTIC_CONTROLS) {
     if (control.classification !== "evaluator_backed") assert.equal(Object.hasOwn(control, "ruleIds"), false);
   }
@@ -153,34 +154,113 @@ test("catalog schema does not grant send/deployment authority and rejects author
   assert.ok(containment.every((control) => !Object.hasOwn(control, "ruleIds")));
 });
 
-test("evaluator modules have only pure domain dependencies and no ambient execution or I/O capabilities", async () => {
-  const directory = new URL("../../src/lib/webinar-standard-evaluation/", import.meta.url);
-  const files = (await readdir(directory)).filter((name) => name.endsWith(".ts"));
-  assert.ok(files.includes("registry.ts"));
-  assert.ok(files.includes("evaluators.ts"));
-  const allowedCatalogImports = new Set(["../webinar-standard-catalog/types", "../webinar-standard-catalog/validate"]);
-  const forbiddenGlobals = new Set([
-    "fetch", "XMLHttpRequest", "WebSocket", "process", "require", "globalThis",
-    "global", "window", "Date", "setTimeout", "setInterval", "eval", "Function",
-  ]);
-  for (const filename of files) {
-    const source = ts.createSourceFile(filename, await readFile(new URL(filename, directory), "utf8"), ts.ScriptTarget.Latest, true);
+const allowedCatalogImports = new Set(["../webinar-standard-catalog/types", "../webinar-standard-catalog/validate"]);
+const forbiddenGlobals = new Set([
+  "fetch", "XMLHttpRequest", "WebSocket", "process", "require", "globalThis",
+  "global", "window", "Date", "setTimeout", "setInterval", "setImmediate",
+  "eval", "Function", "performance", "Deno", "Bun", "navigator", "document", "crypto",
+]);
+type PureSourceOptions = Readonly<{
+  localFiles: readonly string[];
+  exactImports?: Readonly<Record<string, readonly string[]>>;
+  temporalMembers?: readonly string[];
+}>;
+function assertPureSource(filename: string, content: string, options: PureSourceOptions): void {
+    const source = ts.createSourceFile(filename, content, ts.ScriptTarget.Latest, true);
     const visit = (node: ts.Node): void => {
       if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) {
         assert.ok(ts.isStringLiteral(node.moduleSpecifier));
         const target = node.moduleSpecifier.text;
-        assert.ok(allowedCatalogImports.has(target) || (
-          target.startsWith("./") && !target.slice(2).includes("/") && files.includes(`${target.slice(2)}.ts`)
-        ), `${filename}: forbidden dependency ${target}`);
+        const exactNames = options.exactImports?.[target];
+        if (exactNames) {
+          // No default/namespace/aliased imports or re-exports can expose additional capabilities.
+          assert.ok(ts.isImportDeclaration(node), `${filename}: external re-export forbidden`);
+          const clause = node.importClause;
+          assert.ok(clause && !clause.name && clause.namedBindings && ts.isNamedImports(clause.namedBindings));
+          assert.ok(clause.namedBindings.elements.length > 0);
+          for (const binding of clause.namedBindings.elements) {
+            assert.equal(binding.propertyName, undefined, `${filename}: external aliases forbidden`);
+            assert.ok(exactNames.includes(binding.name.text), `${filename}: forbidden imported member ${binding.name.text}`);
+          }
+        } else {
+          assert.ok(allowedCatalogImports.has(target) || (
+            target.startsWith("./") && !target.slice(2).includes("/")
+              && options.localFiles.includes(`${target.slice(2)}.ts`)
+          ), `${filename}: forbidden dependency ${target}`);
+        }
       }
       if (ts.isIdentifier(node)) assert.ok(!forbiddenGlobals.has(node.text), `${filename}: forbidden global ${node.text}`);
       if (ts.isCallExpression(node)) assert.notEqual(node.expression.kind, ts.SyntaxKind.ImportKeyword, "Dynamic imports are forbidden");
-      if (ts.isPropertyAccessExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "Math") {
-        assert.notEqual(node.name.text, "random");
+      if (ts.isIdentifier(node) && node.text === "Temporal") {
+        const parent = node.parent;
+        if (!ts.isImportSpecifier(parent)) {
+          // Only explicit deterministic members are available; Now, computed access,
+          // alias assignment and destructuring cannot evade the automatic-clock ban.
+          const member = ts.isPropertyAccessExpression(parent) && parent.expression === node
+            ? parent.name.text : ts.isQualifiedName(parent) && parent.left === node ? parent.right.text : undefined;
+          assert.ok(member && options.temporalMembers?.includes(member), `${filename}: forbidden Temporal access`);
+        }
+      }
+      if (ts.isIdentifier(node) && node.text === "Math") {
+        const parent = node.parent;
+        assert.ok(ts.isPropertyAccessExpression(parent) && parent.expression === node
+          && parent.name.text !== "random", `${filename}: indirect or random Math access forbidden`);
       }
       ts.forEachChild(node, visit);
     };
     visit(source);
+}
+
+test("evaluator and evidence modules retain pure domain dependencies and no ambient execution or I/O capabilities", async () => {
+  for (const folder of ["webinar-standard-evaluation", "webinar-standard-evidence"]) {
+    const directory = new URL(`../../src/lib/${folder}/`, import.meta.url);
+    const files = (await readdir(directory)).filter((name) => name.endsWith(".ts"));
+    assert.ok(files.includes("types.ts"));
+    assert.ok(files.includes(folder === "webinar-standard-evaluation" ? "registry.ts" : "validate.ts"));
+    for (const filename of files) {
+      const setup = folder === "webinar-standard-evaluation" && filename === "setup-evaluators.ts";
+      assertPureSource(`${folder}/${filename}`, await readFile(new URL(filename, directory), "utf8"), {
+        localFiles: files,
+        exactImports: setup ? {
+          "@js-temporal/polyfill": ["Temporal"],
+          "node:util": ["isDeepStrictEqual"],
+          "../webinar-standard-planning-time/time": ["assertInstant", "assertTimeZone", "localTime"],
+        } : {},
+        temporalMembers: setup ? ["PlainDate", "PlainTime"] : [],
+      });
+    }
+    assert.ok(fileURLToPath(directory).endsWith(`/${folder}/`));
   }
-  assert.ok(fileURLToPath(directory).endsWith("/webinar-standard-evaluation/"));
+  // Check the admitted time-helper dependency too, rather than trusting its path alone.
+  const helper = new URL("../../src/lib/webinar-standard-planning-time/time.ts", import.meta.url);
+  assertPureSource("planning-time/time.ts", await readFile(helper, "utf8"), {
+    localFiles: [], exactImports: { "@js-temporal/polyfill": ["Temporal"] },
+    temporalMembers: ["Instant", "ZonedDateTime", "PlainDateTime"],
+  });
+});
+
+test("purity guard rejects automatic clocks, indirect Temporal access and capability imports", () => {
+  const options: PureSourceOptions = {
+    localFiles: [], exactImports: {
+      "@js-temporal/polyfill": ["Temporal"], "node:util": ["isDeepStrictEqual"],
+      "../webinar-standard-planning-time/time": ["assertInstant", "assertTimeZone", "localTime"],
+    }, temporalMembers: ["PlainDate", "PlainTime"],
+  };
+  for (const source of [
+    "Date.now()", "new Date()", "process.env.SECRET", "performance.now()",
+    "Temporal.Now.instant()", "Temporal['Now'].instant()", "const { Now } = Temporal",
+    "const clock = Temporal", "Math.random()", "Math['random']()", "const { random } = Math",
+    "fetch('https://example.test')", "import('node:fs')",
+    "import fs from 'node:fs'", "import { inspect } from 'node:util'",
+    "import * as util from 'node:util'", "export * from 'node:util'",
+    "import { Temporal as clock } from '@js-temporal/polyfill'",
+    "import { shiftCalendarDays } from '../webinar-standard-planning-time/time'",
+  ]) assert.throws(() => assertPureSource("negative-probe.ts", source, options), source);
+  assert.doesNotThrow(() => assertPureSource("deterministic-probe.ts", [
+    "import { Temporal } from '@js-temporal/polyfill';",
+    "import { isDeepStrictEqual } from 'node:util';",
+    "import { localTime } from '../webinar-standard-planning-time/time';",
+    "Temporal.PlainDate.from('2030-01-01'); Temporal.PlainTime.from('12:00');",
+    "isDeepStrictEqual({}, {}); localTime(0, 'UTC');",
+  ].join("\n"), options));
 });

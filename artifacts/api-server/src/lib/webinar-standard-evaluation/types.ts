@@ -1,6 +1,7 @@
 import type {
   RuleId, StandardId, StandardVersion, WebinarStandardRule,
 } from "../webinar-standard-catalog/types";
+import type { SetupContext, MeasurementPlanContext, FindingEvidenceContext } from "./setup-types";
 
 export type EventOperationalStatus =
   | "draft" | "open_for_registration" | "scheduled"
@@ -61,6 +62,9 @@ export interface FollowUpVariant {
 
 /** Caller-supplied observation time, never wall-clock time. Null means missing evidence. */
 export interface EvaluationContext {
+  readonly setup?: SetupContext | null;
+  readonly measurementPlan?: MeasurementPlanContext | null;
+  readonly findingEvidence?: FindingEvidenceContext | null;
   readonly observedAtEpochMs: number;
   readonly event: EventContext;
   readonly participant: ParticipantContext | null;
@@ -84,7 +88,7 @@ export interface EvaluationContext {
   };
 }
 
-export type EvaluationStatus = "pass" | "fail" | "not_applicable" | "unimplemented";
+export type EvaluationStatus = "pass" | "fail" | "not_applicable" | "evidence_unavailable" | "unimplemented";
 export type EvaluationReason =
   | "satisfied" | "violation" | "condition_not_met"
   | "missing_evidence" | "invalid_context" | "not_implemented";

@@ -1,6 +1,7 @@
 import type { RuleId, WebinarStandardCatalog } from "../webinar-standard-catalog/types";
 import { validateWebinarStandardCatalog } from "../webinar-standard-catalog/validate";
 import { EVALUATORS, IMPLEMENTED_RULE_IDS } from "./evaluators";
+import { createSetupEvaluators } from "./setup-evaluators";
 import type {
   EvaluationContext, EvaluatorRegistryEntry, PartialEvaluatorRegistry,
   RuleEvaluationResult, RuleEvaluator,
@@ -14,22 +15,23 @@ export function createWebinarEvaluatorRegistry(catalog: WebinarStandardCatalog):
       .map((issue) => `${issue.field}: ${issue.message}`).join("; ")}`);
   }
   const snapshot = validation.catalog;
+  const boundEvaluators = Object.freeze({ ...EVALUATORS, ...createSetupEvaluators(snapshot) });
   const implemented = new Set<RuleId>(IMPLEMENTED_RULE_IDS);
-  if (implemented.size !== 15 || Object.keys(EVALUATORS).length !== implemented.size) {
+  if (implemented.size !== 38 || Object.keys(boundEvaluators).length !== implemented.size) {
     throw new Error("Invalid webinar evaluator registry: duplicate or missing implementations.");
   }
   const catalogIds = new Set(snapshot.rules.map((rule) => rule.ruleId));
   for (const id of IMPLEMENTED_RULE_IDS) {
-    if (!catalogIds.has(id) || typeof EVALUATORS[id] !== "function") {
+    if (!catalogIds.has(id) || typeof boundEvaluators[id] !== "function") {
       throw new Error(`Invalid webinar evaluator registry: missing rule or evaluator ${id}.`);
     }
   }
   const unimplementedRuleIds = Object.freeze(snapshot.rules
     .filter((rule) => !implemented.has(rule.ruleId)).map((rule) => rule.ruleId));
-  if (unimplementedRuleIds.length !== 91) {
-    throw new Error("Invalid webinar evaluator registry: expected exactly 91 unimplemented rules.");
+  if (unimplementedRuleIds.length !== 68) {
+    throw new Error("Invalid webinar evaluator registry: expected exactly 68 unimplemented rules.");
   }
-  const evaluators: Partial<Record<RuleId, RuleEvaluator>> = EVALUATORS;
+  const evaluators: Partial<Record<RuleId, RuleEvaluator>> = boundEvaluators;
   const results = new Map<RuleId, (context: EvaluationContext) => RuleEvaluationResult>();
   const entries: EvaluatorRegistryEntry[] = [];
   for (const rule of snapshot.rules) {

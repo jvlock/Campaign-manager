@@ -19,6 +19,7 @@ const blockingByType = {
 const failureByStatus = {
   pass: false,
   fail: true,
+  evidence_unavailable: false,
   not_applicable: false,
   unimplemented: false,
 } as const satisfies Record<EvaluationStatus, boolean>;

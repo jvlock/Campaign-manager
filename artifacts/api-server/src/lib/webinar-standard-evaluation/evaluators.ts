@@ -2,12 +2,14 @@ import type {
   CommunicationContext, EvaluationContext, GovernedValueEvidence,
   HumanConfirmation, RuleEvaluator, RuleFinding,
 } from "./types";
+import { SETUP_BATCH_RULE_IDS } from "./setup-evaluators";
 
 export const IMPLEMENTED_RULE_IDS = Object.freeze([
   "WEB-REC-005", "WEB-REC-008", "WEB-FU-INT-001", "WEB-REC-011",
   "WEB-WIN-006", "WEB-FU-VAR-001", "WEB-FU-UNK-002", "WEB-QA-003",
   "WEB-RDY-REC-002", "WEB-QA-004", "WEB-RDY-RUN-001", "WEB-SETUP-C07",
   "WEB-QA-005", "WEB-QA-006", "WEB-RDY-REC-008",
+  ...SETUP_BATCH_RULE_IDS,
 ] as const);
 
 type ImplementedRuleId = (typeof IMPLEMENTED_RULE_IDS)[number];
@@ -21,7 +23,7 @@ function finding(
   return Object.freeze({ status, reason, evidence: Object.freeze(evidence) });
 }
 const pass = (...details: string[]) => finding("pass", "satisfied", ...details);
-const missing = (...details: string[]) => finding("fail", "missing_evidence", ...details);
+const missing = (...details: string[]) => finding("evidence_unavailable", "missing_evidence", ...details);
 const violation = (...details: string[]) => finding("fail", "violation", ...details);
 const na = (...details: string[]) => finding("not_applicable", "condition_not_met", ...details);
 const invalid = (...details: string[]) => finding("fail", "invalid_context", ...details);
@@ -245,4 +247,4 @@ export const EVALUATORS = Object.freeze({
   "WEB-QA-005": checked(utms),
   "WEB-QA-006": checked((c) => governed(c.governance.internalName, "Internal name")),
   "WEB-RDY-REC-008": checked(namingTracking),
-} satisfies Record<ImplementedRuleId, RuleEvaluator>);
+} satisfies Partial<Record<ImplementedRuleId, RuleEvaluator>>);

@@ -9,6 +9,12 @@ const approvedImplementedIds = [
   "WEB-FU-INT-001", "WEB-FU-VAR-001", "WEB-FU-UNK-002",
   "WEB-QA-003", "WEB-QA-004", "WEB-QA-005", "WEB-QA-006",
   "WEB-SETUP-C07", "WEB-RDY-REC-002", "WEB-RDY-REC-008", "WEB-RDY-RUN-001",
+  "WEB-SETUP-001", "WEB-SETUP-002", "WEB-SETUP-004", "WEB-SETUP-005",
+  "WEB-SETUP-006", "WEB-SETUP-007", "WEB-SETUP-008", "WEB-SETUP-009",
+  "WEB-SETUP-010", "WEB-SETUP-011", "WEB-SETUP-013", "WEB-SETUP-014",
+  "WEB-SETUP-015", "WEB-SETUP-016", "WEB-SETUP-017", "WEB-SETUP-018",
+  "WEB-SETUP-020", "WEB-SETUP-C01", "WEB-SETUP-C05", "WEB-RDY-REC-001",
+  "WEB-RDY-REC-007", "WEB-QA-008", "WEB-MEAS-001",
 ] as const satisfies readonly RuleId[];
 
 function deepFreeze<T>(value: T): T {
@@ -19,14 +25,14 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
-test("published coverage is exactly the approved 15 and remaining 91 of 106", () => {
+test("published coverage is exactly the approved 38 and remaining 68 of 106", () => {
   assert.equal(catalog.rules.length, 106);
-  assert.equal(registry.implementedRuleIds.length, 15);
-  assert.equal(registry.unimplementedRuleIds.length, 91);
+  assert.equal(registry.implementedRuleIds.length, 38);
+  assert.equal(registry.unimplementedRuleIds.length, 68);
   assert.deepEqual([...registry.implementedRuleIds].sort(), [...approvedImplementedIds].sort());
   const implemented = new Set(registry.implementedRuleIds);
-  assert.equal(implemented.size, 15);
-  assert.equal(new Set(registry.unimplementedRuleIds).size, 91);
+  assert.equal(implemented.size, 38);
+  assert.equal(new Set(registry.unimplementedRuleIds).size, 68);
   assert.ok(registry.unimplementedRuleIds.every((id) => !implemented.has(id)));
   assert.deepEqual(
     [...registry.implementedRuleIds, ...registry.unimplementedRuleIds].sort(),

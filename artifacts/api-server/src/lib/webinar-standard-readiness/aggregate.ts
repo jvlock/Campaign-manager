@@ -8,7 +8,7 @@ import {
   type StageReadinessResult, type PrerequisiteIssue,
 } from "./types";
 import { registryCoverage } from "./coverage";
-import { resolveClaims, isBlockingFailure } from "./claims";
+import { resolveClaims, isBlockingFailure, isBlockingType } from "./claims";
 import { validateIncomingResults } from "./result-validation";
 import { compareText, freezeOwned, isRecord, snapshotData } from "./safe-data";
 
@@ -69,6 +69,10 @@ export function aggregateWebinarReadiness(
     const notApplicable = uniqueValid.filter((result) => result.status === "not_applicable");
     const notApplicableIds = new Set(notApplicable.map((result) => result.ruleId));
     const failedBlockers = findings.filter(isBlockingFailure);
+    const unassessedBlockers = findings.filter((result) => result.status === "evidence_unavailable"
+      && isBlockingType(result.rule.primaryRuleType));
+    const unassessedAdvisories = findings.filter((result) => result.status === "evidence_unavailable"
+      && !isBlockingType(result.rule.primaryRuleType));
     const resolved = claims.resolutions.filter((resolution) => assignedSet.has(resolution.ruleId));
     const resolvedIds = new Set(resolved.map((resolution) => resolution.ruleId));
     const unresolved = [...new Set(failedBlockers.map((result) => result.ruleId).filter((id) => !resolvedIds.has(id)))].sort();
@@ -94,15 +98,17 @@ export function aggregateWebinarReadiness(
       }
     }
     const blocked = unresolved.length > 0 || prerequisites.some((issue) => issue.status === "blocked");
-    const incomplete = missing.length > 0 || stageIssues.length > 0 || prerequisites.some((issue) => issue.status === "incomplete");
+    const incomplete = missing.length > 0 || unassessedBlockers.length > 0
+      || stageIssues.length > 0 || prerequisites.some((issue) => issue.status === "incomplete");
     stages.push({
       stage, status: blocked ? "blocked" : incomplete ? "incomplete" : "ready",
-      fullyEvaluated: missing.length === 0 && stageIssues.length === 0,
+      fullyEvaluated: missing.length === 0 && unassessedBlockers.length === 0
+        && unassessedAdvisories.length === 0 && stageIssues.length === 0,
       assignedRuleIds: assigned,
       applicableRuleIds: assigned.filter((id) => !notApplicableIds.has(id)),
       evaluatedRuleIds: evaluated, missingRuleIds: missing,
       passes: uniqueValid.filter((result) => result.status === "pass"),
-      notApplicable, failedBlockers,
+      notApplicable, failedBlockers, unassessedBlockers, unassessedAdvisories,
       failedNonBlocking: findings.filter((result) => result.status === "fail" && !isBlockingFailure(result)),
       warnings: findings.filter((result) => result.status === "fail" && result.rule.primaryRuleType === "Warning"),
       exceptionResolvedBlockers: resolved, unresolvedRuleIds: unresolved,

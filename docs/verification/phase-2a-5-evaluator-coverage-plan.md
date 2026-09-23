@@ -299,7 +299,25 @@ Runtime metadata must always come from the validated catalog. The matrix is a re
 
 ## 10. Product decisions and blockers
 
-Three genuine product interpretations affecting four missing rules require escalation:
+### Phase 2A-5B — product-owner resolutions
+
+**D1, D2 and D3 are resolved.** The original assessment and matrix below retain their historical classifications and counts; they are not the current evaluator-coverage report. The decisions below supersede the open questions and conditional decision gates in this assessment. Their later-batch evaluators remain outside the authorized 23-rule Setup implementation.
+
+**D1 — WEB-DONE-001: advisory failures do not prevent Complete.** Failed Warning, Recommended-default and Optional rules remain visible but nonblocking. Complete is prevented by unresolved applicable blockers, missing required obligations, missing required blocker evidence, missing evaluator coverage and unresolved completion dependencies. No completion evaluator is implemented in Phase 2A-5B.
+
+**D2 — WEB-REG-005 and WEB-REG-006: tiered material changes and a one-hour operational SLA.**
+
+* Always material attendance-impacting changes: cancellation, event date, start or end time, time zone, delivery format, venue or location, event platform, join link and access instructions.
+* Material only after publication or communication: public session title or topic, advertised speaker roster, published agenda and participant-facing access requirements.
+* Internal owner, internal notes, measurement configuration and other non-participant-facing administrative changes do not create participant-notice obligations.
+* An applicable notice obligation is created immediately when the change is recorded. Its operational due time is within **one elapsed hour**, or no later than event start when the event begins sooner. A late obligation is overdue; it must never create a backdated send.
+* This decision creates planning obligations only and does not authorize sending. No notice evaluator or scheduling/audience-state change is implemented in this batch.
+
+**D3 — WEB-FU-ATT-001: recorded actual event completion is the deadline anchor.** The one-business-day clock starts at the recorded actual event-completion instant. Delayed attendance data neither resets nor extends it; a late attendance import can reveal an already-overdue follow-up obligation. Missing completion time is unavailable required evidence, never an automatic pass. Use the existing Monday–Friday, event-time-zone business-day convention without holidays. No attended-follow-up evaluator is implemented in this batch.
+
+The register that follows records the original questions and options for audit history, not unresolved decisions.
+
+Three product interpretations affecting four rules were escalated in Phase 2A-5A and are now resolved above:
 
 | Decision | Exact affected rule IDs | Question and viable options | Recommendation | Operational consequence | Blocked batch |
 | --- | --- | --- | --- | --- | --- |

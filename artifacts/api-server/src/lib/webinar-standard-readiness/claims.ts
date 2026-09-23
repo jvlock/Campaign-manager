@@ -9,7 +9,7 @@ function assertNever(value: never): never {
 }
 
 /** Severity alone determines blocking; applicability is represented by result status. */
-function isBlockingType(type: PrimaryRuleType): boolean {
+export function isBlockingType(type: PrimaryRuleType): boolean {
   switch (type) {
     case "Mandatory blocker":
     case "Conditional blocker":

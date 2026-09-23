@@ -20,13 +20,124 @@ const nonblocking = select((r) => r.exceptionEligible && r.primaryRuleType === "
 const runRule = select((r) => r.readinessStage === "Ready to run" && r.primaryRuleType === "Mandatory blocker");
 const completeRule = select((r) => r.readinessStage === "Complete");
 
+test("Phase2A5B seven result cases remain distinct at the readiness boundary", async (t) => {
+  for (const [name, status, reason, expected] of [
+    ["pass", "pass", "satisfied", "ready"],
+    ["fail", "fail", "violation", "blocked"],
+    ["not applicable", "not_applicable", "condition_not_met", "ready"],
+    ["evidence unavailable", "evidence_unavailable", "missing_evidence", "incomplete"],
+    ["invalid context", "fail", "invalid_context", "blocked"],
+    ["exception behavior where eligible", "fail", "violation", "ready"],
+    ["canonical failure and resolution output", "fail", "violation", "blocked"],
+  ] as const) {
+    await t.test(name, () => {
+      const base = name === "exception behavior where eligible" ? claimed(eligible) : input();
+      const report = aggregate({
+        ...base,
+        results: catalog.rules.map((rule) => rule.ruleId === eligible.ruleId
+          ? { ...finding(rule, status), reason } : finding(rule)),
+      });
+      const result = stage(report, eligible.readinessStage);
+      assert.equal(result.status, expected);
+      assert.equal(result.issues.length, 0);
+      if (status === "fail") {
+        assert.equal(result.failedBlockers[0].rule.failureMessage, eligible.failureMessage);
+        assert.equal(result.failedBlockers[0].rule.resolutionGuidance, eligible.resolutionGuidance);
+      }
+      if (name === "exception behavior where eligible") {
+        assert.equal(result.exceptionResolvedBlockers[0].originalFailure.status, "fail");
+        assert.equal(result.passes.some((item) => item.ruleId === eligible.ruleId), false);
+      }
+    });
+  }
+});
+
+test("mandatory and conditional unavailable evidence is incomplete, not failed or missing implementation", () => {
+  for (const rule of [mandatory, conditional]) {
+    const result = stage(aggregate(withFinding(rule, "evidence_unavailable")), rule.readinessStage);
+    assert.equal(result.status, "incomplete");
+    assert.equal(result.fullyEvaluated, false);
+    assert.deepEqual(result.unassessedBlockers.map((item) => item.ruleId), [rule.ruleId]);
+    assert.equal(result.failedBlockers.length, 0);
+    assert.equal(result.unresolvedRuleIds.length, 0);
+    assert.equal(result.missingRuleIds.length, 0);
+    assert.ok(result.evaluatedRuleIds.includes(rule.ruleId));
+  }
+});
+
+test("all advisory evidence gaps are visible and unassessed but neither incomplete nor blocked", () => {
+  for (const type of ["Warning", "Optional", "Recommended default"] as const) {
+    const rule = select((item) => item.primaryRuleType === type);
+    const result = stage(aggregate(withFinding(rule, "evidence_unavailable")), rule.readinessStage);
+    assert.equal(result.status, "ready");
+    assert.equal(result.fullyEvaluated, false);
+    assert.deepEqual(result.unassessedAdvisories.map((item) => item.ruleId), [rule.ruleId]);
+    assert.equal(result.unassessedBlockers.length, 0);
+    assert.equal(result.failedNonBlocking.length, 0);
+    assert.equal(result.warnings.length, 0);
+    assert.equal(result.missingRuleIds.length, 0);
+  }
+});
+
+test("unimplemented remains a coverage gap at every severity", () => {
+  for (const type of ["Mandatory blocker", "Conditional blocker", "Warning", "Optional", "Recommended default"] as const) {
+    const rule = select((item) => item.primaryRuleType === type);
+    const result = stage(aggregate(withFinding(rule, "unimplemented")), rule.readinessStage);
+    assert.equal(result.status, "incomplete");
+    assert.ok(result.missingRuleIds.includes(rule.ruleId));
+    assert.equal(result.unassessedAdvisories.length + result.unassessedBlockers.length, 0);
+  }
+});
+
+test("confirmed failure dominates unavailable blocker evidence while incompleteness remains visible", () => {
+  const other = select((rule) => rule.ruleId !== mandatory.ruleId
+    && rule.readinessStage === mandatory.readinessStage && /blocker/.test(rule.primaryRuleType));
+  const report = aggregate(input({ results: catalog.rules.map((rule) =>
+    finding(rule, rule.ruleId === mandatory.ruleId ? "fail"
+      : rule.ruleId === other.ruleId ? "evidence_unavailable" : "pass")) }));
+  const result = stage(report, mandatory.readinessStage);
+  assert.equal(result.status, "blocked");
+  assert.equal(result.fullyEvaluated, false);
+  assert.deepEqual(result.unresolvedRuleIds, [mandatory.ruleId]);
+  assert.deepEqual(result.unassessedBlockers.map((item) => item.ruleId), [other.ruleId]);
+});
+
+test("valid exception documentation cannot substitute for unavailable evidence", () => {
+  const value = { ...claimed(eligible), results: withFinding(eligible, "evidence_unavailable").results };
+  const before = structuredClone(value);
+  const report = aggregate(value);
+  const result = stage(report, eligible.readinessStage);
+  assert.equal(result.status, "incomplete");
+  assert.equal(result.exceptionResolvedBlockers.length, 0);
+  assert.equal(result.unassessedBlockers.length, 1);
+  assert.ok(result.issues.some((issue) => issue.code === "invalid_exception_target"));
+  assert.deepEqual(value, before);
+  assertDeepFrozen(report);
+});
+
+test("unavailable evidence validates coherent reasons and canonical identity without weakening failures", () => {
+  for (const patch of [
+    { reason: "violation" }, { reason: "invalid_context" }, { status: "fail" },
+    { status: "toString" }, { status: "__proto__" }, { standardVersion: "wrong" },
+    { rule: { ...mandatory, primaryRuleType: "Optional" } }, { participantId: 123 },
+  ]) {
+    const report = aggregate(input({ results: catalog.rules.map((rule) => rule.ruleId === mandatory.ruleId
+      ? { ...finding(rule, "evidence_unavailable"), ...patch } : finding(rule)) }));
+    const result = stage(report, mandatory.readinessStage);
+    assert.equal(result.status, "incomplete");
+    assert.ok(result.missingRuleIds.includes(mandatory.ruleId));
+    assert.equal(result.unassessedBlockers.length, 0);
+    assert.ok(result.issues.some((issue) => issue.code === "invalid_result"));
+  }
+});
+
 test("full synthetic passes are ready without misrepresenting actual implementation coverage", () => {
   const report = aggregate();
   assert.equal(report.mode, "descriptive_only");
   assert.equal(report.evaluationTimeEpochMs, referenceTime);
   assert.equal(report.coverage.totalRuleCount, 106);
-  assert.equal(report.coverage.implementedRuleCount, 15);
-  assert.equal(report.coverage.missingEvaluatorCount, 91);
+  assert.equal(report.coverage.implementedRuleCount, 38);
+  assert.equal(report.coverage.missingEvaluatorCount, 68);
   assert.deepEqual(new Set(report.coverage.implementedRuleIds), new Set(registry.implementedRuleIds));
   assert.deepEqual(new Set(report.coverage.missingEvaluatorRuleIds), new Set(registry.unimplementedRuleIds));
   assert.deepEqual(READINESS_STAGES.map((name) => catalog.rules.filter((r) => r.readinessStage === name).length), [57, 19, 24, 6]);
@@ -42,9 +153,9 @@ test("full synthetic passes are ready without misrepresenting actual implementat
   }
 });
 
-test("real registry findings never turn 15 implemented and 91 unimplemented into false readiness", () => {
+test("real registry findings never turn 38 implemented and 68 unimplemented into false readiness", () => {
   const results = catalog.rules.map((r) => registry.evaluate(r.ruleId, makeContext()));
-  assert.equal(results.filter((r) => r.status === "unimplemented").length, 91);
+  assert.equal(results.filter((r) => r.status === "unimplemented").length, 68);
   const report = aggregate(input({ results }));
   for (const result of report.stages) {
     assert.notEqual(result.status, "ready");

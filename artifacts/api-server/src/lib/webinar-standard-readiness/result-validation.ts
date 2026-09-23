@@ -11,7 +11,8 @@ const RESULT_FIELDS = Object.freeze([
 
 const REASONS_BY_STATUS: Readonly<Record<string, readonly string[]>> = Object.freeze({
   pass: Object.freeze(["satisfied"]),
-  fail: Object.freeze(["violation", "missing_evidence", "invalid_context"]),
+  fail: Object.freeze(["violation", "invalid_context"]),
+  evidence_unavailable: Object.freeze(["missing_evidence"]),
   not_applicable: Object.freeze(["condition_not_met"]),
   unimplemented: Object.freeze(["not_implemented"]),
 });
@@ -203,7 +204,8 @@ export function validateIncomingResults(
     if (!matchesCanonicalRule(entry.rule, rule)) {
       invalid("Embedded rule metadata must exactly match the complete canonical catalog rule.");
     }
-    const reasons = typeof entry.status === "string" ? REASONS_BY_STATUS[entry.status] : undefined;
+    const reasons = typeof entry.status === "string" && own(REASONS_BY_STATUS, entry.status)
+      ? REASONS_BY_STATUS[entry.status] : undefined;
     if (!reasons) {
       invalid("Result status must be a closed evaluation status.");
     } else if (typeof entry.reason !== "string" || !reasons.includes(entry.reason)) {

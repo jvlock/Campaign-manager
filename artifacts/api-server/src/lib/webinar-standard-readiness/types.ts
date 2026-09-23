@@ -47,15 +47,22 @@ export interface PrerequisiteIssue {
 export interface StageReadinessResult {
   readonly stage: ReadinessStage;
   readonly status: StageStatus;
+  /** False for any unassessed result, even a nonblocking advisory evidence gap. */
   readonly fullyEvaluated: boolean;
   readonly assignedRuleIds: readonly RuleId[];
   /** Conservatively includes missing/invalid results until a valid not-applicable result exists. */
   readonly applicableRuleIds: readonly RuleId[];
+  /** Valid unique implemented results, including explicit evidence-unavailable outcomes. */
   readonly evaluatedRuleIds: readonly RuleId[];
+  /** Missing, invalid, duplicate or unimplemented result coverage, not evidence gaps. */
   readonly missingRuleIds: readonly RuleId[];
   readonly passes: readonly RuleEvaluationResult[];
   readonly notApplicable: readonly RuleEvaluationResult[];
   readonly failedBlockers: readonly RuleEvaluationResult[];
+  /** Applicable blockers awaiting evidence; incomplete, never confirmed failures. */
+  readonly unassessedBlockers: readonly RuleEvaluationResult[];
+  /** Advisory evidence gaps remain visible without making a stage incomplete. */
+  readonly unassessedAdvisories: readonly RuleEvaluationResult[];
   readonly failedNonBlocking: readonly RuleEvaluationResult[];
   /** Warning failures remain visible as a subset of failedNonBlocking. */
   readonly warnings: readonly RuleEvaluationResult[];

@@ -12,6 +12,7 @@ export function finding(rule: WebinarStandardRule, status: EvaluationStatus = "p
     mode: "descriptive_only", standardId: catalog.standardId, standardVersion: catalog.standardVersion,
     ruleId: rule.ruleId, rule: structuredClone(rule), status,
     reason: status === "pass" ? "satisfied" : status === "fail" ? "violation"
+      : status === "evidence_unavailable" ? "missing_evidence"
       : status === "not_applicable" ? "condition_not_met" : "not_implemented",
     participantId: null, evidence: ["Explicit synthetic evidence for aggregation contract tests."],
   };
