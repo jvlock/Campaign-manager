@@ -164,6 +164,7 @@ const forbiddenGlobals = new Set([
 type PureSourceOptions = Readonly<{
   localFiles: readonly string[];
   exactImports?: Readonly<Record<string, readonly string[]>>;
+  strictImports?: boolean;
   temporalMembers?: readonly string[];
 }>;
 function assertPureSource(filename: string, content: string, options: PureSourceOptions): void {
@@ -184,6 +185,7 @@ function assertPureSource(filename: string, content: string, options: PureSource
             assert.ok(exactNames.includes(binding.name.text), `${filename}: forbidden imported member ${binding.name.text}`);
           }
         } else {
+          assert.equal(options.strictImports, undefined, `${filename}: unreviewed dependency ${target}`);
           assert.ok(allowedCatalogImports.has(target) || (
             target.startsWith("./") && !target.slice(2).includes("/")
               && options.localFiles.includes(`${target.slice(2)}.ts`)
@@ -229,9 +231,36 @@ test("evaluator and evidence modules retain pure domain dependencies and no ambi
       const deliverableEvaluators = folder === "webinar-standard-evaluation" && filename === "deliverable-evaluators.ts";
       const deliverableHelpers = folder === "webinar-standard-evaluation" && filename === "deliverable-helpers.ts";
       const deliverableTypes = folder === "webinar-standard-evaluation" && filename === "deliverable-types.ts";
+      const governedEvaluators = folder === "webinar-standard-evaluation" && filename === "governed-evaluators.ts";
+      const governedHelpers = folder === "webinar-standard-evaluation" && filename === "governed-helpers.ts";
+      const governedTypes = folder === "webinar-standard-evaluation" && filename === "governed-types.ts";
       assertPureSource(`${folder}/${filename}`, await readFile(new URL(filename, directory), "utf8"), {
         localFiles: files,
-        exactImports: deliverableEvaluators ? {
+        strictImports: governedEvaluators || governedHelpers || governedTypes ? true : undefined,
+        exactImports: governedEvaluators ? {
+          "../webinar-standard-catalog/types": ["WebinarStandardCatalog"],
+          "../webinar-standard-readiness/safe-data": ["snapshotData"],
+          "../webinar-standard-audience/validate-result": ["validateWebinarAudiencePlanResult"],
+          "../webinar-standard-evidence/types": ["EvidenceScope"],
+          "./types": ["EvaluationContext", "RuleEvaluator", "RuleFinding"],
+          "./governed-types": ["GovernedExclusionContext"],
+          "./governed-helpers": [
+            "evidenceIssue", "fail", "instant", "invalid", "missing", "na", "pass",
+            "receipt", "requestIssue", "text",
+          ],
+        } : governedHelpers ? {
+          "../webinar-standard-catalog/types": ["WebinarStandardCatalog"],
+          "../webinar-standard-evidence/types": ["EvidenceScope", "ManualEvidence"],
+          "../webinar-standard-evidence/validate": ["validateManualEvidence"],
+          "../webinar-standard-planning-time/time": ["assertInstant"],
+          "./types": ["EvaluationContext", "RuleFinding"],
+          "./governed-types": ["GovernedObservation", "GovernedRequest", "GovernedRuleId"],
+        } : governedTypes ? {
+          "../webinar-standard-catalog/types": ["StandardId", "StandardVersion"],
+          "../webinar-standard-evidence/types": ["ManualEvidence"],
+          "../webinar-standard-audience/types": ["WebinarAudienceInput", "WebinarAudiencePlan"],
+          "./types": ["GovernedValueEvidence"],
+        } : deliverableEvaluators ? {
           "../webinar-standard-catalog/types": ["WebinarStandardCatalog"],
         } : deliverableHelpers ? {
           "../webinar-standard-catalog/types": [

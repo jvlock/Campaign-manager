@@ -17,24 +17,33 @@ const root = resolve("../..");
 const rows = readFileSync(resolve(root, "docs/verification/phase-2a-5-evaluator-coverage-plan.md"), "utf8")
   .split("\n").filter(l => l.startsWith("| WEB-")).map(l => l.split("|").slice(1, -1).map(s => s.trim()));
 const batch = rows.filter(row => row[17] === "4").map(row => row[0]!);
+const governedBatch = rows.filter(row => row[17] === "5").map(row => row[0]!);
+const completionBatch = rows.filter(row => row[17] === "6").map(row => row[0]!);
 const prior: readonly RuleId[] = [...IMPLEMENTED_RULE_IDS, ...SCHEDULING_BATCH_RULE_IDS, ...AUDIENCE_BATCH_RULE_IDS];
 test("Deliverables batch exactly equals the 26 coverage-plan rows, never a prefix selection", () => {
   assert.equal(batch.length, 26);
   assert.deepEqual([...DELIVERABLE_BATCH_RULE_IDS].sort(), batch.sort());
 });
-test("Deliverables registry preserves all prior 68 and has no overlap, unknown, or duplicate IDs", () => {
+test("Governed registry preserves prior 68 and exact Deliverables Batch 4 as subsets", () => {
   assert.equal(prior.length, 68);
   assert.equal(new Set(registry.implementedRuleIds).size, registry.implementedRuleIds.length);
   assert.ok(prior.every(id => registry.implementedRuleIds.includes(id)));
   assert.ok(DELIVERABLE_BATCH_RULE_IDS.every(id => !prior.includes(id) && RULE_IDS.includes(id)));
-  assert.equal(registry.entries.length, 94);
+  assert.equal(new Set([...prior, ...DELIVERABLE_BATCH_RULE_IDS]).size, 94);
+  assert.ok(DELIVERABLE_BATCH_RULE_IDS.every(id => registry.implementedRuleIds.includes(id)));
+  assert.equal(registry.entries.length, 96);
   assert.equal(catalog.rules.length, 106);
-  assert.equal(registry.unimplementedRuleIds.length, 12);
+  assert.equal(registry.unimplementedRuleIds.length, 10);
 });
-test("Exactly the two Governed Services and ten Completion evaluators remain missing", () => {
-  const missing = rows.filter(row => row[17] === "5" || row[17] === "6").map(row => row[0]!).sort();
-  assert.deepEqual([...registry.unimplementedRuleIds].sort(), missing);
-  assert.ok(batch.every(id => !missing.includes(id)));
+test("Exact Governed Services Batch 5 is added and exact Completion Batch 6 remains missing", () => {
+  assert.equal(governedBatch.length, 2);
+  assert.equal(new Set(governedBatch).size, 2);
+  assert.deepEqual([...governedBatch].sort(), ["WEB-REC-010", "WEB-SETUP-003"]);
+  assert.ok(governedBatch.every(id => registry.implementedRuleIds.includes(id as RuleId)));
+  assert.equal(completionBatch.length, 10);
+  assert.equal(new Set(completionBatch).size, 10);
+  assert.deepEqual([...registry.unimplementedRuleIds].sort(), completionBatch.sort());
+  assert.ok(batch.every(id => !completionBatch.includes(id)));
 });
 test("Readiness evaluator coverage derives from the actual new registry", () => {
   const report = aggregateWebinarReadiness(catalog, registry, input({ results: [] }));

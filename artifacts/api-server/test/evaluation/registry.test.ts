@@ -33,14 +33,15 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
-test("published coverage is the approved baseline plus exact Deliverables and QA Batch 4", async () => {
+test("published coverage is the approved baseline plus exact Batches 4 and 5", async () => {
   const plan = await readFile(
     new URL("../../../../docs/verification/phase-2a-5-evaluator-coverage-plan.md", import.meta.url), "utf8",
   );
   const rows = plan.split("\n").filter((line) => line.startsWith("| WEB-"))
     .map((line) => line.split("|").slice(1, -1).map((cell) => cell.trim()));
   const batch4 = rows.filter((cells) => cells[17] === "4").map((cells) => cells[0]);
-  const expectedImplementedIds = [...approvedBaselineIds, ...batch4];
+  const batch5 = rows.filter((cells) => cells[17] === "5").map((cells) => cells[0]);
+  const expectedImplementedIds = [...approvedBaselineIds, ...batch4, ...batch5];
   assert.equal(catalog.rules.length, 106);
   assert.equal(registry.implementedRuleIds.length, expectedImplementedIds.length);
   assert.equal(registry.unimplementedRuleIds.length, catalog.rules.length - expectedImplementedIds.length);
@@ -57,7 +58,7 @@ test("published coverage is the approved baseline plus exact Deliverables and QA
   assert.deepEqual(registry.entries.map((entry) => entry.ruleId).sort(), expectedImplementedIds.sort());
 });
 
-test("Deliverables and QA Batch 4 is mechanically exact, preserves the original 68, and leaves Batches 5 and 6", async () => {
+test("Governed Services Batch 5 is mechanically exact against the prior 94 and leaves exact Batch 6", async () => {
   const plan = await readFile(
     new URL("../../../../docs/verification/phase-2a-5-evaluator-coverage-plan.md", import.meta.url), "utf8",
   );
@@ -68,7 +69,8 @@ test("Deliverables and QA Batch 4 is mechanically exact, preserves the original 
   const batch5 = batch("5");
   const batch6 = batch("6");
   const baseline = new Set<RuleId>(approvedBaselineIds);
-  const added = registry.implementedRuleIds.filter((id) => !baseline.has(id));
+  const prior94 = new Set<RuleId>([...approvedBaselineIds, ...batch4] as RuleId[]);
+  const added = registry.implementedRuleIds.filter((id) => !prior94.has(id));
   const canonical = new Set(catalog.rules.map((rule) => rule.ruleId));
 
   assert.equal(baseline.size, 68);
@@ -77,16 +79,21 @@ test("Deliverables and QA Batch 4 is mechanically exact, preserves the original 
   assert.equal(DELIVERABLE_BATCH_RULE_IDS.length, 26);
   assert.equal(new Set(DELIVERABLE_BATCH_RULE_IDS).size, 26);
   assert.deepEqual([...DELIVERABLE_BATCH_RULE_IDS].sort(), batch4.sort());
-  assert.deepEqual([...added].sort(), batch4.sort());
+  assert.ok(batch4.every((id) => prior94.has(id as RuleId)));
   assert.ok(batch4.every((id) => !baseline.has(id as RuleId)));
   assert.ok(batch4.every((id) => canonical.has(id as RuleId)));
-  assert.equal(registry.implementedRuleIds.length, 94);
-  assert.equal(registry.unimplementedRuleIds.length, 12);
+  assert.equal(prior94.size, 94);
+  assert.ok([...prior94].every((id) => registry.implementedRuleIds.includes(id)));
   assert.equal(batch5.length, 2);
   assert.equal(new Set(batch5).size, 2);
+  assert.deepEqual([...added].sort(), batch5.sort());
+  assert.ok(batch5.every((id) => !prior94.has(id as RuleId)));
+  assert.deepEqual([...batch5].sort(), ["WEB-REC-010", "WEB-SETUP-003"]);
+  assert.equal(registry.implementedRuleIds.length, 96);
+  assert.equal(registry.unimplementedRuleIds.length, 10);
   assert.equal(batch6.length, 10);
   assert.equal(new Set(batch6).size, 10);
-  assert.deepEqual([...registry.unimplementedRuleIds].sort(), [...batch5, ...batch6].sort());
+  assert.deepEqual([...registry.unimplementedRuleIds].sort(), batch6.sort());
   assert.equal(new Set([...batch5, ...batch6]).size, 12);
   assert.ok([...batch5, ...batch6].every((id) => canonical.has(id as RuleId)));
 });

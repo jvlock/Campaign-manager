@@ -138,6 +138,13 @@ test("full synthetic passes are ready without misrepresenting actual implementat
   assert.equal(report.coverage.totalRuleCount, catalog.rules.length);
   assert.equal(report.coverage.implementedRuleCount, registry.implementedRuleIds.length);
   assert.equal(report.coverage.missingEvaluatorCount, registry.unimplementedRuleIds.length);
+  assert.equal(report.coverage.implementedRuleCount, 96);
+  assert.equal(report.coverage.missingEvaluatorCount, 10);
+  assert.deepEqual([...report.coverage.missingEvaluatorRuleIds].sort(), [
+    "WEB-DONE-001", "WEB-EXC-001", "WEB-FU-ABS-001", "WEB-FU-ATT-001",
+    "WEB-FU-UNK-001", "WEB-FU-UNK-003", "WEB-RDY-COMP-001", "WEB-RDY-COMP-002",
+    "WEB-RDY-COMP-003", "WEB-RDY-COMP-004",
+  ]);
   assert.deepEqual(new Set(report.coverage.implementedRuleIds), new Set(registry.implementedRuleIds));
   assert.deepEqual(new Set(report.coverage.missingEvaluatorRuleIds), new Set(registry.unimplementedRuleIds));
   assert.deepEqual(READINESS_STAGES.map((name) => catalog.rules.filter((r) => r.readinessStage === name).length), [57, 19, 24, 6]);

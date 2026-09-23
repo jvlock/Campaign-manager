@@ -1,4 +1,6 @@
 export type * from "./types";
+export type * from "./governed-types";
+export { GOVERNED_BATCH_RULE_IDS, createGovernedEvaluators } from "./governed-evaluators";
 export type * from "./setup-types";
 export type * from "./scheduling-types";
 export type * from "./audience-types";

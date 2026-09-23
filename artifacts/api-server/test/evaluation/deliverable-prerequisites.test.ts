@@ -94,11 +94,13 @@ test("WEB-QA-009: unavailable governed UTM prerequisite cannot be replaced by fi
   assert.equal(result.status, "evidence_unavailable");
   assert.equal(report.stages.flatMap(s => s.exceptionResolvedBlockers).length, 0);
 });
-test("WEB-QA-009: available QA does not silently implement the remaining governed services", () => {
+test("WEB-QA-009: available QA does not stand in for governed-service evaluation", () => {
   const c = fixture("WEB-QA-009");
   assert.equal(registry.evaluate("WEB-QA-009", c).status, "pass");
-  assert.equal(registry.evaluate("WEB-REC-010", c).status, "unimplemented");
-  assert.equal(registry.evaluate("WEB-SETUP-003", c).status, "unimplemented");
+  assert.notEqual(registry.evaluate("WEB-REC-010", c).status, "unimplemented");
+  assert.notEqual(registry.evaluate("WEB-SETUP-003", c).status, "unimplemented");
+  assert.notEqual(registry.evaluate("WEB-REC-010", c).status, "pass");
+  assert.notEqual(registry.evaluate("WEB-SETUP-003", c).status, "pass");
 });
 test("WEB-QA-009: unrelated completion finding is not invented as a QA dependency", () => {
   const c = fixture("WEB-QA-009"), p = structuredClone(pre("WEB-DONE-001")) as Mutable<DeliverablePrerequisite>;

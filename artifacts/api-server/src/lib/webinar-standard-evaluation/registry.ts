@@ -5,6 +5,7 @@ import { createSetupEvaluators } from "./setup-evaluators";
 import { createSchedulingEvaluators, SCHEDULING_BATCH_RULE_IDS } from "./scheduling-evaluators";
 import { createAudienceEvaluators, AUDIENCE_BATCH_RULE_IDS } from "./audience-evaluators";
 import { createDeliverableEvaluators, DELIVERABLE_BATCH_RULE_IDS } from "./deliverable-evaluators";
+import { createGovernedEvaluators, GOVERNED_BATCH_RULE_IDS } from "./governed-evaluators";
 import type {
   EvaluationContext, EvaluatorRegistryEntry, PartialEvaluatorRegistry,
   RuleEvaluationResult, RuleEvaluator,
@@ -19,9 +20,9 @@ export function createWebinarEvaluatorRegistry(catalog: WebinarStandardCatalog):
   }
   const snapshot = validation.catalog;
   const boundEvaluators = Object.freeze({
-    ...EVALUATORS, ...createSetupEvaluators(snapshot), ...createSchedulingEvaluators(snapshot), ...createAudienceEvaluators(snapshot), ...createDeliverableEvaluators(snapshot),
+    ...EVALUATORS, ...createSetupEvaluators(snapshot), ...createSchedulingEvaluators(snapshot), ...createAudienceEvaluators(snapshot), ...createDeliverableEvaluators(snapshot), ...createGovernedEvaluators(snapshot),
   });
-  const allImplementedIds = Object.freeze([...IMPLEMENTED_RULE_IDS, ...SCHEDULING_BATCH_RULE_IDS, ...AUDIENCE_BATCH_RULE_IDS, ...DELIVERABLE_BATCH_RULE_IDS]);
+  const allImplementedIds = Object.freeze([...IMPLEMENTED_RULE_IDS, ...SCHEDULING_BATCH_RULE_IDS, ...AUDIENCE_BATCH_RULE_IDS, ...DELIVERABLE_BATCH_RULE_IDS, ...GOVERNED_BATCH_RULE_IDS]);
   const implemented = new Set<RuleId>(allImplementedIds);
   if (implemented.size !== allImplementedIds.length || Object.keys(boundEvaluators).length !== implemented.size) {
     throw new Error("Invalid webinar evaluator registry: duplicate or missing implementations.");
