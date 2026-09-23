@@ -33,7 +33,7 @@ type StructuralControlsHaveNoIds = Assert<
 const catalog = await loadWebinarStandardCatalog();
 const registry = createWebinarEvaluatorRegistry(catalog);
 
-test("coverage addresses 14 semantic checks as 10/2/2 with 53 of 106 rules implemented", async () => {
+test("coverage addresses 14 semantic checks as 10/2/2 with 68 of 106 rules implemented", async () => {
   const manifest = JSON.parse(await readFile(
     new URL("../../../../docs/standards/webinar/manifest.json", import.meta.url), "utf8",
   )) as { semanticValidation: Record<string, unknown> };
@@ -44,8 +44,8 @@ test("coverage addresses 14 semantic checks as 10/2/2 with 53 of 106 rules imple
   assert.equal(coverage.evaluatorBacked, 10);
   assert.equal(coverage.structurallyEnforced, 2);
   assert.equal(coverage.containmentVerified, 2);
-  assert.equal(coverage.implementedRuleCount, 53);
-  assert.equal(coverage.unimplementedRuleCount, 53);
+  assert.equal(coverage.implementedRuleCount, 68);
+  assert.equal(coverage.unimplementedRuleCount, 38);
   assert.equal(coverage.totalRuleCount, 106);
   assert.equal(coverage.ruleEngineCoverage, "partial");
   const mappedIds = new Set(SEMANTIC_CONTROLS.flatMap((control) =>
@@ -223,6 +223,9 @@ test("evaluator and evidence modules retain pure domain dependencies and no ambi
       const scheduling = folder === "webinar-standard-evaluation" && filename === "scheduling-evaluators.ts";
       const schedulingOperational = folder === "webinar-standard-evaluation" && filename === "scheduling-operational.ts";
       const schedulingTypes = folder === "webinar-standard-evaluation" && filename === "scheduling-types.ts";
+      const audience = folder === "webinar-standard-evaluation" && filename === "audience-evaluators.ts";
+      const audienceHelpers = folder === "webinar-standard-evaluation" && filename === "audience-helpers.ts";
+      const audienceTypes = folder === "webinar-standard-evaluation" && filename === "audience-types.ts";
       assertPureSource(`${folder}/${filename}`, await readFile(new URL(filename, directory), "utf8"), {
         localFiles: files,
         exactImports: setup ? {
@@ -255,6 +258,23 @@ test("evaluator and evidence modules retain pure domain dependencies and no ambi
             "RecruitmentPlan", "RecruitmentTouchDisposition", "RecruitmentTouchIdentity",
             "RecruitmentTouchReason", "RecruitmentWarning",
           ],
+        } : audience ? {
+          "../webinar-standard-audience": ["registrantReminderInstant", "AudienceCommunicationKind"],
+          "../webinar-standard-catalog/types": ["READINESS_STAGES", "RuleId", "WebinarStandardCatalog"],
+          "../webinar-standard-readiness/result-validation": ["validateIncomingResults"],
+        } : audienceHelpers ? {
+          "../webinar-standard-audience": [
+            "AUDIENCE_COMMUNICATION_KINDS", "validateWebinarAudiencePlanResult",
+          ],
+          "../webinar-standard-catalog/types": ["WebinarStandardCatalog", "RuleId"],
+          "../webinar-standard-evidence/validate": ["validateManualEvidence"],
+          "../webinar-standard-evidence/types": ["ManualEvidence"],
+        } : audienceTypes ? {
+          "../webinar-standard-audience": [
+            "AudienceCommunicationKind", "WebinarAudienceInput", "WebinarAudiencePlan",
+          ],
+          "../webinar-standard-evidence/types": ["ManualEvidence"],
+          "../webinar-standard-catalog/types": ["RuleId"],
         } : {},
         temporalMembers: setup ? ["PlainDate", "PlainTime"] : [],
       });
@@ -302,6 +322,25 @@ test("evaluator and evidence modules retain pure domain dependencies and no ambi
         temporalMembers: validator ? ["PlainDateTime"] : [],
       });
   }
+
+  // Audience-result validation may inspect only planner data and the reviewed
+  // deterministic scheduling/time surfaces admitted here.
+  const audienceDirectory = new URL("../../src/lib/webinar-standard-audience/", import.meta.url);
+  const audienceFiles = (await readdir(audienceDirectory)).filter(name => name.endsWith(".ts")).sort();
+  assert.deepEqual(audienceFiles, ["index.ts", "plan.ts", "types.ts", "validate-result.ts", "validate.ts"]);
+  assertPureSource("webinar-standard-audience/validate-result.ts",
+    await readFile(new URL("validate-result.ts", audienceDirectory), "utf8"), {
+      localFiles: audienceFiles,
+      exactImports: {
+        "@js-temporal/polyfill": ["Temporal"],
+        "../webinar-standard-catalog/types": ["WebinarStandardCatalog"],
+        "../webinar-standard-readiness/safe-data": ["isRecord", "snapshotData"],
+        "../webinar-standard-planning-time/time": ["assertInstant", "localTime"],
+        "../webinar-standard-planning-time/business-days": ["BUSINESS_DAY_CONVENTION"],
+        "../webinar-standard-scheduling/validate-result": ["validateRecruitmentPlanResult"],
+      },
+      temporalMembers: ["PlainDateTime"],
+    });
 });
 
 test("purity guard rejects automatic clocks, indirect Temporal access and capability imports", () => {

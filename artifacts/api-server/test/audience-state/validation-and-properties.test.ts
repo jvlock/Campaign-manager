@@ -247,6 +247,7 @@ test("module source exposes no send, route, database, publishing, or deployment 
   const exports = await import("../../src/lib/webinar-standard-audience/index");
   assert.deepEqual(Object.keys(exports).sort(), [
     "AUDIENCE_COMMUNICATION_KINDS", "AudiencePlanningInputError",
-    "planWebinarAudience", "validateAudiencePlanningInput",
+    "planWebinarAudience", "registrantReminderInstant", "validateAudiencePlanningInput",
+    "validateWebinarAudiencePlanResult",
   ]);
 });

@@ -20,8 +20,15 @@ const RULE = {
   distinct: "WEB-FU-VAR-001",
 } as const satisfies Record<string, RuleId>;
 
-function communicationId(participant: AudienceParticipantInput, kind: AudienceCommunicationKind): string {
+export function communicationId(participant: AudienceParticipantInput, kind: AudienceCommunicationKind): string {
   return participant.communicationIds?.[kind] ?? JSON.stringify(["audience", participant.participantId, kind]);
+}
+/** Nominal planner-owned reminder instant, not proof of scheduling or delivery. */
+export function registrantReminderInstant(
+  startsAtEpochMs: number,
+  kind: "reminder_24_hour" | "reminder_1_hour",
+): number {
+  return startsAtEpochMs - (kind === "reminder_24_hour" ? 86_400_000 : 3_600_000);
 }
 function obligation(
   participant: AudienceParticipantInput, kind: AudienceCommunicationKind,
@@ -45,7 +52,7 @@ function obligation(
     } : null,
   };
 }
-function stateFor(participant: AudienceParticipantInput, eventStatus: string): AudienceState {
+export function stateFor(participant: AudienceParticipantInput, eventStatus: string): AudienceState {
   if (participant.audienceClass !== "customer") return "internal_or_test";
   if (participant.registrationStatus === "cancelled") return "cancelled";
   if (participant.registrationStatus === "waitlisted") return "waitlisted";
@@ -179,10 +186,10 @@ function addRegistrantObligations(
     [RULE.calendar]));
   const cancelled = input.event.operationalStatus === "cancelled";
   for (const reminder of [
-    { kind: "reminder_24_hour" as const, offset: 86_400_000, rule: RULE.reminder24 },
-    { kind: "reminder_1_hour" as const, offset: 3_600_000, rule: RULE.reminder1 },
+    { kind: "reminder_24_hour" as const, rule: RULE.reminder24 },
+    { kind: "reminder_1_hour" as const, rule: RULE.reminder1 },
   ]) {
-    const due = input.event.startsAtEpochMs - reminder.offset;
+    const due = registrantReminderInstant(input.event.startsAtEpochMs, reminder.kind);
     const future = due > input.calculationInstantEpochMs && due >= registrationAt && !cancelled;
     obligations.push(obligation(participant, reminder.kind, future ? "required" : "omitted",
       future ? due : null, input.calculationInstantEpochMs,

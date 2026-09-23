@@ -77,8 +77,9 @@ export function resolveClaims(
       continue;
     }
     const findings = results.filter((result) => result.ruleId === rule.ruleId);
-    if (findings.length !== 1 || duplicateRuleIds.includes(rule.ruleId) || !isBlockingFailure(findings[0]!)) {
-      issue("invalid_exception_target", rule.ruleId, "Claim must reference a single valid failed blocker result.");
+    if (findings.length !== 1 || duplicateRuleIds.includes(rule.ruleId) || !isBlockingFailure(findings[0]!)
+      || findings[0]!.reason !== "violation") {
+      issue("invalid_exception_target", rule.ruleId, "Claim must reference a single valid failed blocker violation, not invalid context.");
       continue;
     }
     const records = exceptions.get(claim.exceptionId) ?? [];

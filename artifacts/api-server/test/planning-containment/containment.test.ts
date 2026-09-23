@@ -28,6 +28,7 @@ const temporalMembersByFile: Readonly<Record<string, readonly string[]>> = {
   "webinar-standard-planning-time/business-days.ts": ["Instant"],
   "webinar-standard-planning-time/time.ts": ["Instant", "ZonedDateTime", "PlainDateTime"],
   "webinar-standard-scheduling/validate-result.ts": ["PlainDateTime"],
+  "webinar-standard-audience/validate-result.ts": ["PlainDateTime"],
 };
 
 for (const folder of folders) {

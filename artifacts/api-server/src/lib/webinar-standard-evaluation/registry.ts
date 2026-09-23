@@ -3,6 +3,7 @@ import { validateWebinarStandardCatalog } from "../webinar-standard-catalog/vali
 import { EVALUATORS, IMPLEMENTED_RULE_IDS } from "./evaluators";
 import { createSetupEvaluators } from "./setup-evaluators";
 import { createSchedulingEvaluators, SCHEDULING_BATCH_RULE_IDS } from "./scheduling-evaluators";
+import { createAudienceEvaluators, AUDIENCE_BATCH_RULE_IDS } from "./audience-evaluators";
 import type {
   EvaluationContext, EvaluatorRegistryEntry, PartialEvaluatorRegistry,
   RuleEvaluationResult, RuleEvaluator,
@@ -17,11 +18,11 @@ export function createWebinarEvaluatorRegistry(catalog: WebinarStandardCatalog):
   }
   const snapshot = validation.catalog;
   const boundEvaluators = Object.freeze({
-    ...EVALUATORS, ...createSetupEvaluators(snapshot), ...createSchedulingEvaluators(snapshot),
+    ...EVALUATORS, ...createSetupEvaluators(snapshot), ...createSchedulingEvaluators(snapshot), ...createAudienceEvaluators(snapshot),
   });
-  const allImplementedIds = Object.freeze([...IMPLEMENTED_RULE_IDS, ...SCHEDULING_BATCH_RULE_IDS]);
+  const allImplementedIds = Object.freeze([...IMPLEMENTED_RULE_IDS, ...SCHEDULING_BATCH_RULE_IDS, ...AUDIENCE_BATCH_RULE_IDS]);
   const implemented = new Set<RuleId>(allImplementedIds);
-  if (implemented.size !== 53 || Object.keys(boundEvaluators).length !== implemented.size) {
+  if (implemented.size !== allImplementedIds.length || Object.keys(boundEvaluators).length !== implemented.size) {
     throw new Error("Invalid webinar evaluator registry: duplicate or missing implementations.");
   }
   const catalogIds = new Set(snapshot.rules.map((rule) => rule.ruleId));
@@ -32,9 +33,6 @@ export function createWebinarEvaluatorRegistry(catalog: WebinarStandardCatalog):
   }
   const unimplementedRuleIds = Object.freeze(snapshot.rules
     .filter((rule) => !implemented.has(rule.ruleId)).map((rule) => rule.ruleId));
-  if (unimplementedRuleIds.length !== 53) {
-    throw new Error("Invalid webinar evaluator registry: expected exactly 53 unimplemented rules.");
-  }
   const evaluators: Partial<Record<RuleId, RuleEvaluator>> = boundEvaluators;
   const results = new Map<RuleId, (context: EvaluationContext) => RuleEvaluationResult>();
   const entries: EvaluatorRegistryEntry[] = [];
