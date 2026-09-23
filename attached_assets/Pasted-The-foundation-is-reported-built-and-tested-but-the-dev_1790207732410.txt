@@ -1,0 +1,148 @@
+The foundation is reported built and tested, but the development application is currently inaccessible. The next priority is trusted sign-in and restoration of authorized workflows—not more activity modules.
+
+There is one important qualification: preserving legacy data and passing regression tests does not satisfy the original requirement to keep active legacy workflows available. Replit has disclosed that gap correctly. We should resolve it before treating this increment as operationally complete.
+
+Send Replit this next prompt:
+
+⸻
+
+Phase 2B-1 continuation — Trusted identity and authorized workflow restoration
+
+Continue from the organizational foundation without expanding into new activity modules.
+
+1. Verify the baseline
+
+Reported implementation commit:
+
+47c0f45951ef8bedcbdc7c99aa25a39885a9f355
+
+Expected branch:
+
+feature/webinar-standard-engine
+
+Read:
+
+* docs/verification/phase-2b-1-organizational-foundation.md
+* Accepted Phase 2B-0, 2B-0A and 2B-0B records.
+* Current architecture, permission matrix, provisioning instructions and remaining Phase 2B-1 plan.
+
+Confirm HEAD, ancestry, subsequent changes and working-tree state. Explain the lineage from the accepted Phase 2B-0B commit to the reported implementation starting commit if not already documented.
+
+Preserve unrelated work. Do not stage instruction uploads.
+
+2. Identify the trusted authentication path
+
+Inspect the application’s existing authentication code, configured identity-provider references and deployment architecture without printing secrets.
+
+Distinguish:
+
+* Authentication already implemented but incorrectly connected.
+* An available, approved provider requiring configuration.
+* An identity-provider decision or external setup still missing.
+
+Use an existing approved identity provider where available. Do not select a new enterprise identity provider, create paid services or assume a provider is approved merely because credentials exist.
+
+If an external dependency prevents completion, report exactly:
+
+* What is missing.
+* Who must supply or configure it.
+* Where the configuration belongs.
+* Which work can still be completed locally.
+* How successful connection will be verified.
+
+Never request secrets in chat.
+
+3. Implement the identity boundary where dependencies permit
+
+Use the provider’s supported authentication mechanism and server-side validation.
+
+Requirements:
+
+* Identify users by a stable provider identity, not a display name or unverified email.
+* Reject unauthenticated, expired, invalid or otherwise untrusted sessions.
+* Derive memberships and scoped permissions from authoritative server-side records.
+* Do not accept client-submitted roles, group membership or reviewer identity as authorization.
+* Do not automatically grant membership from an email domain.
+* Preserve revocation, separation of duties and non-overridable controls.
+* Use secure session handling appropriate to the existing architecture, including protection against cross-site request forgery where applicable.
+* Keep test identities isolated from deployable application behavior.
+
+Do not introduce an authentication bypass to restore the development experience.
+
+4. Restore workflows through scoped authorization
+
+Inventory every route and user flow disabled or affected by the organizational foundation.
+
+For each, document:
+
+* Intended user action.
+* Required role and record scope.
+* Ownership-resolution behavior.
+* Implementation and verification status.
+* Any remaining dependency.
+
+Restore the existing pilot planning workflows first, following the accepted implementation sequence.
+
+Do not reactivate old unscoped handlers. Enforce authorization on individual records, collection queries and nested resources. A permitted campaign must not automatically expose separately owned activities or restricted evidence.
+
+Calendar summaries must remain limited to authorized fields and records.
+
+5. Resolve the legacy availability gap
+
+Determine whether the changed development boundary affects any actual active sessions or only local demonstration workflows. Do not infer shared or production impact from development behavior.
+
+Preserve active legacy sessions’ standards, schedules, communications, evidence and history.
+
+Restore access only through verified identity and established entitlement. Where legacy ownership is unresolved, use the approved controlled mapping process; do not assign arbitrary ownership or grant broad access.
+
+Explicitly distinguish:
+
+* Data preservation.
+* Behavioral regression compatibility.
+* Authenticated workflow availability.
+
+If workflow availability cannot yet be restored, record it as an unresolved acceptance gap. Do not claim that the legacy continuity requirement has been fully satisfied.
+
+6. Verify the integrated experience
+
+Add meaningful integration tests covering:
+
+* Valid and invalid authentication.
+* Authenticated users with no membership.
+* Different permissions across multiple groups.
+* Cross-group access denial through direct and collection requests.
+* Session expiry, logout and membership revocation.
+* Self-approval denial across roles and groups.
+* Authorized calendar summaries without private-detail leakage.
+* Restored legacy workflows where entitlement is verified.
+* Concurrent requests without identity or diagnostic leakage.
+
+Use browser verification for the restored user flows when a real development identity is available. Otherwise, label browser and provider verification as pending; mocked authentication tests are not proof of a live identity connection.
+
+Run applicable repository regression and migration gates. Preserve canonical hashes, the 106/106 canonical evaluator registry and the exact dependency pin.
+
+Report fresh test totals without forcing historical counts. Confirm disposable-database cleanup.
+
+7. Boundaries and completion
+
+No shared or production migration, deployment, live sending or publishing is authorized by this increment.
+
+Update the project’s implementation evidence, route-access matrix, identity configuration guidance and remaining Phase 2B-1 plan.
+
+Commit only relevant code, tests and documentation.
+
+Report:
+
+* Starting and ending commits and changed files.
+* Identity provider used and whether connection was actually verified.
+* Workflows restored and workflows still blocked.
+* Legacy availability status.
+* Verification results.
+* Exact external setup actions still needed.
+* Remaining Phase 2B-1 work.
+
+Stop after this increment. Do not describe the entire phase or application as complete.
+
+⸻
+
+The immediate success criterion is an authorized marketer signing in and completing the existing planning workflow within the correct group, while unauthorized access remains blocked.
