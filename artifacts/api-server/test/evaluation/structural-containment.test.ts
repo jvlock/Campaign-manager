@@ -33,7 +33,7 @@ type StructuralControlsHaveNoIds = Assert<
 const catalog = await loadWebinarStandardCatalog();
 const registry = createWebinarEvaluatorRegistry(catalog);
 
-test("coverage addresses 14 semantic checks as 10/2/2 with 68 of 106 rules implemented", async () => {
+test("coverage addresses 14 semantic checks as 10/2/2 using the actual registry partition", async () => {
   const manifest = JSON.parse(await readFile(
     new URL("../../../../docs/standards/webinar/manifest.json", import.meta.url), "utf8",
   )) as { semanticValidation: Record<string, unknown> };
@@ -44,9 +44,9 @@ test("coverage addresses 14 semantic checks as 10/2/2 with 68 of 106 rules imple
   assert.equal(coverage.evaluatorBacked, 10);
   assert.equal(coverage.structurallyEnforced, 2);
   assert.equal(coverage.containmentVerified, 2);
-  assert.equal(coverage.implementedRuleCount, 68);
-  assert.equal(coverage.unimplementedRuleCount, 38);
-  assert.equal(coverage.totalRuleCount, 106);
+  assert.equal(coverage.implementedRuleCount, registry.implementedRuleIds.length);
+  assert.equal(coverage.unimplementedRuleCount, registry.unimplementedRuleIds.length);
+  assert.equal(coverage.totalRuleCount, catalog.rules.length);
   assert.equal(coverage.ruleEngineCoverage, "partial");
   const mappedIds = new Set(SEMANTIC_CONTROLS.flatMap((control) =>
     control.classification === "evaluator_backed" ? [...control.ruleIds] : []));
@@ -226,9 +226,25 @@ test("evaluator and evidence modules retain pure domain dependencies and no ambi
       const audience = folder === "webinar-standard-evaluation" && filename === "audience-evaluators.ts";
       const audienceHelpers = folder === "webinar-standard-evaluation" && filename === "audience-helpers.ts";
       const audienceTypes = folder === "webinar-standard-evaluation" && filename === "audience-types.ts";
+      const deliverableEvaluators = folder === "webinar-standard-evaluation" && filename === "deliverable-evaluators.ts";
+      const deliverableHelpers = folder === "webinar-standard-evaluation" && filename === "deliverable-helpers.ts";
+      const deliverableTypes = folder === "webinar-standard-evaluation" && filename === "deliverable-types.ts";
       assertPureSource(`${folder}/${filename}`, await readFile(new URL(filename, directory), "utf8"), {
         localFiles: files,
-        exactImports: setup ? {
+        exactImports: deliverableEvaluators ? {
+          "../webinar-standard-catalog/types": ["WebinarStandardCatalog"],
+        } : deliverableHelpers ? {
+          "../webinar-standard-catalog/types": [
+            "READINESS_STAGES", "RuleId", "WebinarStandardCatalog",
+          ],
+          "../webinar-standard-evidence": ["ManualEvidence", "validateManualEvidence"],
+          "../webinar-standard-readiness/result-validation": ["validateIncomingResults"],
+        } : deliverableTypes ? {
+          "../webinar-standard-catalog/types": [
+            "ReadinessStage", "RuleId", "StandardId", "StandardVersion",
+          ],
+          "../webinar-standard-evidence": ["ManualEvidence"],
+        } : setup ? {
           "@js-temporal/polyfill": ["Temporal"],
           "node:util": ["isDeepStrictEqual"],
           "../webinar-standard-planning-time/time": ["assertInstant", "assertTimeZone", "localTime"],

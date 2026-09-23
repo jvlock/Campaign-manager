@@ -135,9 +135,9 @@ test("full synthetic passes are ready without misrepresenting actual implementat
   const report = aggregate();
   assert.equal(report.mode, "descriptive_only");
   assert.equal(report.evaluationTimeEpochMs, referenceTime);
-  assert.equal(report.coverage.totalRuleCount, 106);
-  assert.equal(report.coverage.implementedRuleCount, 68);
-  assert.equal(report.coverage.missingEvaluatorCount, 38);
+  assert.equal(report.coverage.totalRuleCount, catalog.rules.length);
+  assert.equal(report.coverage.implementedRuleCount, registry.implementedRuleIds.length);
+  assert.equal(report.coverage.missingEvaluatorCount, registry.unimplementedRuleIds.length);
   assert.deepEqual(new Set(report.coverage.implementedRuleIds), new Set(registry.implementedRuleIds));
   assert.deepEqual(new Set(report.coverage.missingEvaluatorRuleIds), new Set(registry.unimplementedRuleIds));
   assert.deepEqual(READINESS_STAGES.map((name) => catalog.rules.filter((r) => r.readinessStage === name).length), [57, 19, 24, 6]);
@@ -153,9 +153,9 @@ test("full synthetic passes are ready without misrepresenting actual implementat
   }
 });
 
-test("real registry findings never turn 68 implemented and 38 unimplemented into false readiness", () => {
+test("real registry findings never turn partial implementation coverage into false readiness", () => {
   const results = catalog.rules.map((r) => registry.evaluate(r.ruleId, makeContext()));
-  assert.equal(results.filter((r) => r.status === "unimplemented").length, 38);
+  assert.equal(results.filter((r) => r.status === "unimplemented").length, registry.unimplementedRuleIds.length);
   const report = aggregate(input({ results }));
   for (const result of report.stages) {
     assert.notEqual(result.status, "ready");

@@ -869,11 +869,13 @@ test("WEB-WIN-007: duplicate rendered omission identity is invalid context", () 
 test("WEB-WIN-007: full window without omissions is not applicable", () => {
   assert.equal(registry.evaluate("WEB-WIN-007", context(plan(21))).status, "not_applicable");
 });
-test("Scheduling batch exports exactly the approved 15 IDs within the 68 registry entries", () => {
+test("Scheduling batch exports exactly the approved 15 IDs within the current registry", () => {
   assert.equal(SCHEDULING_BATCH_RULE_IDS.length, 15);
   assert.equal(new Set(SCHEDULING_BATCH_RULE_IDS).size, 15);
-  assert.equal(registry.implementedRuleIds.length, 68);
-  assert.equal(registry.unimplementedRuleIds.length, 38);
+  assert.equal(
+    registry.implementedRuleIds.length + registry.unimplementedRuleIds.length,
+    catalog.rules.length,
+  );
   assert.ok(SCHEDULING_BATCH_RULE_IDS.every(id => registry.implementedRuleIds.includes(id)));
 });
 test("Scheduling batch has no overlap with the accepted prior 38 evaluators", () => {
@@ -884,9 +886,9 @@ test("Scheduling batch contains no unknown canonical rule identifier", () => {
   const canonicalIds = new Set(catalog.rules.map(rule => rule.ruleId));
   assert.ok(SCHEDULING_BATCH_RULE_IDS.every(id => canonicalIds.has(id)));
 });
-test("Scheduling registry remains duplicate-free while exactly 38 canonical rules remain missing", () => {
-  assert.equal(new Set(registry.implementedRuleIds).size, 68);
-  assert.equal(new Set(registry.unimplementedRuleIds).size, 38);
+test("Scheduling registry remains duplicate-free within the current canonical partition", () => {
+  assert.equal(new Set(registry.implementedRuleIds).size, registry.implementedRuleIds.length);
+  assert.equal(new Set(registry.unimplementedRuleIds).size, registry.unimplementedRuleIds.length);
   assert.equal(registry.implementedRuleIds.filter(id => registry.unimplementedRuleIds.includes(id)).length, 0);
   assert.equal(registry.implementedRuleIds.length + registry.unimplementedRuleIds.length, catalog.rules.length);
 });

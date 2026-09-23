@@ -4,6 +4,7 @@ import type {
 import type { SetupContext, MeasurementPlanContext, FindingEvidenceContext } from "./setup-types";
 import type { SchedulingEvaluationContext } from "./scheduling-types";
 import type { AudienceEvaluationContext } from "./audience-types";
+import type { DeliverableEvaluationContext } from "./deliverable-types";
 
 export type EventOperationalStatus =
   | "draft" | "open_for_registration" | "scheduled"
@@ -64,6 +65,7 @@ export interface FollowUpVariant {
 
 /** Caller-supplied observation time, never wall-clock time. Null means missing evidence. */
 export interface EvaluationContext {
+  readonly deliverables?: DeliverableEvaluationContext | null;
   readonly audience?: AudienceEvaluationContext | null;
   readonly setup?: SetupContext | null;
   readonly measurementPlan?: MeasurementPlanContext | null;
