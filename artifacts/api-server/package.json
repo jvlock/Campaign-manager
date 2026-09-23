@@ -20,7 +20,7 @@
     "test:deliverables": "tsx --test ./test/deliverables.routes.test.ts"
   },
   "dependencies": {
-    "@js-temporal/polyfill": "^0.5.1",
+    "@js-temporal/polyfill": "0.5.1",
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
     "cookie-parser": "^1.4.7",

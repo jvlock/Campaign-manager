@@ -175,3 +175,134 @@ docs/verification/phase-2a-4.md
 ```
 
 This report is included in the delivery commit. The completion response records its exact commit hash. No history rewrite or intervening platform-generated commit was observed during implementation. Owner acceptance of the delivered phase remains separate from successful verification.
+
+## Phase 2A-4B repository-hygiene follow-up
+
+### History and artifact disposition
+
+The original inventory above is historical and remains unchanged. The listed
+Phase 2A-4 instruction attachment was inadvertently committed; it was removed
+from the working tree in the Phase 2A-4B follow-up. Its complete original
+contents remain recoverable from commit
+`a1614a90bbd5f411117cbc2af0b058bedc4bccdd`. It is not an authoritative
+requirements source, and its historical inventory reference does not imply
+that it is a current dependency.
+
+The expected starting commit was `a1614a90bbd5f411117cbc2af0b058bedc4bccdd`.
+The actual starting commit was `7e94e05ccde64c3bc62094811fae54602db143d3`,
+whose direct parent is that expected commit. This intervening Replit Agent
+commit added only the review paste listed below; no code, configuration, tests
+or canonical documents changed. Its history is retained, not amended.
+
+All three following text files were read completely before removal:
+
+| Attachment under attached_assets/ | Bytes | SHA-256 | Disposition |
+|---|---:|---|---|
+| Pasted-Phase-2A-3-is-now-accepted-The-evidence-is-internally-c_1790124000415.txt | 12870 | 78106f1525638d29a50dfc2dc8dd134a0f71591b649151b583e8c0dec07e4345 | Removed tracked implementation/authorization prompt; recoverable from original functional commit |
+| Pasted-The-Phase-2A-4-logic-appears-correctly-implemented-and-_1790125454732.txt | 4850 | ac298acb7678217af2996623c76a7030b8120b53eb6cb78fde68997f60c2c3d3 | Removed review/remediation prompt; unexpectedly already tracked by intervening commit |
+| Pasted-The-stop-was-procedurally-correct-but-the-reference-is-_1790125698905.txt | 6687 | bf1f83b80b10437d855d3e0d0cafee82fa77fbfdd2d96a86315108ea1ffa8aa9 | Removed current untracked cleanup prompt without staging it |
+
+The review and cleanup texts are already preserved in the conversation. They
+contain process instructions, not unique application source data or distinct
+business rules. Two pre-existing, byte-identical Phase 2A-2 verification-status
+reports remain under attached_assets; they contain no implementation instructions
+and are outside this correction. No broad attached_assets ignore rule was added.
+
+### Memory findings and requirements provenance
+
+Phase 2A-4 added one index entry to MEMORY.md and the file
+pure-planning-boundary.md. The new file restated architecture/scheduling policy
+from the implementation prompt; it contained no unique measurements, test
+results or implementation evidence. The file and its index entry were removed.
+Unrelated pre-existing memory entries were left unchanged.
+
+Canonical webinar documents remain the authoritative product requirements.
+Owner instructions authorize work and define phase-specific constraints.
+This verification report records implementation choices and measured results;
+it does not supersede canonical requirements or authorize further work.
+Agent memory is not an alternative source of product policy or authorization.
+
+The implementation section above retains the four offsets, all shortened-window
+bands and immediate slot identities, local-calendar semantics, compatible DST
+gap/overlap handling, 24-elapsed-hour separation, audience paths, weekday-only
+business days, and planning-only containment. It also records the implementation
+choice to retain historical obligation deadlines as overdue rather than as
+backdated schedules, and that existing runtime weekend policy was not changed.
+
+### Dependency and staging correction
+
+The original manifest used the range ^0.5.1. The follow-up changes it to exact
+version 0.5.1 for @js-temporal/polyfill. The package manager updates the lockfile
+specifier to 0.5.1 while retaining resolved version 0.5.1 and jsbi 4.3.2.
+No dependency upgrades or unrelated lockfile changes are intended.
+
+Functional and corrective commits must stage an explicit, reviewed allowlist of
+intended files, never unrestricted git add -A. An allowlist alone is insufficient:
+each included file must also be within the authorized scope. Uploaded instruction
+pastes must not be included just to obtain a clean working tree. The original
+functional commit used explicit staging but incorrectly included its prompt.
+
+No application source or tests are changed by this correction. No evaluator
+expansion or subsequent functional phase is authorized or begun.
+
+### Fresh Phase 2A-4B verification results
+
+All requested gates were rerun after the exact-pin change. Actual runner totals:
+
+| Suite | Files | Top-level tests | Nested subtests | Individual tests |
+|---|---:|---:|---:|---:|
+| Scheduling | 1 | 33 | 0 | 33 |
+| Audience state | 3 | 63 | 0 | 63 |
+| Business days/time | 4 | 30 | 0 | 30 |
+| Planning containment | 1 | 3 | 0 | 3 |
+| Classifier | 1 | 42 | 0 | 42 |
+| Readiness | 1 | 44 | 0 | 44 |
+| Exceptions | 1 | 172 | 0 | 172 |
+| Evaluators | 1 | 20 | 0 | 20 |
+| Registry | 1 | 9 | 0 | 9 |
+| Existing structural | 1 | 8 | 0 | 8 |
+| Catalog integrity | 2 | 65 | 0 | 65 |
+| Complete API root suite | 14 | 69 | 0 | 69 |
+| Frontend | 1 | 2 | 0 | 2 |
+| **Total** | **32** | **560** | **0** | **560** |
+
+Every gate exited zero. Failures, skipped, cancelled, todo, setup failures,
+teardown failures and type errors: **0 each**. Non-incremental type checking
+passed. Rule-ID generation reported **106 IDs and zero drift**. A fresh registry
+inspection confirmed **15 implemented / 106 total, 91 missing**.
+
+The fresh disposable database applied all 21 migrations listed in the original
+report. Cleanup confirmed PostgreSQL shutdown, socket removal and temporary-root
+removal; root absence was independently checked. All five canonical SHA-256
+hashes were recomputed and matched the exact values recorded above.
+
+API workflow rebuild/restart succeeded. Application sources, tests, canonical
+documents, UI, database/migration code and runtime configuration are unchanged
+from the original functional commit. No route, API, sending, publishing or
+deployment integration was added. The dependency manifest and lockfile differ
+only in the exact specifier; package resolutions and integrity records are
+unchanged. MEMORY.md matches its pre-Phase-2A-4 contents byte for byte.
+
+Verification commands:
+
+```sh
+# Each suite ran separately, with its relevant test path:
+pnpm --filter @workspace/api-server exec tsx --test --test-reporter=tap [test paths]
+# Scheduling/audience/business-day/containment runs also used --test-concurrency=1.
+node artifacts/api-server/src/lib/webinar-standard-catalog/generate-rule-ids.mjs --check
+pnpm --filter @workspace/api-server run typecheck --incremental false
+node lib/db/test/disposable-db.mjs -- pnpm --filter @workspace/api-server exec tsx --test --test-reporter=tap --test-concurrency=1 './test/*.test.ts'
+node --test --test-reporter=tap artifacts/campaign-workspace/scripts/resize-observer.test.mjs
+```
+
+Hash checks used Python SHA-256 with assertions against all five expected
+digests. Runner summaries, zero-exit files and cleanup events were independently
+parsed, rather than assuming the expected test total. Temporary logs:
+`/tmp/phase4b-*.log`; exit codes: `/tmp/phase4b-*.exit`.
+
+The cleanup commit stages exactly seven tracked paths: MEMORY.md, the deleted
+pure-planning-boundary.md, the API package manifest, the two deleted tracked
+instruction/review attachments, this report and pnpm-lock.yaml. The current
+untracked cleanup prompt was deleted without staging. No pasted instruction
+files remain in the resulting tree; the two unrelated historical status reports
+described above remain.
