@@ -1,0 +1,592 @@
+Phase 2A-5C is accepted. The evidence reconciles correctly:
+
+* Coverage: 53/106
+* Scheduling batch: exactly 15
+* Remaining: 53
+* Existing evaluators unchanged
+* Full verification green
+* Canonical artifacts unchanged
+* No runtime integration or later-batch work
+
+The next increment is the 15 Registrant/Audience evaluators, which should raise coverage to 68/106, leaving 38.
+
+Give Replit this prompt:
+
+⸻
+
+Phase 2A-5D — Registrant and Audience Evaluator Coverage
+
+Implement the Registrant/Audience evaluator batch defined in the approved Phase 2A-5 evaluator coverage plan.
+
+This increment must add exactly the 15 missing evaluators assigned to the Registrant/Audience batch. Reuse the verified audience-state planner, scheduling planner, business-day logic, evidence model, evaluation framework, exceptions, and readiness modules.
+
+Do not implement Deliverables/QA, Governed Services, or Completion evaluators.
+
+1. Starting state
+
+Expected branch:
+
+feature/webinar-standard-engine
+
+Expected HEAD:
+
+5d45232add631e0a8a15691b6bffbe6c243272ac
+
+Before changing anything, confirm:
+
+* branch, HEAD, direct parent, and tracked working-tree state;
+* the only permissible untracked file is the current instruction paste;
+* rule-ID generation reports 106 IDs and zero drift;
+* evaluator coverage is exactly 53/106, with 53 missing;
+* all 15 Scheduling evaluators are registered;
+* all previous 38 evaluators remain registered;
+* non-incremental type checking passes;
+* the complete current baseline passes;
+* @js-temporal/polyfill remains pinned exactly to 0.5.1;
+* all five canonical webinar-document hashes match.
+
+The reported Phase 2A-5C baseline is:
+
+* 37 test files;
+* 990 top-level records;
+* seven nested subtests;
+* 996 individual leaf tests;
+* TAP total 997 when the runner includes its grouping record;
+* zero failures, skips, cancellations, TODOs, setup failures, teardown failures, or type errors;
+* all 21 migrations applied against a new disposable database with complete shutdown and cleanup.
+
+Report actual runner units separately. Do not force these counts if the runner reports them differently; investigate and explain any difference.
+
+Do not stage or commit the current instruction paste or any other file under attached_assets/. Use explicit allowlist staging.
+
+Do not treat .agents/memory/ as an authoritative requirements source, and do not add product-policy memory files.
+
+2. Moving-baseline policy
+
+If HEAD has moved, inspect every intervening commit before proceeding.
+
+You may accept a moved HEAD only if every intervening change contains exclusively:
+
+* duplicate status or instruction material under attached_assets/; or
+* non-authoritative process notes under .agents/memory/.
+
+Stop if an intervening commit changes:
+
+* application or test code;
+* dependencies or configuration;
+* canonical standards;
+* the evaluator coverage plan;
+* product requirements or decisions;
+* database schema or migrations;
+* verification evidence other than inventory references to uploaded prompts.
+
+Do not rewrite history.
+
+Do not delete a tracked or untracked upload unless its exact contents, references, and lack of unique information have first been verified. If cleanup becomes necessary, report it explicitly.
+
+3. Authoritative sources
+
+Use:
+
+* docs/standards/webinar/WEB-STANDARD-001.rules.json
+* docs/standards/webinar/WEB-STANDARD-001.md
+* docs/standards/webinar/WEBINAR-PILOT-IMPLEMENTATION-AUTHORIZATION.md
+* docs/standards/webinar/CHANGELOG-RC1.md
+* docs/standards/webinar/manifest.json
+* docs/verification/phase-2a-5-evaluator-coverage-plan.md
+* the verified catalog, evaluation, evidence, exception, readiness, scheduling, audience-state, and planning-time modules.
+
+The canonical catalog controls rule meaning. The coverage plan controls batch membership.
+
+Do not:
+
+* modify the canonical standard;
+* invent, rename, combine, or split rules;
+* change batch assignments;
+* implement later-batch rules;
+* use uploaded prompts or memory files as authoritative rule sources.
+
+4. Reconcile the exact batch before coding
+
+Mechanically derive the Registrant/Audience batch from the committed coverage plan and reconcile it against:
+
+* all 106 canonical rule IDs;
+* the 53 implemented evaluator IDs;
+* the 53 missing IDs;
+* generated rule identifiers;
+* the evaluator registry.
+
+Prove before implementation that:
+
+* exactly 15 unique missing rules belong to this batch;
+* none is already implemented;
+* none belongs to another batch;
+* no ID is unknown;
+* adding them produces exactly 68 implemented evaluators and 38 missing evaluators.
+
+List the exact 15 IDs in the completion report.
+
+If the plan does not yield exactly 15 unambiguous IDs, stop and report the discrepancy. Do not select rules through inference.
+
+5. Implementation contract
+
+Implement one explicit evaluator for each of the 15 rules.
+
+Each evaluator must:
+
+* be registered explicitly by canonical rule ID;
+* use the canonical catalog record for metadata;
+* accept immutable, typed context;
+* use existing audience, scheduling, time, and evidence types where appropriate;
+* return the established evaluation-result union;
+* preserve pass, fail, not applicable, evidence unavailable, invalid context, evaluator unavailable, and exception-resolution distinctions;
+* retain the original failed finding when a valid exception resolves an eligible blocker;
+* never convert missing evidence into a pass;
+* never infer execution from a communication plan or obligation.
+
+Do not add:
+
+* a generic evaluator;
+* a pattern-based fallback;
+* a default-pass path;
+* hard-coded coverage totals;
+* duplicate audience-state or temporal policy.
+
+6. Structural separation
+
+Preserve the existing model:
+
+* event status and participant status are separate;
+* attendance belongs to each registrant;
+* no session-level attendance field may be introduced;
+* event cancellation does not become a participant attendance state;
+* participant cancellation does not silently change event status;
+* internal/test classification remains distinct from customer audience states.
+
+Add structural tests proving this separation remains intact.
+
+7. Audience states
+
+Evaluate the approved states distinctly:
+
+* eligible non-registrant;
+* registered;
+* attended;
+* registered but absent;
+* attendance unknown;
+* waitlisted;
+* cancelled;
+* internal or test.
+
+Do not collapse states or infer one from incomplete data.
+
+The verified audience-state planner remains the source of planning behavior. Evaluators consume its version-bound results; they must not recreate that behavior independently.
+
+8. Registration behavior
+
+Preserve these requirements:
+
+* registration immediately suppresses all future recruitment;
+* confirmation is due immediately;
+* calendar and attendance information are required;
+* a 24-hour reminder is created only when its nominal time remains in the future;
+* a one-hour reminder is created only when its nominal time remains in the future;
+* late registration never creates a reminder in the past;
+* event-change and cancellation notices are obligations only when triggered;
+* planning an obligation does not prove it was actually sent.
+
+Where a rule requires proof of actual scheduling, generation, suppression, or delivery, require valid operational evidence. A planner result alone is insufficient.
+
+9. Material-change decision
+
+Apply the approved material-change policy to the applicable registrant-notification rules.
+
+Always material:
+
+* cancellation;
+* event date;
+* start or end time;
+* time zone;
+* format;
+* venue or location;
+* platform;
+* join or access link;
+* access instructions.
+
+Material after participant-facing publication:
+
+* title or topic;
+* speakers;
+* agenda;
+* access requirements.
+
+Not customer-notice triggers by themselves:
+
+* internal administrative fields;
+* internal ownership;
+* internal notes;
+* unpublished drafting changes.
+
+For an applicable material change, “prompt” notification means within one elapsed hour of the recorded change instant.
+
+Require both instants explicitly. Do not read the system clock.
+
+A planned notice does not prove operational delivery. If the rule requires proof that notification occurred, require scoped operational evidence.
+
+10. Follow-up behavior
+
+Preserve these requirements:
+
+* attended participants receive only the attended variant;
+* registered-but-absent participants receive only the absent variant;
+* attendance unknown first creates a reconciliation obligation;
+* attendance unknown must never produce both attended and absent variants;
+* unresolved attendance may become eligible only for the approved neutral variant after two business days;
+* attended, absent, and neutral variants remain distinct even when they share an asset or destination;
+* a shared asset does not make the variants interchangeable.
+
+The one-business-day deadline for attended follow-up begins at the actual event-completion instant.
+
+Attendance-processing or reconciliation delay does not restart or extend that deadline.
+
+Use the existing Monday-through-Friday business-day convention in the webinar’s IANA time zone. Do not introduce a holiday calendar.
+
+Deadlines and eligibility instants are not send authorizations.
+
+11. Waitlist, cancellation, and internal/test behavior
+
+Preserve:
+
+* waitlist confirmation;
+* promotion obligation when triggered;
+* closure obligation when triggered;
+* cancellation confirmation;
+* suppression from subsequent customer communication paths after cancellation;
+* internal/test exclusion from customer communications and customer reporting;
+* explicitly labelled QA test planning may exist but must not be classified as a customer path.
+
+Do not infer waitlist promotion or closure without an explicit trigger or observation.
+
+12. Planning versus operational evidence
+
+Classify each of the 15 rules according to its canonical validation method.
+
+Planning-verifiable rules
+
+A valid, correctly versioned audience-plan result may satisfy a rule only when the rule is specifically about the existence or correctness of a plan or obligation.
+
+Observation-verifiable rules
+
+Rules requiring proof of an actual communication, suppression, delivery, attendance determination, reconciliation action, promotion, closure, cancellation notice, or reporting exclusion require immutable operational evidence.
+
+Operational evidence must be scoped to applicable:
+
+* rule ID;
+* standard identifier and exact version;
+* webinar and occurrence;
+* participant;
+* communication identity or variant;
+* audience state;
+* trigger;
+* observation instant;
+* source reference;
+* validity period;
+* supplier record with identityVerified: false.
+
+Missing required operational evidence returns evidence_unavailable, not pass.
+
+Expired, mis-scoped, wrong-version, duplicated, contradictory, or structurally invalid evidence must not satisfy a rule.
+
+13. Evidence and exceptions
+
+Reuse the Phase 2A-5B evidence model.
+
+Evidence is not an exception.
+
+Exceptions:
+
+* apply only to eligible failed blockers;
+* cannot replace missing evidence;
+* cannot resolve invalid context;
+* cannot exempt non-exception-eligible rules;
+* cannot exempt themselves;
+* preserve the original failed finding;
+* produce a separate resolution classification.
+
+Warnings, Recommended defaults, and Optional rules remain visible but nonblocking regardless of exceptionEligible.
+
+Do not change the corrected readiness classifier.
+
+14. Precedence and suppression
+
+Audience evaluators must not allow a communication plan to override:
+
+* registration suppression;
+* cancellation suppression;
+* internal/test exclusion;
+* audience eligibility;
+* event status;
+* consent;
+* readiness;
+* exception restrictions;
+* governed naming, taxonomy, or UTM requirements.
+
+When suppression applies, later customer-path obligations must be suppressed visibly rather than silently removed.
+
+Do not represent suppression as successful delivery.
+
+15. Context design
+
+Extend typed context only as required for these 15 rules.
+
+Potential concepts include:
+
+* version-bound audience-plan result;
+* participant record;
+* per-registrant attendance state;
+* event occurrence and status;
+* registration instant;
+* event completion instant;
+* material-change record;
+* participant-facing publication state;
+* waitlist trigger;
+* cancellation trigger;
+* reconciliation record;
+* communication observation;
+* evidence snapshot;
+* prerequisite evaluator results.
+
+All additions must be immutable.
+
+Do not add speculative fields for later batches or introduce:
+
+* database persistence;
+* routes;
+* API contracts;
+* UI models;
+* provider credentials;
+* environment-derived destinations;
+* automatic clock access;
+* external-send methods;
+* publishing or deployment controls.
+
+16. Registry and coverage
+
+After implementation:
+
+* registry coverage must be exactly 68/106;
+* exactly 38 canonical rules must remain without evaluators;
+* all 15 new IDs must belong to Registrant/Audience;
+* all existing 53 evaluators must remain registered;
+* no duplicate, unknown, or extra ID may exist;
+* no generic fallback may exist;
+* readiness coverage must continue to derive from the actual registry.
+
+Add mechanical tests enforcing these conditions.
+
+17. Required tests
+
+Each material state, rule, and boundary must be independently named.
+
+Batch reconciliation
+
+Test:
+
+* exact 15 batch IDs;
+* no overlap with the existing 53;
+* no ID outside the approved batch;
+* resulting coverage of 68/106;
+* exactly 38 missing;
+* zero duplicate or unknown IDs.
+
+Per-rule evaluator behavior
+
+For every new evaluator, test as applicable:
+
+* pass;
+* genuine failure;
+* not applicable;
+* evidence unavailable;
+* invalid context;
+* wrong standard;
+* wrong version;
+* mis-scoped participant or occurrence;
+* invalid prerequisite result;
+* eligible exception resolution;
+* ineligible exception rejection.
+
+Registration and reminders
+
+Test:
+
+* registration suppresses all later recruitment;
+* immediate confirmation obligation;
+* calendar-information obligation;
+* future 24-hour reminder;
+* future one-hour reminder;
+* registration after the nominal 24-hour reminder;
+* registration after the nominal one-hour reminder;
+* no reminder in the past;
+* no reminder at or after event start;
+* plan versus actual operational evidence.
+
+Material changes
+
+Test independently:
+
+* cancellation;
+* date change;
+* start-time change;
+* end-time change;
+* time-zone change;
+* format change;
+* venue/location change;
+* platform change;
+* join-link change;
+* access-instruction change;
+* published title/topic change;
+* published speaker change;
+* published agenda change;
+* published access-requirement change;
+* unpublished content change;
+* internal administrative change;
+* notice at exactly one elapsed hour;
+* notice just before one hour;
+* notice just after one hour;
+* missing delivery evidence.
+
+Attendance and follow-up
+
+Test:
+
+* attended variant only;
+* absent variant only;
+* unknown reconciliation first;
+* unknown never produces both attended and absent;
+* neutral not eligible before two business days;
+* neutral eligible at exactly two business days;
+* weekend boundaries;
+* event-local time-zone behavior;
+* one-business-day deadline from actual completion;
+* attendance-processing delay does not reset the deadline;
+* shared asset with distinct variants;
+* missing attendance evidence;
+* contradictory attendance observations.
+
+Waitlist and cancellation
+
+Test:
+
+* waitlist confirmation;
+* promotion trigger;
+* closure trigger;
+* missing trigger;
+* cancellation confirmation;
+* suppression of subsequent customer paths;
+* participant cancellation remains distinct from event cancellation.
+
+Internal/test and containment
+
+Test:
+
+* internal/test exclusion from customer paths;
+* internal/test exclusion from reporting;
+* labelled QA test planning remains non-customer;
+* no session-level attendance;
+* no sending, provider, database, route, API, UI, publishing, deployment, environment, filesystem, or implicit-clock capability.
+
+18. Verification gate
+
+Run fresh:
+
+1. Registrant/Audience batch evaluator tests.
+2. Registrant/Audience registry and coverage tests.
+3. Audience-state planner tests.
+4. Scheduling-batch evaluator tests.
+5. Scheduling planner tests.
+6. Evidence tests.
+7. Business-day and planning-time tests.
+8. Planning containment tests.
+9. Classifier tests.
+10. Readiness tests.
+11. Exception tests.
+12. Existing evaluator tests.
+13. Existing registry tests.
+14. Existing structural and containment tests.
+15. Catalog-integrity tests.
+16. Rule-ID drift check.
+17. Non-incremental type check.
+18. Complete API suite against a newly created disposable database.
+19. Frontend regression suite.
+20. Preview smoke check.
+21. All five canonical-document hash checks.
+22. Exact dependency-pin verification for @js-temporal/polyfill version 0.5.1.
+
+Report separately:
+
+* test files;
+* top-level tests;
+* nested subtests;
+* individual leaf tests;
+* TAP grouping records;
+* failures;
+* skipped, cancelled, and TODO tests;
+* setup and teardown failures;
+* type errors;
+* all 21 migration results;
+* PostgreSQL shutdown;
+* socket removal;
+* temporary-directory removal;
+* independent confirmation that the disposable database root no longer exists.
+
+Do not force an expected aggregate test count. Calculate it from actual runner results.
+
+19. Commit policy
+
+A platform-created commit remains provisional until every gate passes.
+
+Do not rewrite history.
+
+If a correction is needed after a provisional commit, use a new follow-up commit. Do not amend or squash.
+
+Use explicit allowlist staging. Do not commit uploaded prompts or unrelated workspace files.
+
+Suggested commit title:
+
+Add webinar registrant and audience evaluators
+
+20. Completion report
+
+Create:
+
+docs/verification/phase-2a-5d.md
+
+Report:
+
+* accepted starting commit;
+* any intervening commits and their exact contents;
+* ending commit and direct parent;
+* every changed file;
+* exact 15 Registrant/Audience evaluator IDs;
+* rule type, readiness stage, exception eligibility, validation method, evidence dependency, and planning-versus-observation classification for each;
+* context and shared predicates added;
+* material-change implementation;
+* one-hour notice measurement;
+* event-completion follow-up clock;
+* audience-state and suppression behavior;
+* confirmation that audience and business-day logic was reused rather than duplicated;
+* registry reconciliation;
+* final evaluator coverage of exactly 68/106;
+* exact or mechanically verified list of the remaining 38 evaluator IDs;
+* test counts and all verification results;
+* migration and cleanup results;
+* canonical hashes;
+* dependency-pin result;
+* confirmation that all prior 53 evaluators remain registered;
+* confirmation that no later-batch evaluator was added;
+* confirmation that no canonical standard, database schema, migration, route, API contract, UI, sending, publishing, or deployment behavior changed;
+* any ambiguity, unexpected platform commit, or unresolved dependency.
+
+Stop after reporting. Do not begin Deliverables/QA, Governed Services, Completion, persistence, API, or UI work.
+
+⸻
