@@ -1,0 +1,609 @@
+# Phase 2B-0 — Webinar Engine Integration Assessment and Build Plan
+
+Perform a read-only integration assessment for connecting the completed WEB-STANDARD-001 rule engine to the existing Campaign Manager application.
+
+Do not implement persistence, migrations, routes, services, UI, external integrations, sending, publishing, or deployment in this phase.
+
+The objective is to determine exactly how the completed in-memory engine should connect to the existing application without creating parallel models, duplicating business logic, or breaking current webinar functionality.
+
+## 1. Starting state
+
+Expected branch:
+
+`feature/webinar-standard-engine`
+
+Expected functional HEAD:
+
+`12784a94bc46f86b1a37009c1ae83049554b057b`
+
+Before proceeding, confirm:
+
+* Branch, HEAD, direct parent, and tracked working-tree state.
+* The evaluator registry contains exactly 106 canonical IDs.
+* Zero evaluator IDs are missing, duplicated, or unknown.
+* Rule-ID generation reports 106 IDs and zero drift.
+* Non-incremental type checking passes.
+* The complete Phase 2A baseline passes.
+* All five canonical document hashes match.
+* `@js-temporal/polyfill` remains pinned exactly to `0.5.1`.
+* No persistence, route, API, UI, sending, publishing, Foundation connection, or deployment behavior was introduced by Phase 2A.
+
+Report actual test-runner units separately, including:
+
+* Test files.
+* Top-level records.
+* Nested subtests.
+* Individual leaf tests.
+* TAP grouping records.
+* Failures, skips, cancellations, and TODOs.
+* Setup and teardown failures.
+
+Do not force an expected aggregate count. Calculate it from the actual runner output and explain any runner-specific grouping records.
+
+## 2. Unstaged process-memory note
+
+One process-memory note was reported as unstaged after Phase 2A-5G.
+
+Before any other work:
+
+1. Identify its exact path.
+2. Read it completely.
+3. Record its size and SHA-256.
+4. Determine whether it contains:
+
+   * unique product requirements;
+   * unique implementation evidence;
+   * an unrecorded decision;
+   * application data; or
+   * only duplicated platform or process commentary.
+5. Search for references to its exact path and filename.
+
+If it contains only duplicated, non-authoritative process commentary and is untracked, delete it without staging or committing it.
+
+If it contains unique requirements, evidence, decisions, or data, stop and report the finding.
+
+Do not treat `.agents/memory/` as an authoritative requirements source.
+
+Do not stage or commit the current instruction paste or any unrelated `attached_assets/` file.
+
+## 3. Moving-baseline policy
+
+If HEAD has moved, inspect every intervening commit.
+
+Accept a moved HEAD only when all intervening changes contain exclusively:
+
+* duplicate instruction or status uploads under `attached_assets/`; or
+* non-authoritative process notes under `.agents/memory/`.
+
+Stop if any intervening commit changes:
+
+* application or test code;
+* dependencies or configuration;
+* canonical standards;
+* database schema or migrations;
+* routes or API contracts;
+* UI;
+* product requirements;
+* verification evidence;
+* the completed evaluator registry.
+
+Do not rewrite history.
+
+## 4. Authoritative sources
+
+Use:
+
+* all five canonical files under `docs/standards/webinar/`;
+* `docs/verification/phase-2a-5-evaluator-coverage-plan.md`;
+* all relevant Phase 2A verification reports;
+* the completed catalog, evaluation, evidence, exception, readiness, scheduling, audience, deliverable, QA, governed-service, and completion modules;
+* existing repository documentation for the activity model, deliverables, taxonomy, UTM compiler, and current webinar implementation;
+* the existing application schema, migrations, services, routes, tests, and UI.
+
+Do not modify canonical standards.
+
+Do not use uploaded prompts or memory notes as authoritative requirements.
+
+## 5. Inventory the existing implementation
+
+Inspect and document the current implementation of:
+
+* campaigns;
+* journeys;
+* activities;
+* webinars and webinar occurrences;
+* communications or touches;
+* deliverables;
+* people, participants, registrants, and waitlists;
+* registration;
+* attendance;
+* event status;
+* participant status;
+* scheduled communications;
+* suppression;
+* communication changes and cancellations;
+* assets and destinations;
+* QA evidence;
+* taxonomy;
+* naming;
+* campaign codes;
+* UTM generation;
+* readiness;
+* exceptions;
+* measurement;
+* existing webinar UI;
+* existing registration and attendance endpoints;
+* existing scheduling or send paths;
+* background jobs;
+* provider abstractions;
+* audit and history tables.
+
+For each, report:
+
+* source files;
+* tables and key columns;
+* foreign keys and uniqueness constraints;
+* services;
+* routes;
+* UI consumers;
+* tests;
+* lifecycle ownership;
+* authoritative source;
+* known gaps.
+
+## 6. Preserve the approved hierarchy
+
+Confirm how the existing implementation represents:
+
+```text
+Campaign
+  → optional Journey
+    → Activity
+      → Communication/Touch
+        → Deliverable
+```
+
+A webinar must remain an Activity, never a Journey.
+
+Identify any existing implementation that conflicts with this hierarchy. Do not correct it in this phase.
+
+## 7. Domain-to-application mapping
+
+Create a field-level mapping from the Phase 2A domain models to existing application sources.
+
+At minimum map:
+
+* standard identifier and exact version;
+* webinar and occurrence;
+* calculation instant;
+* event status;
+* participant status;
+* per-registrant attendance;
+* registration instant;
+* cancellation state;
+* waitlist state;
+* recruitment touches;
+* reminder obligations;
+* follow-up variants;
+* scheduled instants;
+* operational observations;
+* evidence records;
+* governed Foundation observations;
+* exceptions;
+* readiness-stage results;
+* completion snapshot;
+* measurement obligations.
+
+For every domain field, classify its source as:
+
+* already persisted;
+* derived from existing data;
+* available from an existing service;
+* available only through external integration;
+* missing and requiring persistence;
+* missing but intentionally runtime-only;
+* unresolved product decision.
+
+Do not propose a new field when an existing authoritative field already serves the requirement.
+
+## 8. Source-of-truth boundaries
+
+Identify the authoritative source for each category:
+
+* campaign and activity identity;
+* webinar occurrence;
+* event status;
+* participant identity and status;
+* registration;
+* per-registrant attendance;
+* communication plan;
+* communication execution;
+* assets and destinations;
+* governed taxonomy;
+* standardized naming;
+* campaign code;
+* UTM output;
+* QA evidence;
+* exception record;
+* readiness result;
+* measurement result.
+
+Preserve these boundaries:
+
+* event status remains separate from participant status;
+* attendance remains per registrant;
+* the Governance Foundation remains authoritative for governed taxonomy, naming, campaign codes, and UTM output;
+* planning output does not prove execution;
+* manual evidence does not become an exception;
+* evaluator coverage does not mean operational readiness.
+
+Flag any existing table, endpoint, or service that violates these boundaries.
+
+## 9. Persistence assessment
+
+Determine what must be persisted versus recomputed.
+
+Evaluate these categories separately.
+
+### Source facts
+
+Examples include event, occurrence, participant, registration, attendance, cancellation, waitlist, and operational delivery observations.
+
+### Plans
+
+Examples include recruitment plans, audience obligations, deadlines, and scheduled communication intentions.
+
+### Evidence
+
+Examples include QA reviews, governed observations, operational observations, source references, validity, and content-version scope.
+
+### Evaluations
+
+Examples include individual rule results, exception resolution, readiness-stage results, and completion results.
+
+### Audit snapshots
+
+Examples include exact standard version, evaluator-registry fingerprint, calculation instant, input references, and completion snapshot.
+
+For each category, recommend one of:
+
+* persist as authoritative state;
+* persist as immutable history;
+* persist only the source facts and recompute;
+* cache with invalidation;
+* compute on demand;
+* do not persist.
+
+Explain:
+
+* business value;
+* audit requirement;
+* stale-data risk;
+* recomputation risk;
+* transaction boundary;
+* versioning requirement;
+* retention requirement.
+
+Do not create schema changes.
+
+## 10. Existing schema compatibility
+
+Compare the required persistence model with the current Drizzle schema and all 21 migrations.
+
+Identify:
+
+* reusable tables;
+* reusable columns;
+* required additions;
+* required constraints;
+* indexes;
+* foreign keys;
+* audit and history needs;
+* migration-order dependencies;
+* backfill requirements;
+* legacy-data risks;
+* nullable transition strategy;
+* rollback considerations.
+
+Do not use `db push` as the deployment design.
+
+All future schema changes must use versioned migrations and the repaired disposable-database process.
+
+## 11. Service and route integration
+
+Identify the exact existing service and route locations where future integration should occur.
+
+At minimum assess:
+
+* webinar creation and update;
+* occurrence changes;
+* registration;
+* cancellation;
+* waitlist;
+* attendance import or reconciliation;
+* recruitment scheduling;
+* reminder planning;
+* follow-up planning;
+* suppression;
+* readiness calculation;
+* completion calculation;
+* exception submission and review;
+* QA evidence;
+* governed Foundation observations.
+
+For each integration point, specify:
+
+* input;
+* output;
+* transaction boundary;
+* idempotency key;
+* source-of-truth update;
+* engine invocation;
+* persisted result, if any;
+* failure behavior;
+* audit record;
+* current tests requiring expansion.
+
+Do not implement these changes.
+
+## 12. Suppression integration
+
+Determine where registration suppression must be enforced in the existing recruitment path.
+
+The future implementation must ensure:
+
+* registration immediately suppresses all future recruitment;
+* cancellation suppresses later customer paths;
+* internal and test records remain excluded;
+* governed campaign exclusions remain non-bypassable;
+* suppression occurs before any provider handoff;
+* already-executed historical communications remain auditable;
+* suppressed communications remain visible with reasons;
+* retries remain idempotent.
+
+Identify the exact existing service or function where this belongs.
+
+Do not create external-send behavior.
+
+## 13. Foundation integration contract
+
+Assess the current taxonomy, naming, campaign-code, and UTM implementation.
+
+Define the future contract for consuming Foundation-governed results, including:
+
+* authoritative service or repository source;
+* input;
+* output;
+* exact version;
+* effective taxonomy version;
+* request or transaction reference;
+* input fingerprint;
+* provenance;
+* unavailable behavior;
+* deprecated-version behavior;
+* retry and idempotency;
+* local caching, if appropriate;
+* audit history.
+
+Do not build the connector.
+
+Do not permit a documented dependency or manual entry to bypass governed output.
+
+Explicitly distinguish:
+
+* evaluator implemented;
+* governed observation available;
+* live Foundation integration connected.
+
+## 14. Existing UI and required screens
+
+Assess the existing webinar UI against the four authorized workflow areas:
+
+1. Setup
+2. Recruitment
+3. Follow-up
+4. Readiness
+
+For each, inventory:
+
+* existing screen or component;
+* current data source;
+* missing data;
+* missing actions;
+* required statuses;
+* required warnings;
+* applicable rule findings;
+* evidence requirements;
+* exception behavior;
+* accessibility considerations;
+* mobile and responsive behavior.
+
+Do not redesign or implement the UI.
+
+Produce only the data and interaction contract needed for a later UX phase.
+
+## 15. Legacy compatibility
+
+Assess existing webinar sessions and templates, including `legacy_9`, `default_5`, or their current equivalents.
+
+Determine:
+
+* whether they still exist;
+* how they are represented;
+* whether active sessions can be evaluated safely;
+* which required data is absent;
+* whether migration is possible;
+* whether a controlled upgrade must wait until the current cycle ends;
+* what rollback or opt-out is required;
+* how historical communications remain auditable.
+
+Do not choose the product policy if it remains unresolved. Present options, impacts, and a recommendation.
+
+## 16. Neutral follow-up content
+
+Assess whether approved neutral follow-up content exists for attendance-unknown cases.
+
+Determine:
+
+* where content variants are stored;
+* whether a placeholder exists;
+* whether placeholder use is allowed by current authorization;
+* how neutral content remains distinct from attended and absent variants;
+* what blocks a first live pilot.
+
+Do not create customer-facing copy or authorize sending.
+
+If approval remains unresolved, record it as a product-owner decision.
+
+## 17. Security and authorization assessment
+
+Although full enterprise authentication is outside the pilot, identify the minimum authorization controls required before integrating:
+
+* evidence submission;
+* exception creation;
+* exception review;
+* readiness override attempts;
+* governed observation ingestion;
+* attendance updates;
+* operational execution;
+* deployment.
+
+Preserve the existing rule that a reviewer identity remains unverified until real authentication supplies it.
+
+Do not imply authenticated approval exists when it does not.
+
+## 18. Proposed implementation increments
+
+Produce a sequenced build plan after the assessment.
+
+The plan should separate at least:
+
+1. Persistence and migration foundation.
+2. Domain adapters and evaluation orchestration.
+3. Registration, attendance, cancellation, and suppression integration.
+4. Foundation-governed observation integration.
+5. API contracts.
+6. Setup and recruitment UI.
+7. Follow-up and readiness UI.
+8. Legacy-session handling.
+9. End-to-end and non-regression testing.
+10. Deployment-readiness review.
+
+For every increment, specify:
+
+* scope;
+* files or modules likely affected;
+* schema impact;
+* dependencies;
+* risks;
+* verification gate;
+* rollback boundary;
+* product decisions required;
+* what remains explicitly out of scope.
+
+Recommend increments small enough to verify independently.
+
+## 19. Required decisions and blockers
+
+Identify every decision that genuinely requires product-owner input.
+
+Do not ask for decisions already settled in canonical documentation.
+
+For each unresolved decision, provide:
+
+* exact question;
+* affected rules;
+* affected implementation increment;
+* available options;
+* operational impact;
+* risk;
+* recommendation.
+
+At minimum confirm the status of:
+
+* legacy in-progress session upgrade timing;
+* neutral follow-up content approval;
+* production Foundation connection and provenance source;
+* minimum authorization for exception review;
+* pilot evidence-retention requirement.
+
+## 20. Verification
+
+Because this phase is analysis-only:
+
+* do not modify application code;
+* do not modify tests;
+* do not modify schema;
+* do not add migrations;
+* do not modify canonical standards;
+* do not modify dependencies;
+* do not connect external systems.
+
+After writing the assessment, rerun:
+
+1. Rule-ID drift check.
+2. Non-incremental type check.
+3. Catalog tests.
+4. Full evaluator and readiness tests.
+5. Scheduling and audience tests.
+6. Complete API suite against a new disposable database.
+7. Frontend regression suite.
+8. All five canonical hash checks.
+9. Temporal pin check.
+
+Report:
+
+* test files;
+* top-level tests;
+* nested subtests;
+* leaf tests;
+* TAP grouping records;
+* failures, skips, cancellations, and TODOs;
+* setup and teardown failures;
+* all 21 migrations;
+* database shutdown and cleanup;
+* canonical hashes;
+* 106/106 evaluator coverage.
+
+## 21. Deliverable and commit policy
+
+Create:
+
+`docs/verification/phase-2b-0-integration-assessment.md`
+
+It must include:
+
+* repository and baseline evidence;
+* existing implementation inventory;
+* domain-to-application field mapping;
+* source-of-truth matrix;
+* persistence recommendations;
+* schema-gap assessment;
+* integration-point map;
+* suppression integration point;
+* Foundation contract;
+* UI data contracts;
+* legacy compatibility assessment;
+* neutral-content assessment;
+* security and authorization gaps;
+* sequenced implementation increments;
+* decisions and blockers;
+* risks;
+* verification results.
+
+Commit only:
+
+* this assessment document; and
+* any explicitly authorized deletion of a verified duplicate process-memory note or tracked instruction upload.
+
+Do not commit the current prompt upload.
+
+Suggested commit title:
+
+`Document webinar engine integration plan`
+
+A platform-created commit remains provisional until verification passes.
+
+Do not rewrite history. Use a follow-up commit for any correction.
+
+Stop after reporting. Do not begin persistence, migrations, routes, UI, integrations, or deployment.
