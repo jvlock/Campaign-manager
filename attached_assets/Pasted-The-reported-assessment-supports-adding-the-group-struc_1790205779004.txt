@@ -1,0 +1,214 @@
+The reported assessment supports adding the group structure without rebuilding the campaign system. The remaining blockers are business decisions about visibility and administration.
+
+One adjustment matters: restricted access must still allow designated parent-team leaders to see the master calendar. Otherwise, we would deliver separate workspaces without the oversight you requested.
+
+I recommend the following defaults. The prompt below records them and authorizes a bounded foundation build, subject to Replit verifying the actual assessment. I have reviewed the summary you pasted, not the repository document itself.
+
+Send Replit:
+
+⸻
+
+Phase 2B-1 — Organizational Foundation and Scoped Authorization
+
+Proceed with the first bounded implementation increment after verifying the accepted baseline and reconciling these decisions with the existing Phase 2B-1 plan.
+
+1. Verify and preserve the baseline
+
+Expected branch:
+
+feature/webinar-standard-engine
+
+Reported Phase 2B-0B commit:
+
+b19fb35c06249ad4e3d175d84da77c905fbc4913
+
+Read the Phase 2B-0 assessment, Phase 2B-0A owner decisions, Phase 2B-0B hierarchy assessment, and existing implementation instructions.
+
+Verify branch, HEAD, ancestry, working-tree state, and subsequent commits. Do not overwrite unrelated work or commit instruction uploads.
+
+Preserve all accepted webinar decisions, canonical standards, evaluator IDs, Foundation authority, retention requirements, legacy-session protections, and concurrency requirements.
+
+If the full assessment exposes a material conflict or an additional prerequisite not resolved below, report that specific issue before implementing the affected portion. Continue independent authorized work.
+
+2. Record these owner decisions
+
+Record these decisions in a new decision record, referencing the existing assessment and preserving its original contents.
+
+A. Parent and sibling visibility
+
+* Each group has a separate workspace.
+* Members receive access through explicit, scoped grants.
+* Designated parent-team calendar viewers can see planning summaries across explicitly authorized child groups.
+* Summary fields include activity title, owning group, accountable owner, activity type, dates, time zone, and planning status.
+* Tentative activities are clearly identified. Working drafts remain group-private until explicitly marked for calendar visibility; this does not constitute operational approval.
+* Sibling groups receive no automatic access to drafts or detailed records.
+* Calendar access does not reveal participant information, internal notes, budgets, evidence, or approval controls.
+* Adding or moving a child group must not silently expand existing viewers’ access.
+
+B. Membership administration
+
+* Authorized Administrators manage groups, verified memberships, and scoped role grants.
+* Group leads may request membership changes but receive no automatic access-administration authority.
+* Users cannot approve their own privilege elevation. Initial administrator provisioning must use a documented, trusted bootstrap process.
+* Membership and role changes are audited.
+* Removing membership removes the access derived from it, including access through cached sessions or background operations, according to a documented revocation mechanism.
+
+C. Collaboration
+
+* Each campaign and activity has one owning group.
+* A campaign can coordinate activities owned by other groups through explicit relationships.
+* A relationship alone grants no access.
+* Collaboration grants identify the record, recipient group or user, and permitted actions.
+* Collaboration does not automatically grant exception approval, operational execution, access to all child records, or access to participant data.
+* Revocation must remove access derived from the collaboration grant.
+
+D. Ownership transfers and archival
+
+* Transfers require an authorized Administrator and recorded acceptance by the destination group’s accountable owner.
+* Preserve record IDs, governed codes, history, and historical evidence.
+* Reassess existing grants during transfer; do not automatically retain obsolete access or expose restricted historical attachments.
+* Transfers must not silently rewrite approvals or readiness evidence. Where ownership affects their validity, require reassessment before further operational action.
+* An active group must retain an accountable owner.
+* Archive a group only after active work is completed or transferred.
+* Archived groups retain authorized historical reporting but cannot receive new work.
+
+E. Calendar and financial summaries
+
+* Calendar rollups use underlying records and deduplicate by stable activity identity.
+* Calendar access and financial access are separate permissions.
+* Financial rollups require explicit authorization and must distinguish unavailable amounts from zero.
+* Shared costs are counted once according to their documented allocation.
+* Financial dashboards and advanced conflict detection are deferred.
+
+F. Historical ownership
+
+* Do not infer historical ownership solely from record creator.
+* Do not assign all existing records to an arbitrary default group.
+* Historical assignments require a verified mapping and audit trail.
+* Unresolved records retain their existing authorized handling and are excluded from newly introduced cross-group visibility.
+* Active legacy sessions remain unchanged through completion. If associating organizational ownership would alter their behavior or accepted evidence, defer that association.
+* Newly created records using the new organizational model require valid ownership.
+
+3. Implement the minimum foundation
+
+Use existing compatible structures wherever possible.
+
+Implement only the foundation required for:
+
+* Parent-team and child-group identities.
+* Verified memberships.
+* The six approved roles with organizational or record scope.
+* Campaign and activity ownership.
+* Explicit collaboration grants.
+* Auditable membership, ownership, and archival changes.
+* Central server-side authorization.
+* An authorization-aware calendar-summary query or service over existing records.
+
+Keep creator, accountable owner, owning group, and collaborators distinct.
+
+Prevent invalid hierarchy relationships, contradictory ownership, and duplicate active memberships or grants as appropriate.
+
+Do not create duplicate campaign, activity, communication, or calendar stores.
+
+Administrative interfaces may remain deferred. Use the existing authenticated administrative mechanism or a documented controlled provisioning process. Do not expose an unsecured setup endpoint.
+
+4. Integrate authorization safely
+
+Roles determine permitted actions; scope determines the records on which those actions are allowed.
+
+Preserve:
+
+* Separation of exception request and approval.
+* Prohibition of self-approval across all group memberships and roles.
+* Non-overridable controls.
+* Verified actor identities.
+* Foundation-dependent readiness checks.
+* Request-local diagnostics and concurrent-request isolation.
+
+Apply the authorization foundation to affected reads and writes, including direct record requests, list queries, search, exports, and background operations.
+
+Filter unauthorized records before calculating visible counts or summaries. Do not leak hidden records through totals or pagination metadata.
+
+For queued operations, revalidate authorization before execution. Do not treat a previously queued request as permanent permission.
+
+If trusted authentication or membership verification is unavailable, keep affected operational capabilities disabled. Do not introduce mock identities into live authorization.
+
+5. Migrations and compatibility
+
+Use additive, versioned migrations consistent with the existing repository.
+
+Do not alter already accepted migrations. Do not impose ownership constraints on historical records before verified mapping is available.
+
+Where historical ownership must remain unresolved, define an explicit compatibility state. It must not become a path for bypassing ownership requirements on new records.
+
+Test migrations against both a fresh database and a representative prior-schema fixture using synthetic data.
+
+Document recovery procedures. Do not drop existing data to make migration tests pass.
+
+Do not deploy or apply migrations to production or other shared environments in this increment.
+
+6. Keep this increment bounded
+
+Defer:
+
+* Full workspace administration UI.
+* Visual master calendar.
+* Financial dashboards.
+* Advanced audience-conflict detection.
+* New activity modules.
+* Sales enablement screens and automation.
+* Live sending, publishing, and external integrations.
+* Automatic legacy-session migration.
+
+Reconcile this increment with the existing Phase 2B-1 sequence. Record which original work is included, remains pending, or follows this foundation. Do not silently redefine the entire phase as complete when only this increment is complete.
+
+7. Acceptance and verification
+
+Add meaningful tests covering:
+
+1. Cross-group access denial through direct and collection requests.
+2. Different permissions for a person belonging to multiple groups.
+3. Parent-team calendar access without detail, editing, approval, or execution access.
+4. Private drafts excluded from parent and sibling summaries.
+5. Explicit collaboration and revocation.
+6. Membership removal and stale or queued authorization.
+7. Self-approval denial across group and role combinations.
+8. Transfers preserving identity while reassessing access and readiness.
+9. Archival restrictions and historical visibility.
+10. Unresolved historical ownership without arbitrary assignment.
+11. One calendar result per activity, with correct status and time-zone handling.
+12. Concurrent requests without cross-user or cross-group leakage.
+
+Run the established regression, typecheck, rule-drift, canonical-hash, evaluator-registry, dependency-pin, and disposable-database gates.
+
+Run all existing migrations plus any new migrations. Do not force the migration total to remain 21 or the test total to remain 3,158.
+
+The canonical webinar evaluator registry remains 106/106 unless separately authorized. Organizational authorization tests must not inflate that count.
+
+Verify database shutdown and cleanup. Report fresh results separately from historical baselines.
+
+8. Documentation and completion
+
+Update the applicable architecture, requirements, permission matrix, migration notes, decision records, and implementation evidence.
+
+Preserve stable identifiers and distinguish superseded proposals from accepted decisions.
+
+Commit only relevant implementation, tests, migrations, and documentation. Exclude instruction uploads and unrelated files.
+
+Report:
+
+* Starting and ending commits.
+* Changed files and migrations.
+* Decisions recorded.
+* Implemented capabilities.
+* Verification results.
+* Authentication or external dependencies still unresolved.
+* Legacy compatibility evidence.
+* Remaining Phase 2B-1 work.
+* Deployment status.
+
+Stop after this bounded increment. Do not begin another phase or enable live operations.
+
+⸻
+
+This moves the project into implementation while keeping the webinar controls intact. It also resolves the specific visibility and ownership questions that would otherwise hold up the database design.
