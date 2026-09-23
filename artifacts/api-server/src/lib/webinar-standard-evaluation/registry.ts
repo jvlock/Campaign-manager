@@ -6,6 +6,9 @@ import { createSchedulingEvaluators, SCHEDULING_BATCH_RULE_IDS } from "./schedul
 import { createAudienceEvaluators, AUDIENCE_BATCH_RULE_IDS } from "./audience-evaluators";
 import { createDeliverableEvaluators, DELIVERABLE_BATCH_RULE_IDS } from "./deliverable-evaluators";
 import { createGovernedEvaluators, GOVERNED_BATCH_RULE_IDS } from "./governed-evaluators";
+import { createCompletionFollowUpEvaluators, FOLLOW_UP_COMPLETION_RULE_IDS } from "./completion-follow-up";
+import { createCompletionStageEvaluators, COMPLETION_STAGE_RULE_IDS } from "./completion-stage";
+import { createCompletionDoneEvaluator, COMPLETION_DONE_RULE_IDS } from "./completion-done";
 import type {
   EvaluationContext, EvaluatorRegistryEntry, PartialEvaluatorRegistry,
   RuleEvaluationResult, RuleEvaluator,
@@ -21,8 +24,10 @@ export function createWebinarEvaluatorRegistry(catalog: WebinarStandardCatalog):
   const snapshot = validation.catalog;
   const boundEvaluators = Object.freeze({
     ...EVALUATORS, ...createSetupEvaluators(snapshot), ...createSchedulingEvaluators(snapshot), ...createAudienceEvaluators(snapshot), ...createDeliverableEvaluators(snapshot), ...createGovernedEvaluators(snapshot),
+    ...createCompletionFollowUpEvaluators(snapshot), ...createCompletionStageEvaluators(snapshot), ...createCompletionDoneEvaluator(snapshot),
   });
-  const allImplementedIds = Object.freeze([...IMPLEMENTED_RULE_IDS, ...SCHEDULING_BATCH_RULE_IDS, ...AUDIENCE_BATCH_RULE_IDS, ...DELIVERABLE_BATCH_RULE_IDS, ...GOVERNED_BATCH_RULE_IDS]);
+  const allImplementedIds = Object.freeze([...IMPLEMENTED_RULE_IDS, ...SCHEDULING_BATCH_RULE_IDS, ...AUDIENCE_BATCH_RULE_IDS, ...DELIVERABLE_BATCH_RULE_IDS, ...GOVERNED_BATCH_RULE_IDS,
+    ...FOLLOW_UP_COMPLETION_RULE_IDS, ...COMPLETION_STAGE_RULE_IDS, ...COMPLETION_DONE_RULE_IDS]);
   const implemented = new Set<RuleId>(allImplementedIds);
   if (implemented.size !== allImplementedIds.length || Object.keys(boundEvaluators).length !== implemented.size) {
     throw new Error("Invalid webinar evaluator registry: duplicate or missing implementations.");

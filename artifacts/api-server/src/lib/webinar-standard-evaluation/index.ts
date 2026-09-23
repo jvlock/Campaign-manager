@@ -1,6 +1,12 @@
 export type * from "./types";
 export type * from "./governed-types";
 export { GOVERNED_BATCH_RULE_IDS, createGovernedEvaluators } from "./governed-evaluators";
+export type * from "./completion-follow-up-types";
+export type * from "./completion-stage-types";
+export type * from "./completion-done-types";
+export { FOLLOW_UP_COMPLETION_RULE_IDS, createCompletionFollowUpEvaluators } from "./completion-follow-up";
+export { COMPLETION_STAGE_RULE_IDS, createCompletionStageEvaluators } from "./completion-stage";
+export { COMPLETION_DONE_RULE_IDS, createCompletionDoneEvaluator } from "./completion-done";
 export type * from "./setup-types";
 export type * from "./scheduling-types";
 export type * from "./audience-types";

@@ -47,7 +47,7 @@ test("coverage addresses 14 semantic checks as 10/2/2 using the actual registry 
   assert.equal(coverage.implementedRuleCount, registry.implementedRuleIds.length);
   assert.equal(coverage.unimplementedRuleCount, registry.unimplementedRuleIds.length);
   assert.equal(coverage.totalRuleCount, catalog.rules.length);
-  assert.equal(coverage.ruleEngineCoverage, "partial");
+  assert.equal(coverage.ruleEngineCoverage, "complete");
   const mappedIds = new Set(SEMANTIC_CONTROLS.flatMap((control) =>
     control.classification === "evaluator_backed" ? [...control.ruleIds] : []));
   assert.equal(mappedIds.size, 15);
@@ -99,8 +99,8 @@ test("conflicting follow-ups for one unknown participant do not affect other par
   assert.equal(registry.evaluate("WEB-FU-UNK-002", { ...context, participant: first, communications }).status, "fail");
   assert.equal(registry.evaluate("WEB-FU-UNK-002", { ...context, participant: second, communications }).status, "pass");
   assert.equal(registry.evaluate("WEB-FU-UNK-002", { ...context, participant: first, communications: [communications[0]] }).status, "pass");
-  assert.equal(registry.evaluate("WEB-FU-UNK-001", { ...context, participant: first }).status, "unimplemented");
-  assert.equal(registry.evaluate("WEB-FU-UNK-003", { ...context, participant: first }).status, "unimplemented");
+  assert.notEqual(registry.evaluate("WEB-FU-UNK-001", { ...context, participant: first }).status, "pass");
+  assert.notEqual(registry.evaluate("WEB-FU-UNK-003", { ...context, participant: first }).status, "pass");
 });
 
 test("unknown-attendance reconciliation is not broadened to non-follow-up communications", () => {
@@ -234,10 +234,51 @@ test("evaluator and evidence modules retain pure domain dependencies and no ambi
       const governedEvaluators = folder === "webinar-standard-evaluation" && filename === "governed-evaluators.ts";
       const governedHelpers = folder === "webinar-standard-evaluation" && filename === "governed-helpers.ts";
       const governedTypes = folder === "webinar-standard-evaluation" && filename === "governed-types.ts";
+      const completionDone = folder === "webinar-standard-evaluation" && filename === "completion-done.ts";
+      const completionDoneTypes = folder === "webinar-standard-evaluation" && filename === "completion-done-types.ts";
+      const completionStage = folder === "webinar-standard-evaluation" && filename === "completion-stage.ts";
+      const completionStageTypes = folder === "webinar-standard-evaluation" && filename === "completion-stage-types.ts";
+      const completionFollowUp = folder === "webinar-standard-evaluation" && filename === "completion-follow-up.ts";
+      const completionFollowUpTypes = folder === "webinar-standard-evaluation" && filename === "completion-follow-up-types.ts";
       assertPureSource(`${folder}/${filename}`, await readFile(new URL(filename, directory), "utf8"), {
         localFiles: files,
-        strictImports: governedEvaluators || governedHelpers || governedTypes ? true : undefined,
-        exactImports: governedEvaluators ? {
+        strictImports: governedEvaluators || governedHelpers || governedTypes
+          || completionDone || completionDoneTypes || completionStage || completionStageTypes
+          || completionFollowUp || completionFollowUpTypes ? true : undefined,
+        exactImports: completionDone ? {
+          "../webinar-standard-catalog/types": ["WebinarStandardCatalog", "RuleId"],
+          "../webinar-standard-readiness/types": ["COMPLETE_OBLIGATIONS"],
+          "../webinar-standard-readiness/claims": ["isBlockingType", "resolveClaims"],
+          "../webinar-standard-readiness/result-validation": ["validateIncomingResults"],
+          "./types": ["EvaluationContext", "RuleEvaluationResult", "RuleFinding"],
+          "./completion-done-types": [
+            "CompletionDoneEvaluator", "CompletionProjection", "CompletionSnapshotContext", "CompletionFindingEnvelope",
+          ],
+        } : completionDoneTypes ? {
+          "../webinar-standard-catalog/types": ["RuleId", "StandardId", "StandardVersion", "WebinarStandardCatalog"],
+          "../webinar-standard-readiness/types": ["CompleteObligation"],
+          "./types": ["RuleEvaluationResult", "RuleFinding"],
+        } : completionStage ? {
+          "../webinar-standard-catalog/types": ["WebinarStandardCatalog", "RuleId"],
+          "../webinar-standard-readiness/safe-data": ["snapshotData"],
+          "../webinar-standard-readiness/result-validation": ["validateIncomingResults"],
+          "../webinar-standard-audience/validate-result": ["validateWebinarAudiencePlanResult"],
+          "../webinar-standard-readiness/claims": ["resolveClaims"],
+          "../webinar-standard-exceptions/validate": ["validateWebinarException"],
+          "./types": ["EvaluationContext", "RuleEvaluator", "RuleFinding", "RuleEvaluationResult"],
+          "./completion-stage-types": ["CompletionStageContext", "EvaluationContextWithCompletion"],
+        } : completionStageTypes ? {
+          "../webinar-standard-catalog/types": ["StandardId", "StandardVersion"],
+          "../webinar-standard-exceptions/types": ["WebinarException"],
+          "./types": ["RuleEvaluationResult", "EvaluationContext"],
+        } : completionFollowUp ? {
+          "../webinar-standard-catalog/types": ["WebinarStandardCatalog", "RuleId"],
+          "../webinar-standard-planning-time/business-days": ["addBusinessDays"],
+          "./types": ["EvaluationContext", "RuleEvaluator", "RuleFinding"],
+          "./completion-follow-up-types": ["FollowUpCompletionContext"],
+        } : completionFollowUpTypes ? {
+          "../webinar-standard-catalog/types": ["StandardId", "StandardVersion"],
+        } : governedEvaluators ? {
           "../webinar-standard-catalog/types": ["WebinarStandardCatalog"],
           "../webinar-standard-readiness/safe-data": ["snapshotData"],
           "../webinar-standard-audience/validate-result": ["validateWebinarAudiencePlanResult"],

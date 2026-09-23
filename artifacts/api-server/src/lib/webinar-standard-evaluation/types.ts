@@ -6,6 +6,9 @@ import type { SchedulingEvaluationContext } from "./scheduling-types";
 import type { AudienceEvaluationContext } from "./audience-types";
 import type { DeliverableEvaluationContext } from "./deliverable-types";
 import type { GovernedEvaluationContext } from "./governed-types";
+import type { FollowUpCompletionContext } from "./completion-follow-up-types";
+import type { CompletionStageContext } from "./completion-stage-types";
+import type { CompletionSnapshotContext } from "./completion-done-types";
 
 export type EventOperationalStatus =
   | "draft" | "open_for_registration" | "scheduled"
@@ -66,6 +69,9 @@ export interface FollowUpVariant {
 
 /** Caller-supplied observation time, never wall-clock time. Null means missing evidence. */
 export interface EvaluationContext {
+  readonly completionFollowUp?: FollowUpCompletionContext | null;
+  readonly completionStage?: CompletionStageContext | null;
+  readonly completionSnapshot?: CompletionSnapshotContext | null;
   readonly governed?: GovernedEvaluationContext | null;
   readonly deliverables?: DeliverableEvaluationContext | null;
   readonly audience?: AudienceEvaluationContext | null;

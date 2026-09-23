@@ -4,6 +4,7 @@ import { test } from "node:test";
 import type { RuleId } from "../../src/lib/webinar-standard-catalog/types";
 import {
   AUDIENCE_BATCH_RULE_IDS, DELIVERABLE_BATCH_RULE_IDS,
+  FOLLOW_UP_COMPLETION_RULE_IDS, COMPLETION_STAGE_RULE_IDS, COMPLETION_DONE_RULE_IDS,
 } from "../../src/lib/webinar-standard-evaluation/index";
 import { createWebinarEvaluatorRegistry } from "../../src/lib/webinar-standard-evaluation/registry";
 import { SCHEDULING_BATCH_RULE_IDS } from "../../src/lib/webinar-standard-evaluation/scheduling-evaluators";
@@ -33,7 +34,7 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
-test("published coverage is the approved baseline plus exact Batches 4 and 5", async () => {
+test("published coverage is the approved baseline plus exact Batches 4, 5 and 6", async () => {
   const plan = await readFile(
     new URL("../../../../docs/verification/phase-2a-5-evaluator-coverage-plan.md", import.meta.url), "utf8",
   );
@@ -41,7 +42,8 @@ test("published coverage is the approved baseline plus exact Batches 4 and 5", a
     .map((line) => line.split("|").slice(1, -1).map((cell) => cell.trim()));
   const batch4 = rows.filter((cells) => cells[17] === "4").map((cells) => cells[0]);
   const batch5 = rows.filter((cells) => cells[17] === "5").map((cells) => cells[0]);
-  const expectedImplementedIds = [...approvedBaselineIds, ...batch4, ...batch5];
+  const batch6 = rows.filter((cells) => cells[17] === "6").map((cells) => cells[0]);
+  const expectedImplementedIds = [...approvedBaselineIds, ...batch4, ...batch5, ...batch6];
   assert.equal(catalog.rules.length, 106);
   assert.equal(registry.implementedRuleIds.length, expectedImplementedIds.length);
   assert.equal(registry.unimplementedRuleIds.length, catalog.rules.length - expectedImplementedIds.length);
@@ -58,7 +60,7 @@ test("published coverage is the approved baseline plus exact Batches 4 and 5", a
   assert.deepEqual(registry.entries.map((entry) => entry.ruleId).sort(), expectedImplementedIds.sort());
 });
 
-test("Governed Services Batch 5 is mechanically exact against the prior 94 and leaves exact Batch 6", async () => {
+test("Governed Services Batch 5 preserves the prior 94 and Completion Batch 6 is exactly the final ten", async () => {
   const plan = await readFile(
     new URL("../../../../docs/verification/phase-2a-5-evaluator-coverage-plan.md", import.meta.url), "utf8",
   );
@@ -70,7 +72,8 @@ test("Governed Services Batch 5 is mechanically exact against the prior 94 and l
   const batch6 = batch("6");
   const baseline = new Set<RuleId>(approvedBaselineIds);
   const prior94 = new Set<RuleId>([...approvedBaselineIds, ...batch4] as RuleId[]);
-  const added = registry.implementedRuleIds.filter((id) => !prior94.has(id));
+  const prior96 = new Set<RuleId>([...prior94, ...batch5] as RuleId[]);
+  const added = registry.implementedRuleIds.filter((id) => !prior96.has(id));
   const canonical = new Set(catalog.rules.map((rule) => rule.ruleId));
 
   assert.equal(baseline.size, 68);
@@ -86,14 +89,18 @@ test("Governed Services Batch 5 is mechanically exact against the prior 94 and l
   assert.ok([...prior94].every((id) => registry.implementedRuleIds.includes(id)));
   assert.equal(batch5.length, 2);
   assert.equal(new Set(batch5).size, 2);
-  assert.deepEqual([...added].sort(), batch5.sort());
+  assert.ok(batch5.every((id) => registry.implementedRuleIds.includes(id as RuleId)));
   assert.ok(batch5.every((id) => !prior94.has(id as RuleId)));
   assert.deepEqual([...batch5].sort(), ["WEB-REC-010", "WEB-SETUP-003"]);
-  assert.equal(registry.implementedRuleIds.length, 96);
-  assert.equal(registry.unimplementedRuleIds.length, 10);
+  assert.equal(prior96.size, 96);
+  assert.ok([...prior96].every((id) => registry.implementedRuleIds.includes(id)));
+  assert.equal(registry.implementedRuleIds.length, 106);
+  assert.equal(registry.unimplementedRuleIds.length, 0);
   assert.equal(batch6.length, 10);
   assert.equal(new Set(batch6).size, 10);
-  assert.deepEqual([...registry.unimplementedRuleIds].sort(), batch6.sort());
+  assert.deepEqual([...FOLLOW_UP_COMPLETION_RULE_IDS, ...COMPLETION_STAGE_RULE_IDS, ...COMPLETION_DONE_RULE_IDS].sort(), batch6.sort());
+  assert.deepEqual([...added].sort(), batch6.sort());
+  assert.deepEqual(registry.unimplementedRuleIds, []);
   assert.equal(new Set([...batch5, ...batch6]).size, 12);
   assert.ok([...batch5, ...batch6].every((id) => canonical.has(id as RuleId)));
 });
@@ -162,14 +169,15 @@ test("unknown runtime IDs throw instead of becoming pass or unimplemented", () =
   }
 });
 
-test("all unimplemented rules return explicit unimplemented findings, including UNK-001/003", () => {
-  assert.ok(registry.unimplementedRuleIds.includes("WEB-FU-UNK-001"));
-  assert.ok(registry.unimplementedRuleIds.includes("WEB-FU-UNK-003"));
-  for (const id of registry.unimplementedRuleIds) {
+test("every canonical rule is explicitly implemented, without a default-pass path", () => {
+  assert.equal(registry.unimplementedRuleIds.length, 0);
+  for (const id of catalog.rules.map((rule) => rule.ruleId)) {
     const result = registry.evaluate(id, makeContext());
-    assert.equal(result.status, "unimplemented", id);
-    assert.equal(result.reason, "not_implemented", id);
-    assert.notEqual(result.status, "pass");
+    assert.notEqual(result.status, "unimplemented", id);
+    assert.notEqual(result.reason, "not_implemented", id);
+  }
+  for (const id of [...FOLLOW_UP_COMPLETION_RULE_IDS, ...COMPLETION_STAGE_RULE_IDS, ...COMPLETION_DONE_RULE_IDS]) {
+    assert.notEqual(registry.evaluate(id, makeContext()).status, "pass", id);
   }
 });
 

@@ -30,7 +30,7 @@ const REASONS: Record<AudienceCommunicationKind, readonly string[]> = {
   event_change_notice: ["Material event change notice is due at the supplied trigger."],
   event_cancellation_notice: ["Event cancellation notice is due at the supplied trigger."],
   attended_follow_up: ["Attended follow-up is due within one business day."],
-  absent_follow_up: ["Absent follow-up is due within one business day after attendance data is available."],
+  absent_follow_up: ["Absent follow-up is due within one business day of actual event completion."],
   attendance_reconciliation: ["Reconciliation precedes any follow-up treatment."],
   neutral_follow_up: ["Approved neutral variant is eligible after two business days; this is not send authorization."],
   waitlist_confirmation: ["Waitlist confirmation is immediate."],
@@ -215,7 +215,7 @@ export function validateWebinarAudiencePlanResult(
         requireValue(obligation.variant === variant && obligation.customerPath === (kind !== "qa_test_send")
           && obligation.assetId === (followUp ? participant.followUpAssetId : null), "Audience variant, asset or customer path is incoherent.");
         if (followUp) {
-          const anchor = kind === "absent_follow_up" ? participant.attendanceAvailableAtEpochMs : expected.event.actualEndsAtEpochMs;
+          const anchor = expected.event.actualEndsAtEpochMs;
           requireValue(anchor !== null && obligation.dueAtEpochMs! > anchor,
             "Audience follow-up deadline must follow its supplied anchor.");
           exact(obligation.deadlineLocal, ["date", "time", "offset", "disambiguation", "requestedLocalDateTime"]);

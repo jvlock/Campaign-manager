@@ -169,12 +169,12 @@ for (const [name, mutate, status, reason] of [
   const c: Mutable = structuredClone(fixture("WEB-REC-010")); mutate(c.governed.exclusion);
   const r = registry.evaluate("WEB-REC-010", c); assert.equal(r.status, status); assert.equal(r.reason, reason);
 });
-test("Governed batch exactly reconciles previous 94 and excludes Completion", () => {
+test("Governed batch preserves previous 94 as final coverage includes Completion", () => {
   assert.deepEqual(GOVERNED_BATCH_RULE_IDS, ["WEB-SETUP-003", "WEB-REC-010"]);
   const previous = [...IMPLEMENTED_RULE_IDS, ...SCHEDULING_BATCH_RULE_IDS, ...AUDIENCE_BATCH_RULE_IDS, ...DELIVERABLE_BATCH_RULE_IDS];
-  assert.equal(previous.length, 94); assert.equal(registry.implementedRuleIds.length, 96);
-  assert.equal(registry.unimplementedRuleIds.length, 10);
-  assert.equal(new Set(registry.implementedRuleIds).size, 96);
+  assert.equal(previous.length, 94); assert.equal(registry.implementedRuleIds.length, 106);
+  assert.equal(registry.unimplementedRuleIds.length, 0);
+  assert.equal(new Set(registry.implementedRuleIds).size, 106);
   for (const id of previous) assert.ok(registry.implementedRuleIds.includes(id));
   for (const id of GOVERNED_BATCH_RULE_IDS) assert.ok(!(previous as readonly string[]).includes(id));
   for (const id of registry.implementedRuleIds) assert.ok(catalog.rules.some(r => r.ruleId === id));

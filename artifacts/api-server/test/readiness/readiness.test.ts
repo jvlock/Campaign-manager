@@ -138,13 +138,9 @@ test("full synthetic passes are ready without misrepresenting actual implementat
   assert.equal(report.coverage.totalRuleCount, catalog.rules.length);
   assert.equal(report.coverage.implementedRuleCount, registry.implementedRuleIds.length);
   assert.equal(report.coverage.missingEvaluatorCount, registry.unimplementedRuleIds.length);
-  assert.equal(report.coverage.implementedRuleCount, 96);
-  assert.equal(report.coverage.missingEvaluatorCount, 10);
-  assert.deepEqual([...report.coverage.missingEvaluatorRuleIds].sort(), [
-    "WEB-DONE-001", "WEB-EXC-001", "WEB-FU-ABS-001", "WEB-FU-ATT-001",
-    "WEB-FU-UNK-001", "WEB-FU-UNK-003", "WEB-RDY-COMP-001", "WEB-RDY-COMP-002",
-    "WEB-RDY-COMP-003", "WEB-RDY-COMP-004",
-  ]);
+  assert.equal(report.coverage.implementedRuleCount, 106);
+  assert.equal(report.coverage.missingEvaluatorCount, 0);
+  assert.deepEqual(report.coverage.missingEvaluatorRuleIds, []);
   assert.deepEqual(new Set(report.coverage.implementedRuleIds), new Set(registry.implementedRuleIds));
   assert.deepEqual(new Set(report.coverage.missingEvaluatorRuleIds), new Set(registry.unimplementedRuleIds));
   assert.deepEqual(READINESS_STAGES.map((name) => catalog.rules.filter((r) => r.readinessStage === name).length), [57, 19, 24, 6]);
@@ -160,10 +156,12 @@ test("full synthetic passes are ready without misrepresenting actual implementat
   }
 });
 
-test("real registry findings never turn partial implementation coverage into false readiness", () => {
+test("full implementation coverage cannot turn missing operational evidence into readiness", () => {
   const results = catalog.rules.map((r) => registry.evaluate(r.ruleId, makeContext()));
   assert.equal(results.filter((r) => r.status === "unimplemented").length, registry.unimplementedRuleIds.length);
   const report = aggregate(input({ results }));
+  assert.equal(report.coverage.implementedRuleCount, 106);
+  assert.equal(report.coverage.missingEvaluatorCount, 0);
   for (const result of report.stages) {
     assert.notEqual(result.status, "ready");
     assert.equal(result.fullyEvaluated, false);

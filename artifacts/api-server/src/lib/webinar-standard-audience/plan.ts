@@ -221,9 +221,11 @@ function addFollowUpObligations(
       input.calculationInstantEpochMs, "Attended follow-up is due within one business day.",
       [RULE.attended, RULE.distinct], { variant: "attended", assetId: participant.followUpAssetId, deadline }));
   } else if (state === "registered_absent") {
-    const deadline = addBusinessDays(participant.attendanceAvailableAtEpochMs!, input.timeZone, 1);
+    // Attendance processing is observational latency, not a new clock anchor.
+    // Both attendance outcomes use the actual event completion instant.
+    const deadline = addBusinessDays(actualEnd, input.timeZone, 1);
     obligations.push(obligation(participant, "absent_follow_up", "required", deadline.epochMs,
-      input.calculationInstantEpochMs, "Absent follow-up is due within one business day after attendance data is available.",
+      input.calculationInstantEpochMs, "Absent follow-up is due within one business day of actual event completion.",
       [RULE.absent, RULE.distinct], { variant: "absent", assetId: participant.followUpAssetId, deadline }));
   } else if (state === "attendance_unknown") {
     obligations.push(obligation(participant, "attendance_reconciliation", "required", actualEnd,

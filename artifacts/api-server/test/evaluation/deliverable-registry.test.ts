@@ -31,18 +31,19 @@ test("Governed registry preserves prior 68 and exact Deliverables Batch 4 as sub
   assert.ok(DELIVERABLE_BATCH_RULE_IDS.every(id => !prior.includes(id) && RULE_IDS.includes(id)));
   assert.equal(new Set([...prior, ...DELIVERABLE_BATCH_RULE_IDS]).size, 94);
   assert.ok(DELIVERABLE_BATCH_RULE_IDS.every(id => registry.implementedRuleIds.includes(id)));
-  assert.equal(registry.entries.length, 96);
+  assert.equal(registry.entries.length, 106);
   assert.equal(catalog.rules.length, 106);
-  assert.equal(registry.unimplementedRuleIds.length, 10);
+  assert.equal(registry.unimplementedRuleIds.length, 0);
 });
-test("Exact Governed Services Batch 5 is added and exact Completion Batch 6 remains missing", () => {
+test("Exact Governed Services Batch 5 remains and exact Completion Batch 6 is implemented", () => {
   assert.equal(governedBatch.length, 2);
   assert.equal(new Set(governedBatch).size, 2);
   assert.deepEqual([...governedBatch].sort(), ["WEB-REC-010", "WEB-SETUP-003"]);
   assert.ok(governedBatch.every(id => registry.implementedRuleIds.includes(id as RuleId)));
   assert.equal(completionBatch.length, 10);
   assert.equal(new Set(completionBatch).size, 10);
-  assert.deepEqual([...registry.unimplementedRuleIds].sort(), completionBatch.sort());
+  assert.ok(completionBatch.every(id => registry.implementedRuleIds.includes(id as RuleId)));
+  assert.deepEqual(registry.unimplementedRuleIds, []);
   assert.ok(batch.every(id => !completionBatch.includes(id)));
 });
 test("Readiness evaluator coverage derives from the actual new registry", () => {

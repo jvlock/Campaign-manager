@@ -53,7 +53,7 @@ export function describeCoverage(registry: PartialEvaluatorRegistry) {
   const structurallyEnforced = SEMANTIC_CONTROLS.filter((control) => control.classification === "structurally_enforced").length;
   const containmentVerified = SEMANTIC_CONTROLS.filter((control) => control.classification === "containment_verified").length;
   return Object.freeze({
-    ruleEngineCoverage: "partial" as const,
+    ruleEngineCoverage: registry.unimplementedRuleIds.length === 0 ? "complete" as const : "partial" as const,
     semanticChecksTotal: SEMANTIC_CONTROLS.length,
     semanticChecksAddressed: evaluatorBacked + structurallyEnforced + containmentVerified,
     evaluatorBacked,
