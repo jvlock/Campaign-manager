@@ -2,6 +2,7 @@ import type { RuleId, WebinarStandardCatalog } from "../webinar-standard-catalog
 import { validateWebinarStandardCatalog } from "../webinar-standard-catalog/validate";
 import { EVALUATORS, IMPLEMENTED_RULE_IDS } from "./evaluators";
 import { createSetupEvaluators } from "./setup-evaluators";
+import { createSchedulingEvaluators, SCHEDULING_BATCH_RULE_IDS } from "./scheduling-evaluators";
 import type {
   EvaluationContext, EvaluatorRegistryEntry, PartialEvaluatorRegistry,
   RuleEvaluationResult, RuleEvaluator,
@@ -15,21 +16,24 @@ export function createWebinarEvaluatorRegistry(catalog: WebinarStandardCatalog):
       .map((issue) => `${issue.field}: ${issue.message}`).join("; ")}`);
   }
   const snapshot = validation.catalog;
-  const boundEvaluators = Object.freeze({ ...EVALUATORS, ...createSetupEvaluators(snapshot) });
-  const implemented = new Set<RuleId>(IMPLEMENTED_RULE_IDS);
-  if (implemented.size !== 38 || Object.keys(boundEvaluators).length !== implemented.size) {
+  const boundEvaluators = Object.freeze({
+    ...EVALUATORS, ...createSetupEvaluators(snapshot), ...createSchedulingEvaluators(snapshot),
+  });
+  const allImplementedIds = Object.freeze([...IMPLEMENTED_RULE_IDS, ...SCHEDULING_BATCH_RULE_IDS]);
+  const implemented = new Set<RuleId>(allImplementedIds);
+  if (implemented.size !== 53 || Object.keys(boundEvaluators).length !== implemented.size) {
     throw new Error("Invalid webinar evaluator registry: duplicate or missing implementations.");
   }
   const catalogIds = new Set(snapshot.rules.map((rule) => rule.ruleId));
-  for (const id of IMPLEMENTED_RULE_IDS) {
+  for (const id of allImplementedIds) {
     if (!catalogIds.has(id) || typeof boundEvaluators[id] !== "function") {
       throw new Error(`Invalid webinar evaluator registry: missing rule or evaluator ${id}.`);
     }
   }
   const unimplementedRuleIds = Object.freeze(snapshot.rules
     .filter((rule) => !implemented.has(rule.ruleId)).map((rule) => rule.ruleId));
-  if (unimplementedRuleIds.length !== 68) {
-    throw new Error("Invalid webinar evaluator registry: expected exactly 68 unimplemented rules.");
+  if (unimplementedRuleIds.length !== 53) {
+    throw new Error("Invalid webinar evaluator registry: expected exactly 53 unimplemented rules.");
   }
   const evaluators: Partial<Record<RuleId, RuleEvaluator>> = boundEvaluators;
   const results = new Map<RuleId, (context: EvaluationContext) => RuleEvaluationResult>();
@@ -58,7 +62,7 @@ export function createWebinarEvaluatorRegistry(catalog: WebinarStandardCatalog):
     if (evaluator) entries.push(Object.freeze({ ruleId: rule.ruleId, rule, evaluate }));
   }
   return Object.freeze({
-    implementedRuleIds: IMPLEMENTED_RULE_IDS,
+    implementedRuleIds: allImplementedIds,
     unimplementedRuleIds,
     entries: Object.freeze(entries),
     evaluate: (ruleId: RuleId, context: EvaluationContext): RuleEvaluationResult => {

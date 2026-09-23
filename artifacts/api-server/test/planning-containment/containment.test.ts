@@ -24,6 +24,11 @@ const forbidden = new Set([
   "credentials", "apiKey", "accessToken", "secret", "sendEmail", "sendSms",
   "publish", "deploy", "executeSql", "router", "Now", "now",
 ]);
+const temporalMembersByFile: Readonly<Record<string, readonly string[]>> = {
+  "webinar-standard-planning-time/business-days.ts": ["Instant"],
+  "webinar-standard-planning-time/time.ts": ["Instant", "ZonedDateTime", "PlainDateTime"],
+  "webinar-standard-scheduling/validate-result.ts": ["PlainDateTime"],
+};
 
 for (const folder of folders) {
   test(`${folder}: production dependency graph and types expose planning capabilities only`, async () => {
@@ -36,8 +41,7 @@ for (const folder of folders) {
         ts.ScriptTarget.Latest, true);
       const dependency = (target: string): void => {
         if (target === "@js-temporal/polyfill") {
-          assert.ok(folder === "webinar-standard-planning-time"
-            && ["time.ts", "business-days.ts"].includes(filename),
+          assert.ok(Object.hasOwn(temporalMembersByFile, `${folder}/${filename}`),
           "Temporal is isolated behind explicit-time helpers");
           return;
         }
@@ -54,6 +58,16 @@ for (const folder of folders) {
           assert.ok(ts.isStringLiteral(node.moduleSpecifier));
           const target = node.moduleSpecifier.text;
           dependency(target);
+          if (target === "@js-temporal/polyfill") {
+            assert.ok(ts.isImportDeclaration(node), "Temporal re-exports are forbidden");
+            const clause = node.importClause;
+            assert.ok(clause && !clause.name && clause.namedBindings && ts.isNamedImports(clause.namedBindings),
+              "Temporal requires one exact named import");
+            assert.equal(clause.namedBindings.elements.length, 1, "Only Temporal may be imported");
+            const binding = clause.namedBindings.elements[0];
+            assert.equal(binding.propertyName, undefined, "Temporal import aliases are forbidden");
+            assert.equal(binding.name.text, "Temporal", "Only the Temporal namespace may be imported");
+          }
           if (target === "../webinar-standard-evaluation/types") {
             assert.ok(ts.isImportDeclaration(node) ? node.importClause?.isTypeOnly : node.isTypeOnly,
               "Existing evaluator context may only be imported as types");
@@ -75,7 +89,7 @@ for (const folder of folders) {
             const member = ts.isPropertyAccessExpression(node.parent) && node.parent.expression === node
               ? node.parent.name.text : ts.isQualifiedName(node.parent) && node.parent.left === node
                 ? node.parent.right.text : null;
-            assert.ok(member && ["Instant", "ZonedDateTime", "PlainDateTime", "PlainDate", "PlainTime"].includes(member),
+            assert.ok(member && temporalMembersByFile[`${folder}/${filename}`]?.includes(member),
             "No ambient Temporal clock or namespace escape");
           }
         }

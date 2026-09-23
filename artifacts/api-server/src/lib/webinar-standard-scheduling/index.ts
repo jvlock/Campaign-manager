@@ -1,4 +1,6 @@
 export { planWebinarRecruitment } from "./plan";
+export { validateRecruitmentPlanResult } from "./validate-result";
+export type { RecruitmentPlanResultExpectation } from "./validate-result";
 export {
   RECRUITMENT_TOUCH_IDENTITIES,
   RecruitmentPlanningValidationError,

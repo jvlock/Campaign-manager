@@ -23,6 +23,10 @@ The complete file was read and confirmed to be the previously delivered assessme
 
 It was tracked by the preceding checkpoint, not untracked. The user explicitly authorized this tracked deletion and prohibited history rewriting. The newer upload was already tracked by the additional checkpoint and is preserved unchanged; this implementation commit adds no uploaded prompt.
 
+Subsequent hygiene inventory: the newer instruction upload,
+`attached_assets/Pasted-The-assessment-is-accepted-The-three-product-decisions-_1790127344254.txt`,
+was originally added by `8f01c76b0d24522fd861427ba6360c3a290cdd89` and subsequently removed by the separately authorized cleanup commit `bff042fba5b28c05b3a1a897fe1b40c2387bcf9e`. Its SHA-256 was `3a301e4579fd16531d582dc0f00eb9143df393b73a1ea3a5962cab46e8babb90`. It remains recoverable from Git at its original commit; no history was rewritten. This inventory correction does not change the Phase 2A-5B verification evidence or product decisions.
+
 ## Resolved decisions
 
 The coverage plan's decision register now records the approved resolutions and distinguishes them from the historical assessment:

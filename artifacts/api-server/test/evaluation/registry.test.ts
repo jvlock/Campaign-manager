@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import type { RuleId } from "../../src/lib/webinar-standard-catalog/types";
 import { createWebinarEvaluatorRegistry } from "../../src/lib/webinar-standard-evaluation/registry";
+import { SCHEDULING_BATCH_RULE_IDS } from "../../src/lib/webinar-standard-evaluation/scheduling-evaluators";
+import { SETUP_BATCH_RULE_IDS } from "../../src/lib/webinar-standard-evaluation/setup-evaluators";
 import { catalog, makeCommunication, makeContext, registry } from "./fixtures";
 
-const approvedImplementedIds = [
+const originalImplementedIds = [
   "WEB-REC-005", "WEB-REC-008", "WEB-REC-011", "WEB-WIN-006",
   "WEB-FU-INT-001", "WEB-FU-VAR-001", "WEB-FU-UNK-002",
   "WEB-QA-003", "WEB-QA-004", "WEB-QA-005", "WEB-QA-006",
@@ -16,6 +19,7 @@ const approvedImplementedIds = [
   "WEB-SETUP-020", "WEB-SETUP-C01", "WEB-SETUP-C05", "WEB-RDY-REC-001",
   "WEB-RDY-REC-007", "WEB-QA-008", "WEB-MEAS-001",
 ] as const satisfies readonly RuleId[];
+const approvedImplementedIds = [...originalImplementedIds, ...SCHEDULING_BATCH_RULE_IDS] as const;
 
 function deepFreeze<T>(value: T): T {
   if (value !== null && typeof value === "object") {
@@ -25,14 +29,14 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
-test("published coverage is exactly the approved 38 and remaining 68 of 106", () => {
+test("published coverage is exactly the approved 53 and remaining 53 of 106", () => {
   assert.equal(catalog.rules.length, 106);
-  assert.equal(registry.implementedRuleIds.length, 38);
-  assert.equal(registry.unimplementedRuleIds.length, 68);
+  assert.equal(registry.implementedRuleIds.length, 53);
+  assert.equal(registry.unimplementedRuleIds.length, 53);
   assert.deepEqual([...registry.implementedRuleIds].sort(), [...approvedImplementedIds].sort());
   const implemented = new Set(registry.implementedRuleIds);
-  assert.equal(implemented.size, 38);
-  assert.equal(new Set(registry.unimplementedRuleIds).size, 68);
+  assert.equal(implemented.size, 53);
+  assert.equal(new Set(registry.unimplementedRuleIds).size, 53);
   assert.ok(registry.unimplementedRuleIds.every((id) => !implemented.has(id)));
   assert.deepEqual(
     [...registry.implementedRuleIds, ...registry.unimplementedRuleIds].sort(),
@@ -40,6 +44,40 @@ test("published coverage is exactly the approved 38 and remaining 68 of 106", ()
   );
   assert.equal(new Set(registry.entries.map((entry) => entry.ruleId)).size, registry.entries.length);
   assert.deepEqual(registry.entries.map((entry) => entry.ruleId).sort(), [...approvedImplementedIds].sort());
+});
+
+test("Scheduling Batch 2 is mechanically the exact 15 plan rows and preserves exact Batch 1", async () => {
+  const plan = await readFile(
+    new URL("../../../../docs/verification/phase-2a-5-evaluator-coverage-plan.md", import.meta.url), "utf8",
+  );
+  const rows = plan.split("\n").filter(line => line.startsWith("| WEB-"))
+    .map(line => line.split("|").slice(1, -1).map(cell => cell.trim()));
+  const batch = (number: string) => rows.filter(row => row[17] === number).map(row => row[0]);
+  const batch1 = batch("1");
+  const batch2 = batch("2");
+  assert.equal(batch1.length, 23);
+  assert.equal(new Set(batch1).size, 23);
+  assert.equal(batch2.length, 15);
+  assert.equal(new Set(batch2).size, 15);
+  assert.deepEqual([...SETUP_BATCH_RULE_IDS].sort(), batch1.sort());
+  assert.deepEqual([...SCHEDULING_BATCH_RULE_IDS].sort(), batch2.sort());
+  assert.ok([...batch1, ...batch2].every(id => catalog.rules.some(rule => rule.ruleId === id)));
+  assert.ok(batch2.every(id => !batch1.includes(id)));
+});
+
+test("Scheduling adds only Batch 2, with no overlap, unknown IDs, or loss of the original 38", () => {
+  const canonicalIds = new Set(catalog.rules.map(rule => rule.ruleId));
+  const original = new Set<RuleId>(originalImplementedIds);
+  const scheduling = new Set<RuleId>(SCHEDULING_BATCH_RULE_IDS);
+  assert.equal(original.size, 38);
+  assert.equal(scheduling.size, 15);
+  assert.ok(originalImplementedIds.every(id => registry.implementedRuleIds.includes(id)));
+  assert.ok(SCHEDULING_BATCH_RULE_IDS.every(id => !original.has(id)));
+  assert.ok(registry.implementedRuleIds.every(id => canonicalIds.has(id)));
+  assert.deepEqual(
+    new Set(registry.implementedRuleIds),
+    new Set([...original, ...scheduling]),
+  );
 });
 
 test("unknown runtime IDs throw instead of becoming pass or unimplemented", () => {

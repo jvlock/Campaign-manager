@@ -31,19 +31,22 @@ const ACTIVE_STATUSES = new Set<EventOperationalStatus>([
 const EVENT_STATUSES = new Set<EventOperationalStatus>([
   "draft", "open_for_registration", "scheduled", "in_progress", "completed", "cancelled",
 ]);
-const OFFSETS: Readonly<Record<RecruitmentTouchIdentity, 21 | 14 | 7 | 1>> = Object.freeze({
+/** Scheduler-owned canonical metadata shared with structural result validation. */
+export const RECRUITMENT_OFFSETS: Readonly<Record<RecruitmentTouchIdentity, 21 | 14 | 7 | 1>> = Object.freeze({
   recruitment_1: 21,
   recruitment_2: 14,
   recruitment_3: 7,
   final_recruitment: 1,
 });
-const TOUCH_RULES: Readonly<Record<RecruitmentTouchIdentity, RuleId>> = Object.freeze({
+/** Scheduler-owned canonical metadata shared with structural result validation. */
+export const RECRUITMENT_TOUCH_RULES: Readonly<Record<RecruitmentTouchIdentity, RuleId>> = Object.freeze({
   recruitment_1: "WEB-REC-001",
   recruitment_2: "WEB-REC-002",
   recruitment_3: "WEB-REC-003",
   final_recruitment: "WEB-REC-004",
 });
-const BAND_RULES: Readonly<Record<RecruitmentWindowBand, RuleId>> = Object.freeze({
+/** Scheduler-owned canonical metadata shared with structural result validation. */
+export const RECRUITMENT_BAND_RULES: Readonly<Record<RecruitmentWindowBand, RuleId>> = Object.freeze({
   full_window: "WEB-WIN-001",
   days_14_to_20: "WEB-WIN-002",
   days_7_to_13: "WEB-WIN-003",
@@ -103,7 +106,8 @@ function inactiveReason(status: EventOperationalStatus): RecruitmentTouchReason 
   return "event_in_progress";
 }
 
-function applicableIdentities(band: RecruitmentWindowBand): {
+/** Scheduler-owned applicability contract; this does not calculate a window band. */
+export function recruitmentApplicabilityForBand(band: RecruitmentWindowBand): {
   readonly immediate: RecruitmentTouchIdentity | null;
   readonly retained: readonly RecruitmentTouchIdentity[];
 } {
@@ -189,8 +193,8 @@ export function planWebinarRecruitment(
   }
   const days = calendarDaysBetween(calculationInstantEpochMs, webinarStartEpochMs, timeZone);
   const band: RecruitmentWindowBand = active ? selectBand(days) : "inactive_event";
-  const bandRule = BAND_RULES[band];
-  const applicability = applicableIdentities(band);
+  const bandRule = RECRUITMENT_BAND_RULES[band];
+  const applicability = recruitmentApplicabilityForBand(band);
   const candidates: PlannedRecruitmentTouch[] = [];
   const usedInstants = new Set<number>();
 
@@ -211,17 +215,17 @@ export function planWebinarRecruitment(
       eventLocalDate: null,
       eventLocalTime: null,
       eventLocalOffset: null,
-      originalOffsetDays: OFFSETS[identity],
+      originalOffsetDays: RECRUITMENT_OFFSETS[identity],
       reason,
       warnings,
-      ruleIds: [TOUCH_RULES[identity], bandRule, "WEB-WIN-007", "WEB-REC-011"],
+      ruleIds: [RECRUITMENT_TOUCH_RULES[identity], bandRule, "WEB-WIN-007", "WEB-REC-011"],
       timeAdjustment: adjustment,
     };
   }
 
   function scheduled(identity: RecruitmentTouchIdentity, immediate: boolean): PlannedRecruitmentTouch {
     const shifted = immediate ? null : shiftCalendarDays(
-      webinarStartEpochMs, timeZone, -OFFSETS[identity],
+      webinarStartEpochMs, timeZone, -RECRUITMENT_OFFSETS[identity],
     );
     const epochMs = immediate ? calculationInstantEpochMs : shifted!.epochMs;
     const disambiguation = shifted?.disambiguation ?? "none";
@@ -270,10 +274,10 @@ export function planWebinarRecruitment(
       eventLocalDate: local.date,
       eventLocalTime: local.time,
       eventLocalOffset: local.offset,
-      originalOffsetDays: OFFSETS[identity],
+      originalOffsetDays: RECRUITMENT_OFFSETS[identity],
       reason: immediate ? "shortened_window_immediate" : "standard_offset",
       warnings: timeWarnings,
-      ruleIds: [TOUCH_RULES[identity], bandRule, "WEB-REC-011"],
+      ruleIds: [RECRUITMENT_TOUCH_RULES[identity], bandRule, "WEB-REC-011"],
       timeAdjustment: adjustment,
     };
   }
