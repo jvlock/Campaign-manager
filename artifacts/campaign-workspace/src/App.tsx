@@ -1,4 +1,58 @@
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useGetDevelopmentStatus } from '@workspace/api-client-react';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { Toaster } from '@/components/ui/toaster';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { Layout } from '@/components/layout';
+import Home from '@/pages/Home';
+import Governance from '@/pages/Governance';
+import Portfolio from '@/pages/Portfolio';
+import CampaignList from '@/pages/campaigns/List';
+import CampaignCreate from '@/pages/campaigns/Create';
+import CampaignDetail from '@/pages/campaigns/Detail';
+import NotFound from '@/pages/not-found';
+import Development from '@/pages/Development';
+
+const queryClient = new QueryClient();
+
+function RoutedErrorBoundary({ children }: { children: ReactNode }) {
+  const [location] = useLocation();
+  return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
+}
+
+function PlanningAccess() {
+  const status = useGetDevelopmentStatus({ query: {
+    queryKey: ['development-status'],
+    retry: false,
+    refetchInterval: 15000,
+  } });
+  useEffect(() => {
+    if (status.data?.mode !== 'open-development' || status.isError) {
+      queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== 'development-status' });
+    }
+  }, [status.data?.mode, status.isError]);
+  if (status.isPending) return <main className="p-10" role="status">Confirming server-controlled planning access…</main>;
+  if (status.isError) return <main className="p-10" role="alert">Unable to confirm development mode. No planning records are shown. <button className="underline" onClick={() => void status.refetch()}>Retry</button></main>;
+  if (status.data.mode !== 'open-development' || status.data.planningAccess !== true || status.data.operationalActionsEnabled !== false || status.data.unverified !== true) return <RestrictedAccess />;
+  return (
+    <Layout>
+      <RoutedErrorBoundary>
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/development" component={Development} />
+          <Route path="/governance" component={Governance} />
+          <Route path="/portfolio" component={Portfolio} />
+          <Route path="/campaigns" component={CampaignList} />
+          <Route path="/campaigns/new" component={CampaignCreate} />
+          <Route path="/campaigns/:id" component={CampaignDetail} />
+          <Route component={NotFound} />
+        </Switch>
+      </RoutedErrorBoundary>
+    </Layout>
+  );
+}
 
 type AccessState =
   | 'checking'
@@ -7,7 +61,7 @@ type AccessState =
   | 'limited'
   | 'error';
 
-function App() {
+function RestrictedAccess() {
   const [access, setAccess] = useState<AccessState>('checking');
 
   useEffect(() => {
@@ -98,4 +152,15 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+          <PlanningAccess />
+        </WouterRouter>
+        <Toaster />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}

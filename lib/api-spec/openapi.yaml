@@ -3,7 +3,7 @@ info:
   title: Api
   version: 0.1.0
   description: Campaign Operating Workspace API
-x-access-policy: "Only /healthz is public. Protected endpoints return 503 AUTHENTICATION_UNAVAILABLE when trusted authentication is unavailable. After verification, legacy endpoints are disabled with 403 scoped_operation_unavailable. Only bounded /organization/campaigns reads may be enabled subject to authorization and provisioning."
+x-access-policy: "Restricted is the default: trusted authentication and scoped authorization required. Explicit isolated open-development enables only allowlisted planning routes; attribution is unverified and operational actions remain blocked. /healthz and /development/status are public."
 servers:
   - url: /api
 tags:
@@ -16,6 +16,94 @@ tags:
   - name: portfolio
   - name: governance
 paths:
+  /development/status:
+    get:
+      operationId: getDevelopmentStatus
+      responses:
+        "200":
+          description: Server-selected access mode; never an identity assertion.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [mode, planningAccess, unverified, operationalActionsEnabled]
+                properties:
+                  mode: {type: string, enum: [restricted, open-development]}
+                  planningAccess: {type: boolean}
+                  unverified: {type: boolean, enum: [true]}
+                  operationalActionsEnabled: {type: boolean, enum: [false]}
+  /development/groups:
+    get:
+      operationId: getDevelopmentGroups
+      responses:
+        "200":
+          description: Development teams, groups and unverified profile references; no memberships.
+          content:
+            application/json:
+              schema: {type: object, additionalProperties: true}
+    post:
+      operationId: createDevelopmentGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/DevelopmentGroupInput"}
+      responses:
+        "201":
+          description: Created unverified development organization unit.
+          content:
+            application/json:
+              schema: {type: object, additionalProperties: true}
+  /development/ownership/{type}/{id}:
+    parameters:
+      - {name: type, in: path, required: true, schema: {type: string, enum: [campaigns, activities]}}
+      - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      operationId: getDevelopmentOwnership
+      responses:
+        "200":
+          description: Stable ownership associations with unverified attribution.
+          content:
+            application/json:
+              schema: {type: object, additionalProperties: true}
+    put:
+      operationId: updateDevelopmentOwnership
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/DevelopmentOwnershipInput"}
+      responses:
+        "200":
+          description: Planning association changed; creator remains separate and unverified.
+          content:
+            application/json:
+              schema: {type: object, additionalProperties: true}
+  /development/calendar:
+    get:
+      operationId: getDevelopmentCalendar
+      parameters:
+        - {name: groupId, in: query, schema: {type: string, format: uuid}}
+      responses:
+        "200":
+          description: Deduplicated activity summaries with date, time zone, scheduled dates, status and unverified accountable owner.
+          content:
+            application/json:
+              schema: {type: object, additionalProperties: true}
+  /development/simulations:
+    post:
+      operationId: simulateDevelopmentWorkflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/DevelopmentSimulationInput"}
+      responses:
+        "200":
+          description: Unverified dry-run; never approval, evidence or operational readiness.
+          content:
+            application/json:
+              schema: {type: object, additionalProperties: true}
   /activity-model/catalog:
     get:
       operationId: getActivityModelCatalog
@@ -1356,6 +1444,29 @@ components:
         application/json:
           schema: {$ref: "#/components/schemas/Error"}
   schemas:
+    DevelopmentGroupInput:
+      type: object
+      additionalProperties: false
+      required: [name, kind]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        kind: {type: string, enum: [team, group]}
+        parentId: {type: string, format: uuid}
+        accountableOwnerId: {type: string, format: uuid}
+    DevelopmentOwnershipInput:
+      type: object
+      additionalProperties: false
+      required: [groupId, accountableOwnerId]
+      properties:
+        groupId: {type: string, format: uuid}
+        accountableOwnerId: {type: string, format: uuid}
+    DevelopmentSimulationInput:
+      type: object
+      additionalProperties: false
+      properties:
+        campaignId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        label: {type: string, maxLength: 120}
     OrganizationAccessError:
       type: object
       required: [error]

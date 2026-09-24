@@ -46,6 +46,11 @@ async function transaction<T>(work: (client: Client) => Promise<T>): Promise<T> 
 
 async function identity(client: Client, principal: VerifiedPrincipal | null): Promise<VerifiedPrincipal> {
   if (!principal?.issuer || !principal.subject || !principal.userId) deny();
+  const development = await client.query("SELECT to_regclass('public.development_planning_environment') AS present");
+  if (development.rows[0].present) {
+    const marker = await client.query("SELECT 1 FROM development_planning_environment LIMIT 1");
+    if (marker.rowCount) deny();
+  }
   // The verifier binds issuer/subject to this existing staff user; email/role text is never authority.
   const result = await client.query("SELECT id FROM users WHERE id=$1", [principal.userId]);
   if (!result.rowCount) deny();
@@ -62,6 +67,11 @@ async function memberships(client: Client, userId: string) {
 async function check(client: Client, principal: VerifiedPrincipal | null, action: OrganizationAction,
   resource: OrganizationResource, requesterUserId?: string): Promise<void> {
   const actor = await identity(client, principal);
+  const registry = await client.query("SELECT to_regclass('public.development_record_registry') AS present");
+  if (registry.rows[0].present) {
+    const record = await client.query("SELECT 1 FROM development_record_registry WHERE entity_type=$1 AND entity_id=$2", [resource.type, resource.id]);
+    if (record.rowCount) deny();
+  }
   if (action === "execute") deny();
   const table = resource.type === "campaign" ? "campaign_ownership" : "activity_ownership";
   const key = resource.type === "campaign" ? "campaign_id" : "activity_id";

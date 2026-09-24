@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 
 export default function CampaignList() {
-  const { data: campaigns, isLoading } = useListCampaigns();
+  const { data: campaigns, isLoading, error, refetch } = useListCampaigns();
   const [search, setSearch] = useState('');
 
   const filtered = campaigns?.filter(c => 
@@ -47,7 +47,12 @@ export default function CampaignList() {
         </Button>
       </div>
 
-      {isLoading ? (
+      {error ? (
+        <div role="alert" className="rounded border border-destructive p-4">
+          <p>{error instanceof Error ? error.message : 'Unable to load campaigns. Planning access could not be confirmed.'}</p>
+          <Button variant="outline" onClick={() => void refetch()}>Retry</Button>
+        </div>
+      ) : isLoading ? (
         <div className="py-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 border border-dashed rounded-lg bg-muted/20">

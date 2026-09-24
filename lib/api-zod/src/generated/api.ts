@@ -8,6 +8,72 @@
 import * as zod from 'zod';
 
 
+export const GetDevelopmentStatusResponse = zod.object({
+  "mode": zod.enum(['restricted', 'open-development']),
+  "planningAccess": zod.boolean(),
+  "unverified": zod.literal(true),
+  "operationalActionsEnabled": zod.literal(false)
+})
+
+
+export const GetDevelopmentGroupsResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const createDevelopmentGroupBodyNameMax = 120;
+
+
+
+export const CreateDevelopmentGroupBody = zod.object({
+  "name": zod.string().min(1).max(createDevelopmentGroupBodyNameMax),
+  "kind": zod.enum(['team', 'group']),
+  "parentId": zod.string().uuid().optional(),
+  "accountableOwnerId": zod.string().uuid().optional()
+})
+
+export const CreateDevelopmentGroupResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetDevelopmentOwnershipParams = zod.object({
+  "type": zod.enum(['campaigns', 'activities']),
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetDevelopmentOwnershipResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const UpdateDevelopmentOwnershipParams = zod.object({
+  "type": zod.enum(['campaigns', 'activities']),
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateDevelopmentOwnershipBody = zod.object({
+  "groupId": zod.string().uuid(),
+  "accountableOwnerId": zod.string().uuid()
+})
+
+export const UpdateDevelopmentOwnershipResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetDevelopmentCalendarQueryParams = zod.object({
+  "groupId": zod.coerce.string().uuid().optional()
+})
+
+export const GetDevelopmentCalendarResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const simulateDevelopmentWorkflowBodyLabelMax = 120;
+
+
+
+export const SimulateDevelopmentWorkflowBody = zod.object({
+  "campaignId": zod.string().uuid().optional(),
+  "activityId": zod.string().uuid().optional(),
+  "label": zod.string().max(simulateDevelopmentWorkflowBodyLabelMax).optional()
+})
+
+export const SimulateDevelopmentWorkflowResponse = zod.record(zod.string(), zod.unknown())
+
+
 export const GetActivityModelCatalogResponse = zod.object({
   "channels": zod.array(zod.object({
   "id": zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),

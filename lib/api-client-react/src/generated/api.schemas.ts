@@ -5,6 +5,37 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+export type DevelopmentGroupInputKind = typeof DevelopmentGroupInputKind[keyof typeof DevelopmentGroupInputKind];
+
+
+export const DevelopmentGroupInputKind = {
+  team: 'team',
+  group: 'group',
+} as const;
+
+export interface DevelopmentGroupInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  kind: DevelopmentGroupInputKind;
+  parentId?: string;
+  accountableOwnerId?: string;
+}
+
+export interface DevelopmentOwnershipInput {
+  groupId: string;
+  accountableOwnerId: string;
+}
+
+export interface DevelopmentSimulationInput {
+  campaignId?: string;
+  activityId?: string;
+  /** @maxLength 120 */
+  label?: string;
+}
+
 export type OrganizationAccessErrorError = {
   code: string;
   message: string;
@@ -1933,6 +1964,37 @@ export type RecordIdParameter = string;
 export type RequiredRecordTypeParameter = string;
 
 export type RequiredRecordIdParameter = string;
+
+export type GetDevelopmentStatus200Mode = typeof GetDevelopmentStatus200Mode[keyof typeof GetDevelopmentStatus200Mode];
+
+
+export const GetDevelopmentStatus200Mode = {
+  restricted: 'restricted',
+  'open-development': 'open-development',
+} as const;
+
+export type GetDevelopmentStatus200 = {
+  mode: GetDevelopmentStatus200Mode;
+  planningAccess: boolean;
+  unverified: true;
+  operationalActionsEnabled: false;
+};
+
+export type GetDevelopmentGroups200 = { [key: string]: unknown };
+
+export type CreateDevelopmentGroup201 = { [key: string]: unknown };
+
+export type GetDevelopmentOwnership200 = { [key: string]: unknown };
+
+export type UpdateDevelopmentOwnership200 = { [key: string]: unknown };
+
+export type GetDevelopmentCalendarParams = {
+groupId?: string;
+};
+
+export type GetDevelopmentCalendar200 = { [key: string]: unknown };
+
+export type SimulateDevelopmentWorkflow200 = { [key: string]: unknown };
 
 export type ListGovernanceAuditParams = {
 entityType?: string;

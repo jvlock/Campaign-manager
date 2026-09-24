@@ -311,8 +311,12 @@ export default function CampaignDetail() {
             <EngagementMap campaign={campaign} />
           </TabsContent>
           
-          <TabsContent value="calendar" className="m-0 h-full p-6 flex items-center justify-center text-muted-foreground">
-            Calendar View (Stub)
+          <TabsContent value="calendar" className="m-0 h-full p-6 space-y-4">
+            <h2 className="text-xl font-semibold">Campaign planning calendar</h2>
+            <p className="text-muted-foreground">View this campaign’s activities, scheduled dates, source time zones, owning groups and planning statuses in the development calendar.</p>
+            <Link className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground" href={`/development?campaignId=${encodeURIComponent(campaign.id)}`}>
+              Open this campaign’s calendar
+            </Link>
           </TabsContent>
 
           <TabsContent value="deliverables" className="m-0 h-full p-6 max-w-7xl mx-auto overflow-y-auto">

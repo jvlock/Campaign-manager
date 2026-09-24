@@ -50,9 +50,18 @@ import type {
   ContentAsset,
   ContentAssetInput,
   ContentAssetUpdate,
+  CreateDevelopmentGroup201,
   Cta,
   CtaInput,
   CtaUpdate,
+  DevelopmentGroupInput,
+  DevelopmentOwnershipInput,
+  DevelopmentSimulationInput,
+  GetDevelopmentCalendar200,
+  GetDevelopmentCalendarParams,
+  GetDevelopmentGroups200,
+  GetDevelopmentOwnership200,
+  GetDevelopmentStatus200,
   Governance,
   GovernanceActorReason,
   GovernanceApproval,
@@ -87,6 +96,7 @@ import type {
   ScheduledInstance,
   ScheduledInstanceAdjustment,
   ScopedOperationUnavailableResponse,
+  SimulateDevelopmentWorkflow200,
   SyntheticPersonInput,
   TaskDefault,
   TaskDefaultsUpdate,
@@ -99,6 +109,7 @@ import type {
   TaxonomyTerm,
   TaxonomyTermMutation,
   TaxonomyTermsResponse,
+  UpdateDevelopmentOwnership200,
   UtmGenerationError,
   UtmGenerationResponse,
   UtmInput,
@@ -141,6 +152,551 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetDevelopmentStatusUrl = () => {
+
+
+
+
+  return `/api/development/status`
+}
+
+export const getDevelopmentStatus = async ( options?: Parameters<typeof customFetch>[1]): Promise<GetDevelopmentStatus200> => {
+
+  return customFetch<GetDevelopmentStatus200>(getGetDevelopmentStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDevelopmentStatusQueryKey = () => {
+    return [
+    `/api/development/status`
+    ] as const;
+    }
+
+
+export const getGetDevelopmentStatusQueryOptions = <TData = Awaited<ReturnType<typeof getDevelopmentStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDevelopmentStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDevelopmentStatus>>> = ({ signal }) => getDevelopmentStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDevelopmentStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getDevelopmentStatus>>>
+export type GetDevelopmentStatusQueryError = ErrorType<unknown>
+
+
+
+export function useGetDevelopmentStatus<TData = Awaited<ReturnType<typeof getDevelopmentStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDevelopmentStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetDevelopmentGroupsUrl = () => {
+
+
+
+
+  return `/api/development/groups`
+}
+
+export const getDevelopmentGroups = async ( options?: Parameters<typeof customFetch>[1]): Promise<GetDevelopmentGroups200> => {
+
+  return customFetch<GetDevelopmentGroups200>(getGetDevelopmentGroupsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDevelopmentGroupsQueryKey = () => {
+    return [
+    `/api/development/groups`
+    ] as const;
+    }
+
+
+export const getGetDevelopmentGroupsQueryOptions = <TData = Awaited<ReturnType<typeof getDevelopmentGroups>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDevelopmentGroupsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDevelopmentGroups>>> = ({ signal }) => getDevelopmentGroups({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentGroups>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDevelopmentGroupsQueryResult = NonNullable<Awaited<ReturnType<typeof getDevelopmentGroups>>>
+export type GetDevelopmentGroupsQueryError = ErrorType<unknown>
+
+
+
+export function useGetDevelopmentGroups<TData = Awaited<ReturnType<typeof getDevelopmentGroups>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDevelopmentGroupsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateDevelopmentGroupUrl = () => {
+
+
+
+
+  return `/api/development/groups`
+}
+
+export const createDevelopmentGroup = async (developmentGroupInput: DevelopmentGroupInput, options?: Parameters<typeof customFetch>[1]): Promise<CreateDevelopmentGroup201> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CreateDevelopmentGroup201>(getCreateDevelopmentGroupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(developmentGroupInput)
+  }
+);}
+
+
+
+
+
+export const getCreateDevelopmentGroupMutationKey = () => ['createDevelopmentGroup'] as const;
+
+export const getCreateDevelopmentGroupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDevelopmentGroup>>, TError,CreateDevelopmentGroupMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDevelopmentGroup>>, TError,CreateDevelopmentGroupMutationVariables, TContext> => {
+
+const mutationKey = getCreateDevelopmentGroupMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDevelopmentGroup>>, CreateDevelopmentGroupMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDevelopmentGroup(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDevelopmentGroupMutationResult = NonNullable<Awaited<ReturnType<typeof createDevelopmentGroup>>>
+    export type CreateDevelopmentGroupMutationBody = BodyType<DevelopmentGroupInput>
+    export type CreateDevelopmentGroupMutationError = ErrorType<unknown>
+    export type CreateDevelopmentGroupMutationVariables = {data: BodyType<DevelopmentGroupInput>}
+
+    export const useCreateDevelopmentGroup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDevelopmentGroup>>, TError,CreateDevelopmentGroupMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDevelopmentGroup>>,
+        TError,
+        CreateDevelopmentGroupMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateDevelopmentGroupMutationOptions(options));
+    }
+
+export const getGetDevelopmentOwnershipUrl = (type: 'campaigns' | 'activities',
+    id: string,) => {
+
+
+
+
+  return `/api/development/ownership/${type}/${id}`
+}
+
+export const getDevelopmentOwnership = async (type: 'campaigns' | 'activities',
+    id: string, options?: Parameters<typeof customFetch>[1]): Promise<GetDevelopmentOwnership200> => {
+
+  return customFetch<GetDevelopmentOwnership200>(getGetDevelopmentOwnershipUrl(type,id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDevelopmentOwnershipQueryKey = (type: 'campaigns' | 'activities',
+    id: string,) => {
+    return [
+    `/api/development/ownership/${type}/${id}`
+    ] as const;
+    }
+
+
+export const getGetDevelopmentOwnershipQueryOptions = <TData = Awaited<ReturnType<typeof getDevelopmentOwnership>>, TError = ErrorType<unknown>>(type: 'campaigns' | 'activities',
+    id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentOwnership>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDevelopmentOwnershipQueryKey(type,id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDevelopmentOwnership>>> = ({ signal }) => getDevelopmentOwnership(type,id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: type !== null && type !== undefined && id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentOwnership>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDevelopmentOwnershipQueryResult = NonNullable<Awaited<ReturnType<typeof getDevelopmentOwnership>>>
+export type GetDevelopmentOwnershipQueryError = ErrorType<unknown>
+
+
+
+export function useGetDevelopmentOwnership<TData = Awaited<ReturnType<typeof getDevelopmentOwnership>>, TError = ErrorType<unknown>>(
+ type: 'campaigns' | 'activities',
+    id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentOwnership>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDevelopmentOwnershipQueryOptions(type,id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateDevelopmentOwnershipUrl = (type: 'campaigns' | 'activities',
+    id: string,) => {
+
+
+
+
+  return `/api/development/ownership/${type}/${id}`
+}
+
+export const updateDevelopmentOwnership = async (type: 'campaigns' | 'activities',
+    id: string,
+    developmentOwnershipInput: DevelopmentOwnershipInput, options?: Parameters<typeof customFetch>[1]): Promise<UpdateDevelopmentOwnership200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<UpdateDevelopmentOwnership200>(getUpdateDevelopmentOwnershipUrl(type,id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(developmentOwnershipInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateDevelopmentOwnershipMutationKey = () => ['updateDevelopmentOwnership'] as const;
+
+export const getUpdateDevelopmentOwnershipMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDevelopmentOwnership>>, TError,UpdateDevelopmentOwnershipMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDevelopmentOwnership>>, TError,UpdateDevelopmentOwnershipMutationVariables, TContext> => {
+
+const mutationKey = getUpdateDevelopmentOwnershipMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDevelopmentOwnership>>, UpdateDevelopmentOwnershipMutationVariables> = (props) => {
+          const {type,id,data} = props ?? {};
+
+          return  updateDevelopmentOwnership(type,id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDevelopmentOwnershipMutationResult = NonNullable<Awaited<ReturnType<typeof updateDevelopmentOwnership>>>
+    export type UpdateDevelopmentOwnershipMutationBody = BodyType<DevelopmentOwnershipInput>
+    export type UpdateDevelopmentOwnershipMutationError = ErrorType<unknown>
+    export type UpdateDevelopmentOwnershipMutationVariables = {type: 'campaigns' | 'activities';id: string;data: BodyType<DevelopmentOwnershipInput>}
+
+    export const useUpdateDevelopmentOwnership = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDevelopmentOwnership>>, TError,UpdateDevelopmentOwnershipMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateDevelopmentOwnership>>,
+        TError,
+        UpdateDevelopmentOwnershipMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateDevelopmentOwnershipMutationOptions(options));
+    }
+
+export const getGetDevelopmentCalendarUrl = (params?: GetDevelopmentCalendarParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/development/calendar?${stringifiedParams}` : `/api/development/calendar`
+}
+
+export const getDevelopmentCalendar = async (params?: GetDevelopmentCalendarParams, options?: Parameters<typeof customFetch>[1]): Promise<GetDevelopmentCalendar200> => {
+
+  return customFetch<GetDevelopmentCalendar200>(getGetDevelopmentCalendarUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDevelopmentCalendarQueryKey = (params?: GetDevelopmentCalendarParams,) => {
+    return [
+    `/api/development/calendar`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDevelopmentCalendarQueryOptions = <TData = Awaited<ReturnType<typeof getDevelopmentCalendar>>, TError = ErrorType<unknown>>(params?: GetDevelopmentCalendarParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentCalendar>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDevelopmentCalendarQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDevelopmentCalendar>>> = ({ signal }) => getDevelopmentCalendar(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentCalendar>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDevelopmentCalendarQueryResult = NonNullable<Awaited<ReturnType<typeof getDevelopmentCalendar>>>
+export type GetDevelopmentCalendarQueryError = ErrorType<unknown>
+
+
+
+export function useGetDevelopmentCalendar<TData = Awaited<ReturnType<typeof getDevelopmentCalendar>>, TError = ErrorType<unknown>>(
+ params?: GetDevelopmentCalendarParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentCalendar>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDevelopmentCalendarQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSimulateDevelopmentWorkflowUrl = () => {
+
+
+
+
+  return `/api/development/simulations`
+}
+
+export const simulateDevelopmentWorkflow = async (developmentSimulationInput: DevelopmentSimulationInput, options?: Parameters<typeof customFetch>[1]): Promise<SimulateDevelopmentWorkflow200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SimulateDevelopmentWorkflow200>(getSimulateDevelopmentWorkflowUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(developmentSimulationInput)
+  }
+);}
+
+
+
+
+
+export const getSimulateDevelopmentWorkflowMutationKey = () => ['simulateDevelopmentWorkflow'] as const;
+
+export const getSimulateDevelopmentWorkflowMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof simulateDevelopmentWorkflow>>, TError,SimulateDevelopmentWorkflowMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof simulateDevelopmentWorkflow>>, TError,SimulateDevelopmentWorkflowMutationVariables, TContext> => {
+
+const mutationKey = getSimulateDevelopmentWorkflowMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof simulateDevelopmentWorkflow>>, SimulateDevelopmentWorkflowMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  simulateDevelopmentWorkflow(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SimulateDevelopmentWorkflowMutationResult = NonNullable<Awaited<ReturnType<typeof simulateDevelopmentWorkflow>>>
+    export type SimulateDevelopmentWorkflowMutationBody = BodyType<DevelopmentSimulationInput>
+    export type SimulateDevelopmentWorkflowMutationError = ErrorType<unknown>
+    export type SimulateDevelopmentWorkflowMutationVariables = {data: BodyType<DevelopmentSimulationInput>}
+
+    export const useSimulateDevelopmentWorkflow = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof simulateDevelopmentWorkflow>>, TError,SimulateDevelopmentWorkflowMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof simulateDevelopmentWorkflow>>,
+        TError,
+        SimulateDevelopmentWorkflowMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSimulateDevelopmentWorkflowMutationOptions(options));
+    }
 
 export const getGetActivityModelCatalogUrl = () => {
 

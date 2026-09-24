@@ -1,0 +1,79 @@
+# Phase 2B-1 continuation — isolated open-development planning verification
+
+Authority: [new sequencing decision](phase-2b-1-open-development-owner-decision.md), [configuration and transition runbook](../open-development-planning.md). The accepted Phase 2B-0, 0A, 0B and original 2B-1 records remain byte-unchanged. Starting branch `feature/webinar-standard-engine`, unchanged HEAD `38b114aba6aca5f286792191221ac94fc7fda49d`; `47c0f45951ef8bedcbdc7c99aa25a39885a9f355` is the foundation commit; `b573e46` archives the earlier instruction, `38b114a` archives the prior auth continuation. The current upload is excluded from the intended implementation change set. This is bounded isolated-development verification, **not** acceptance of full Phase 2B-1, verified-identity rollout or live readiness. No commit made by the documentation agent.
+
+## Implemented boundary and source inventory
+
+Mode/pool/isolation are implemented in `lib/db/src/index.ts`; `0023_open_development_planning.sql`, `lib/db/scripts/open-development-planning.mjs`, the development schema and migration checks are additive. API startup/composition is `artifacts/api-server/src/{index,app}.ts`; explicit method/path policy is `lib/development-policy.ts`, group/ownership/calendar/simulation endpoints are `routes/development.ts`; the [route matrix](../open-development-planning.md#existing-route-policy-inventory) reconciles the mounted legacy-router declarations. The workspace gate checks the generated OpenAPI client and types as well as `App.tsx`, `pages/Development.tsx` and changed campaign/map views. Status is public in either mode; open mode uses only the private fixed local PG socket/database and never `DATABASE_URL`; restricted mode refuses the marker and the organization service refuses development-registry records, including with a supplied principal. No real approval, external delivery, operational integration, export, Foundation authority or automatic promotion is implemented.
+
+Earlier review found method/path allowlist alone did not inspect individual registry IDs. Final source implements a stronger fail-closed **whole-database contamination check** at startup and for every open request/status: any campaign or activity missing its registry entry blocks the *entire* planning surface (503, status reports `planningAccess:false`). Private bootstrap checks the same invariant. The dedicated actual-app test deliberately inserts an unregistered synthetic campaign through a privileged fixture that bypasses triggers, observes 503 for status/planning, then removes it. This is not permission to import legacy records into the private cluster; direct DB writers remain privileged. The method/path allowlist denies all non-enumerated handlers before the old router; denied methods include deletes, participant/attendance, governance approval, release and export. Chained activity task-settings GET/PATCH were added to the allowlist after initial review and passed the focused final 4/4 policy rerun.
+
+| Claim to verify | Fresh observation / evidence |
+|---|---|
+| Declared API methods and centrally denied paths | Source matrix updated including chained task-settings; focused final policy rerun 4/4. Other legacy handlers cannot be assumed available in restricted mode. |
+| Missing/invalid mode; production/deployment | Default restricted; invalid mode throws; open requires development/non-deployment. Configuration test covers negatives. |
+| Private database instead of existing `DATABASE_URL` | Private Unix socket, OS user, local `open_development_planning`, matching data directory/private permissions/marker and registry-only contents checked; persistent isolated test exercised real `createApp`. Even a supplied platform `DATABASE_URL` is not read in open mode. No shared/production data queried or migrated. |
+| Restricted fail-closed, including purported trusted identity | Without verifier returns 503; organization authorization service denies development-registry records with supplied principal; no legacy-router fallthrough in restricted app. |
+| Open planning without auth | Actual app dedicated suite 2/2 plus browser: campaign created, webinar with five communications/dates saved and reloaded, development team/group created, activity ownership changed, group and consolidated calendar viewed, simulation previewed. Targeted browser follow-up explicitly saved governed naming input as “Synthetic Webinar Criticalflow Saved”; regenerated map title persisted after reload (concurrency v3). Campaign calendar link opened actual `/development?campaignId=<stable ID>`, filtered to one webinar activity in its child owning group with five UTC dates and provisional, not governance-approved, status. Task-settings GET/PATCH with unchanged values both returned 200. Draft subject standard GET/PATCH saved/restored and returned 200 in API verification; draft-subject UI was not tested. |
+| Isolation and historical data | Whole-database contamination check tested with inserted unregistered row: status and campaign access 503 until removal. Pre-0022 fixture's 44 old table payloads byte-equal after additive migrations; preservation is not legacy HTTP availability. |
+| Ownership and attribution | Insert triggers assign stable campaign/activity ownership in the private cluster; seeded unverified creator is distinct from accountable owner. Group changes retain creator. UI/API mark attribution unverified; no verified admin, roles or membership fabricated. |
+| Simulations and synthetic source | Simulation response `simulation:true`, `authoritative:false`, `operationalReadiness:false`; no approval/evidence persisted. Synthetic seeded taxonomy labeled non-authoritative. |
+| Prohibited actions | Release/publish, export, real approvals, governance routes, participant/attendance, DELETE, integrations and unknown paths denied centrally; actual-app test confirms approval/release/export 403 and cross-origin mutation 403. No live send/publish exercised. |
+| Canonical behavior and original data | Rule drift/106 evaluator coverage and all original 22 migrations unchanged; 23-migration disposable fresh/prior-schema checks passed. Invalid required fields in the draft standard still correctly FAIL; non-overridable constraints remain. |
+
+## Fresh gates and reconciliation
+
+These are the main verifier's **fresh continuation** results, not the historical foundation 3,180-leaf/22-migration or Phase 2B-0 figures. Full suite artifacts are under `/tmp/open-planning-gates/` (`domain.log`, `api.log`, `open.log`, `frontend.log`, `typecheck-final.log`, `drift.log`, `policy-final.log`). Dedicated open-app test uses the persistent isolated development database only; domain/API migration tests use disposable clusters. No existing shared `DATABASE_URL` was accessed by open mode. The persistent private cluster remains intentionally running for development preview, **not** as a leaked disposable database. Neither shared nor production data was queried, migrated or deployed.
+
+```sh
+pnpm --filter @workspace/api-server exec tsx --test --test-reporter=tap --test-concurrency=1 './test/*/*.test.ts'
+node lib/db/test/disposable-db.mjs -- pnpm --filter @workspace/api-server exec tsx --test --test-reporter=tap --test-concurrency=1 './test/*.test.ts' './test/organization/service.database.ts'
+PLANNING_ACCESS_MODE=open-development NODE_ENV=development pnpm --filter @workspace/api-server exec tsx --test --test-reporter=tap './test/development.routes.database.ts'
+node --test --test-reporter=tap artifacts/campaign-workspace/scripts/resize-observer.test.mjs
+pnpm run typecheck
+pnpm --filter @workspace/api-server run typecheck --incremental false
+node artifacts/api-server/src/lib/webinar-standard-catalog/generate-rule-ids.mjs --check
+```
+
+| Suite | Files | Top-level | Nested | TAP records | Grouping | Leaves | Final |
+|---|---:|---:|---:|---:|---:|---:|---|
+| Domain | 36 | 3,097 | 7 | 3,104 | 1 | 3,103 | Pass |
+| API with disposable database | 18 | 79 | 0 | 79 | 0 | 79 | Pass |
+| Actual open `createApp` on persistent isolated private database | 1 | 2 | 0 | 2 | 0 | 2 | Pass |
+| Frontend regression | 1 | 2 | 0 | 2 | 0 | 2 | Pass |
+| **Total (nonoverlapping suites)** | **56** | **3,180** | **7** | **3,187** | **1** | **3,186** | **All pass** |
+
+All final suites report **zero failures, skips, cancellations and TODOs**. The full API 79/79 passed before a targeted policy correction to the chained activity task-settings GET/PATCH allowlist; focused **final policy rerun 4/4 passed** after that change. The 4 focused checks are a rerun, **not** additional leaves in the total. Typechecking passed for the full workspace (`typecheck-final.log`), including the final policy change; nonincremental API typecheck passed as reported by the verifier. Initial generated-client run had three entity input-name collisions; those were corrected by unique entity input names and canonical code generation, followed by successful typechecks. Do not misreport those resolved errors as final failures.
+
+The disposable migration applied **23 migrations (`0001`–`0023`)** on fresh and synthetic pre-0022 fixtures; organizational invalid-operation checks rejected 16 per mode and development invalid-operation checks rejected 8 per mode. All **44 previously existing table payloads** compared equal across the additive upgrade, including synthetic historical session payloads. Disposable root `/tmp/disposable-pg-LoqAPM` reported normal stop, root/socket removal and independent absence confirmation. This is synthetic data preservation evidence, **not** proof that unavailable old HTTP legacy workflows are restored or that production migration occurred. The separate private persistent cluster is deliberately retained for preview.
+
+Rule-ID drift check found **106 canonical IDs, zero drift**; evaluator registry **106/106**, `missing=[]`, `unknown=[]`, `duplicate=0`. Original `0001`–`0022` migrations are byte-identical, canonical five-file hashes remain identical to accepted foundation `47c0f45`, and Temporal polyfill remains exactly **0.5.1**. The lockfile is unchanged; package manifest changes only the API development script. Canonical SHA-256 baseline:
+
+| Canonical file | SHA-256 (unchanged) |
+|---|---|
+| `docs/standards/webinar/WEB-STANDARD-001.rules.json` | `7abe547acf36d2f4b61c937f4ae192a3d30db52d5c2c947fd60d2c82b3c4f2e2` |
+| `docs/standards/webinar/WEB-STANDARD-001.md` | `74d10b56c625db6ae203a5fe097f4586611650ff15e4882479d78a98f62ebf25` |
+| `docs/standards/webinar/WEBINAR-PILOT-IMPLEMENTATION-AUTHORIZATION.md` | `87b0f5a4eefe5b52e516db16d1483d6e4025e5b54a658e3132f0267d3800a09f` |
+| `docs/standards/webinar/CHANGELOG-RC1.md` | `b67a40ca7ad4a3be35d510c5b4eb1d0e29577d7471a1b05862697e53b5ddba0c` |
+| `docs/standards/webinar/manifest.json` | `8a4268ff7c8ff82d747defae8549f5cd845ec1c4c91cdec27f0e641bb66d0859` |
+
+## Observed development preview
+
+URL: **https://ff9e9051-1ae9-49d9-b58e-575f694a1837-00-26hkcvapvp4w5.msci-usc1.replit.dev/**. Observed `GET /api/development/status`: `mode:"open-development"`, `planningAccess:true`, `unverified:true`, `operationalActionsEnabled:false`. Two API workflow restarts were reported clean by the main verifier; this is **only** the current development preview, not a deployed/production endpoint. Browser checks confirmed saved/reloaded campaign, webinar, schedules/communications, group assignment, consolidated/filtered calendar and visibly unverified simulation. The initial browser review found a stub campaign calendar link and unclear generated-name save affordance; targeted fixes were browser-verified afterward: real filtered calendar navigation and explicit Save activity persisted regenerated map title. No failed save remains. Governance/participant routes returning 403 are intentional policy denials, not broken open-planning workflows. Simulated approvals cannot authorize publish/send; real approval and publish remain 403.
+
+## Change inventory relative to starting HEAD (exclude current upload)
+
+| Area | Exact changed paths |
+|---|---|
+| Development settings and team boundary reminder | `.replit`; `.agents/memory/MEMORY.md`; `.agents/memory/development-planning-boundary.md` |
+| API composition, policy, group/ownership/calendar and tests | `artifacts/api-server/package.json`; `artifacts/api-server/src/app.ts`; `artifacts/api-server/src/index.ts`; `artifacts/api-server/src/lib/organization/service.ts`; `artifacts/api-server/src/lib/development-policy.ts`; `artifacts/api-server/src/routes/campaigns.ts`; `artifacts/api-server/src/routes/development.ts`; `artifacts/api-server/test/development-configuration.test.ts`; `artifacts/api-server/test/development-policy.test.ts`; `artifacts/api-server/test/development.routes.database.ts` |
+| Workspace UI | `artifacts/campaign-workspace/src/App.tsx`; `artifacts/campaign-workspace/src/components/layout.tsx`; `artifacts/campaign-workspace/src/components/map/ActivityConfigDrawer.tsx`; `artifacts/campaign-workspace/src/pages/Development.tsx`; `artifacts/campaign-workspace/src/pages/campaigns/Create.tsx`; `artifacts/campaign-workspace/src/pages/campaigns/Detail.tsx`; `artifacts/campaign-workspace/src/pages/campaigns/List.tsx` |
+| Contract and generated clients/types | `lib/api-spec/openapi.yaml`; `lib/api-client-react/src/generated/api.schemas.ts`; `lib/api-client-react/src/generated/api.ts`; `lib/api-zod/src/generated/api.ts`; `lib/api-zod/src/generated/types/index.ts`; `lib/api-zod/src/generated/types/{createDevelopmentGroup201,developmentGroupInput,developmentGroupInputKind,developmentOwnershipInput,developmentSimulationInput,getDevelopmentCalendar200,getDevelopmentCalendarParams,getDevelopmentGroups200,getDevelopmentOwnership200,getDevelopmentStatus200,getDevelopmentStatus200Mode,simulateDevelopmentWorkflow200,updateDevelopmentOwnership200}.ts` |
+| Private database, additive migration and disposable checks | `lib/db/src/index.ts`; `lib/db/src/schema/index.ts`; `lib/db/src/schema/development-planning.ts`; `lib/db/migrations/0023_open_development_planning.sql`; `lib/db/scripts/open-development-planning.mjs`; `lib/db/test/disposable-db.mjs`; `lib/db/test/open-development-migration.mjs` |
+| New decision/config/evidence only | `docs/verification/phase-2b-1-open-development-owner-decision.md`; `docs/open-development-planning.md`; `docs/verification/phase-2b-1-open-development-continuation.md` |
+
+The untracked `attached_assets/Pasted-We-can-defer-role-restrictions-and-keep-the-development_1790207961151.txt` is the **current instruction upload** and must be excluded from any scoped commit. Accepted original decision and verification docs, previous 22 migrations and canonical standards have not been edited. This inventory is a pre-commit working-tree observation; the main implementer owns final staging/commit and changed-file reconciliation.
+
+## Remaining Phase 2B-1 scope
+
+Opening an isolated planning instance is a sequencing change, **not** restricted operational access or completion of the original Phase 2B-1 sequence (`1 → 2 → 2A → 3 → 4 → 5 → 6 → 8 → 7 → 9 → 10 → 11 → 12 → 13 → 14`). The original foundation's scoped grants remain implemented but require verified identity and broader safe route/job coverage before restricted use; old legacy HTTP paths are not magically restored by preserving their rows. Webinar operational transitions, Foundation connector/provenance, suppression and live execution remain pending per accepted original assessments. Follow the six transition steps in the runbook; no development approval or unverified attribution becomes operational evidence. Final report must distinguish **data preservation**, **webinar behavior compatibility** and **HTTP workflow availability** and must not claim a shared/production rollout.

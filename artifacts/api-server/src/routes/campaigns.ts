@@ -355,6 +355,13 @@ router.put("/campaigns/:id/map", async (req, res, next) => {
     const submittedActivities = activitiesProvided ? req.body.activities : [];
     const connectionsProvided = Array.isArray(req.body.connections);
     const submittedConnections = connectionsProvided ? req.body.connections : [];
+    if (res.locals.openDevelopment && activitiesProvided) {
+      const persisted = await db.select({ id: activities.id }).from(activities).where(eq(activities.campaignId, req.params.id));
+      if (persisted.some(node => !submittedActivities.some((candidate: { id?: string }) => candidate.id === node.id))) {
+        res.status(403).json({ error: "Removing activities is disabled in open development. Preserve existing records when editing the map." });
+        return;
+      }
+    }
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (submittedActivities.some((node: any) => !uuidPattern.test(String(node.id))) ||
       submittedConnections.some((edge: any) => !uuidPattern.test(String(edge.id)))) {
@@ -438,6 +445,9 @@ router.put("/campaigns/:id/map", async (req, res, next) => {
         .map((activity) => activity.id)
         .filter((id) => !submittedActivityIds.has(id));
       if (activitiesProvided && omittedActivityIds.length) {
+        if (res.locals.openDevelopment) {
+          throw Object.assign(new Error("Removing development activities is disabled; preserve existing planning records."), { statusCode: 403 });
+        }
         const linkedCommunications = await tx.select({ id: communications.id, activityId: communications.activityId })
           .from(communications)
           .where(inArray(communications.activityId, omittedActivityIds));

@@ -11,6 +11,7 @@ export function Layout({ children }: { children: ReactNode }) {
     { href: '/', label: 'Overview', icon: Home },
     { href: '/campaigns', label: 'Campaigns', icon: FolderGit2 },
     { href: '/portfolio', label: 'Portfolio', icon: Briefcase },
+    { href: '/development', label: 'Development', icon: Layers },
     { href: '/governance', label: 'Governance', icon: Settings },
   ];
 
@@ -45,11 +46,15 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="w-2 h-2 rounded-full bg-green-500"></span>
-            System Online
+            Synthetic planning only
           </div>
         </div>
       </header>
+      <aside role="status" data-testid="open-development-banner" className="sticky top-14 z-40 border-b border-amber-300 bg-amber-50 px-6 py-3 text-sm text-amber-950">
+        <strong>Open development — synthetic planning only.</strong>{' '}
+        Attribution is unverified, not authenticated audit evidence. Simulated approvals are nonoperational.
+        Live sending, publishing, customer-data exports, and real approvals remain blocked.
+      </aside>
       <main className="flex-1 flex flex-col overflow-hidden relative">
         {children}
       </main>

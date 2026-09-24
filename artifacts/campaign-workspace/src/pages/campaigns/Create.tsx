@@ -43,8 +43,8 @@ export default function CampaignCreate() {
         toast({ title: 'Campaign created successfully' });
         setLocation(`/campaigns/${res.id}`);
       },
-      onError: () => {
-        toast({ title: 'Failed to create campaign', variant: 'destructive' });
+      onError: (error) => {
+        toast({ title: 'Failed to create campaign', description: error instanceof Error ? error.message : 'The planning request was not accepted.', variant: 'destructive' });
       }
     });
   };

@@ -1,4 +1,5 @@
-import app from "./app";
+import { createApp } from "./app";
+import { assertPlanningDatabaseIsolation, planningAccessMode } from "@workspace/db";
 import { logger } from "./lib/logger";
 
 const rawPort = process.env["PORT"];
@@ -15,6 +16,8 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
+await assertPlanningDatabaseIsolation();
+const app = createApp({ mode: planningAccessMode as "restricted" | "open-development" });
 app.listen(port, (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");

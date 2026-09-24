@@ -364,7 +364,7 @@ export default function ActivityConfigDrawer({
 
             {(!typeConfig || typeConfig.id !== 'mcp') && (
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Activity Name</Label>
+                <Label className="text-xs text-muted-foreground">{typeConfig ? 'Activity name input' : 'Activity Name'}</Label>
                 <Input
                   value={typeConfig ? modelDraft.namingInput : String(node.data.name || '')}
                   onChange={(e) => typeConfig
@@ -372,6 +372,7 @@ export default function ActivityConfigDrawer({
                     : updateNodeData('name', e.target.value)}
                   className="h-8 text-sm font-medium"
                 />
+                {typeConfig && <p className="text-xs text-muted-foreground">This input contributes to the canonical generated name shown below. Choose “Save activity” to persist edits; changing this field alone does not save the plan.</p>}
               </div>
             )}
 
