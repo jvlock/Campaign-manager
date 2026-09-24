@@ -1,0 +1,557 @@
+Phase 2B-2 should be accepted as complete. The architecture is now correctly layered: existing application records feed one canonical orchestration service, while missing governed inputs remain visible and every result stays nonoperational.
+
+The next approved increment is registration, attendance, cancellation, waitlist and suppression integration.
+
+---
+
+# Phase 2B-3 — Registration, Attendance, Cancellation and Suppression Integration
+
+Integrate webinar participant-state source facts with the completed domain orchestration and standards engine.
+
+This increment remains synthetic-only and nonoperational. Do not connect ON24, Marketing Cloud, Salesforce, outreach providers, customer data, live sending, publishing, production authentication or production deployment.
+
+## 1. Starting state
+
+Expected branch:
+
+`feature/webinar-standard-engine`
+
+Expected starting commit:
+
+`c8b3f75ec04d07e64d086a25695cc0a088b0a5ac`
+
+Authoritative sources:
+
+* all five canonical webinar standards under `docs/standards/webinar/`;
+* `docs/verification/phase-2b-0-integration-assessment.md`;
+* `docs/verification/phase-2b-0a-acceptance-and-owner-decisions.md`;
+* `docs/verification/phase-2b-1-completion.md`;
+* `docs/verification/phase-2b-2-domain-adapters.md`;
+* `docs/verification/phase-2b-phase-classification.md`;
+* existing registration, attendance, scheduling, communication and suppression implementation;
+* the current schema and migrations `0001–0024`.
+
+Before editing, confirm:
+
+* branch, HEAD, direct parent and working-tree state;
+* ancestry from the expected commit;
+* 106/106 evaluator coverage;
+* all canonical hashes;
+* exact Temporal `0.5.1` pin;
+* all 24 migrations;
+* open-development safeguards;
+* synthetic database identity;
+* restricted-mode behavior;
+* absence of customer and production participant data;
+* no operational provider integration.
+
+Inspect every intervening commit if HEAD moved. Stop for unexplained substantive changes.
+
+Do not commit instruction uploads or unrelated assets.
+
+## 2. Objective
+
+Create one internal participant-lifecycle integration boundary:
+
+```text
+Synthetic registration or attendance event
+              ↓
+Participant lifecycle service
+              ↓
+Authoritative source-fact update
+              ↓
+Suppression and communication-obligation update
+              ↓
+Phase 2B-2 domain orchestration
+              ↓
+Immutable simulation snapshot
+```
+
+Requirements:
+
+* Source facts must be persisted before evaluation.
+* Suppression decisions must occur before any simulated provider handoff.
+* Registration, participant status, attendance and event status remain distinct.
+* Historical executed communications remain immutable and auditable.
+* Future obligations may be suppressed or recalculated without rewriting history.
+* Every resulting evaluation remains `simulation-only`.
+
+## 3. Use canonical enumerations
+
+Inspect the actual closed enumerations for:
+
+* event status;
+* participant status;
+* registration status;
+* attendance status;
+* cancellation status;
+* waitlist status;
+* communication status;
+* suppression reason.
+
+Do not invent or rename statuses.
+
+If existing application enumerations conflict with canonical enumerations:
+
+1. Document the conflict.
+2. Create an explicit adapter mapping where meanings are equivalent.
+3. Stop if the meanings are materially incompatible.
+4. Do not change canonical terminology merely to match existing code.
+
+Use exhaustive TypeScript handling so unknown states fail closed.
+
+## 4. Preserve separate state dimensions
+
+The implementation must not collapse these concepts:
+
+| Dimension            | Meaning                                                      |
+| -------------------- | ------------------------------------------------------------ |
+| Event status         | State of the webinar occurrence                              |
+| Registration status  | Whether a participant registered, cancelled or is waitlisted |
+| Attendance status    | Attended, absent or unknown for that participant             |
+| Communication status | Planned, scheduled, executed, cancelled or suppressed        |
+| Suppression status   | Whether a future communication is prohibited and why         |
+
+Rules:
+
+* A completed event does not prove an individual attended.
+* Registration does not prove attendance.
+* Cancellation is not absence.
+* Waitlist status is not registration confirmation.
+* Email delivery, open or click is not attendance.
+* Unknown attendance remains unknown.
+* Event cancellation must not be represented as participant cancellation.
+* Participant cancellation must not cancel the event occurrence.
+
+Add tests for every distinction.
+
+## 5. Synthetic participant boundary
+
+Only synthetic participant data is authorized.
+
+Create or reuse a development-only participant fixture mechanism that:
+
+* generates synthetic stable participant identifiers;
+* uses reserved non-deliverable email domains such as `.test`;
+* prohibits real customer identifiers;
+* prohibits imports and bulk uploads from production sources;
+* rejects data that matches known production-source markers;
+* clearly labels every record synthetic;
+* records fixture provenance;
+* supports deterministic test creation;
+* can be safely removed with the disposable database.
+
+Do not create a general open participant-data administration screen.
+
+Any development interface must be explicitly labelled:
+
+`Synthetic participant simulator — no customer data`
+
+## 6. Registration integration
+
+Implement an idempotent internal registration operation.
+
+Required behavior:
+
+1. Validate the occurrence.
+2. Validate that the participant is synthetic.
+3. Validate the requested transition.
+4. Persist the registration source fact.
+5. Immediately suppress future recruitment communications for that occurrence.
+6. Recalculate future reminder obligations where applicable.
+7. Preserve already-executed recruitment history.
+8. Write the audit record in the same transaction.
+9. Invoke the Phase 2B-2 orchestration service.
+10. Persist the resulting immutable simulation snapshot.
+
+Requirements:
+
+* Duplicate registration events must not create duplicate participants, registrations, suppressions, audits or snapshots.
+* Registration suppression must be effective before any simulated provider handoff.
+* Suppressed recruitment communications remain visible with reason and timestamp.
+* Registration must not suppress valid registrant reminders unless the canonical standard requires it.
+* Registration changes only the relevant occurrence.
+* Cross-occurrence suppression is prohibited unless explicitly required by a governed campaign exclusion.
+
+## 7. Waitlist integration
+
+Implement the canonical waitlist behavior using the existing model where possible.
+
+Requirements:
+
+* Waitlisting remains distinct from confirmed registration.
+* Future recruitment treatment follows the canonical standard.
+* Waitlisted participants must not receive communications reserved for confirmed registrants unless authorized.
+* Promotion from waitlist to registration is atomic and idempotent.
+* Promotion updates suppression and reminder obligations.
+* A full or closed occurrence must not silently convert a waitlisted participant to registered.
+* Historical waitlist status changes remain auditable.
+
+Do not invent automated capacity-management rules if they are not already authorized.
+
+## 8. Participant cancellation
+
+Implement participant registration cancellation separately from event cancellation.
+
+Requirements:
+
+* Preserve the original registration record and cancellation history.
+* Recalculate future reminders and follow-up obligations according to the canonical standard.
+* Do not automatically return the person to recruitment.
+* Do not assume cancellation means absence.
+* Do not delete executed communications.
+* Do not erase the original registration timestamp.
+* Repeated cancellation requests must be idempotent.
+* Any later re-registration must be an explicit valid transition with its own audit evidence.
+
+If the canonical documentation does not settle a downstream communication path, fail closed and report the unresolved path rather than inventing behavior.
+
+## 9. Event cancellation and rescheduling
+
+Implement the internal effects of occurrence cancellation and rescheduling.
+
+For cancellation:
+
+* stop future recruitment and reminder obligations;
+* preserve executed communications;
+* preserve participant records and history;
+* mark affected future communications suppressed or cancelled with explicit reasons;
+* prevent attendance classification for an event that did not occur;
+* trigger no external notifications in this increment.
+
+For rescheduling:
+
+* preserve the occurrence identity unless the existing authoritative model requires a new occurrence;
+* recalculate future obligations using the canonical time-zone rules;
+* preserve prior schedules and changes in audit history;
+* identify communications that are now overdue, invalid or require review;
+* do not silently move an already-executed communication;
+* maintain idempotency.
+
+Do not generate or send customer-facing cancellation or rescheduling messages.
+
+## 10. Attendance integration
+
+Implement a synthetic attendance import and reconciliation contract.
+
+Every attendance record must be keyed to:
+
+* participant;
+* webinar activity;
+* webinar occurrence;
+* authoritative synthetic source event;
+* source reference;
+* observed timestamp;
+* reconciliation timestamp;
+* current attendance classification.
+
+Requirements:
+
+* Attendance remains per registrant.
+* Aggregate event attendance cannot substitute for participant attendance.
+* Duplicate source events are idempotent.
+* Conflicting events remain visible and require deterministic reconciliation.
+* Corrections create audit history rather than overwriting prior evidence silently.
+* Attendance cannot be established from opens, clicks, page views or email delivery.
+* A participant may remain attendance-unknown.
+* Reconciliation must distinguish missing source data from an explicit absence result.
+* Attendance changes invoke a new evaluation and immutable simulation snapshot.
+
+Do not build a live ON24 import.
+
+## 11. Follow-up variants
+
+Map participant state to the canonical follow-up obligation:
+
+* attended;
+* absent;
+* attendance unknown;
+* cancelled or otherwise ineligible;
+* internal/test exclusion.
+
+Requirements:
+
+* Neutral follow-up is distinct from attended and absent follow-up.
+* Neutral follow-up may be selected only after the authorized attendance-reconciliation period.
+* Development placeholder content cannot satisfy live content approval.
+* Ineligible or cancelled participants must not be placed into a follow-up path merely because the event completed.
+* Variant selection creates a plan or obligation, not proof of execution.
+* No follow-up is sent in this increment.
+
+## 12. Suppression service
+
+Create or extend one authoritative suppression decision service.
+
+It must evaluate, at minimum:
+
+* confirmed registration;
+* waitlist state;
+* participant cancellation;
+* event cancellation;
+* internal/test exclusion;
+* governed campaign exclusion when a valid observation exists;
+* communication cancellation;
+* previously executed communication;
+* duplicate communication;
+* occurrence mismatch;
+* invalid participant state.
+
+The suppression result must include:
+
+* allowed or suppressed;
+* exact reason code;
+* human-readable explanation;
+* affected participant;
+* occurrence;
+* communication;
+* evaluated timestamp;
+* source references;
+* governed-observation provenance where applicable;
+* release fingerprint;
+* simulation-only status.
+
+Requirements:
+
+* Suppression is evaluated before provider handoff.
+* No caller can bypass a non-bypassable exclusion.
+* Manual free text cannot override suppression.
+* Unknown or invalid states fail closed.
+* Suppressed communications remain visible.
+* Already-executed history remains unchanged.
+* Repeated evaluation is deterministic.
+* The service supports whole-population pagination without partial-result ambiguity.
+
+Do not create a provider handoff in this phase.
+
+## 13. Communication-obligation updates
+
+When participant or event state changes, update only future communication obligations.
+
+Requirements:
+
+* Preserve historical planned and executed records.
+* Record why a future obligation changed.
+* Distinguish suppressed, cancelled, obsolete and rescheduled.
+* Do not convert planned activity into execution evidence.
+* Do not erase the original schedule.
+* Maintain stable communication identifiers.
+* Apply updates transactionally with the source-state change and audit event.
+* Protect against concurrent registration, cancellation and attendance updates.
+
+## 14. Phase 2B-2 orchestration integration
+
+After a successful state transition:
+
+* assemble fresh canonical input;
+* invoke all applicable evaluators through the single Phase 2B-2 orchestration boundary;
+* apply canonical exception resolution;
+* calculate readiness and completion;
+* preserve missing Foundation observations;
+* generate a new input fingerprint where inputs changed;
+* persist an immutable occurrence-scoped simulation snapshot;
+* return request-local diagnostics;
+* keep operational status `simulation-only`.
+
+Do not invoke individual evaluators directly from routes, UI components or lifecycle services.
+
+## 15. Development simulator
+
+Add a narrowly scoped development simulator for:
+
+* create synthetic participant;
+* register;
+* place on waitlist;
+* promote from waitlist;
+* cancel registration;
+* cancel or reschedule a synthetic occurrence;
+* record attended;
+* record absent;
+* leave attendance unknown;
+* reconcile conflicting attendance;
+* inspect suppression decisions;
+* inspect planned follow-up variant;
+* rerun the simulation.
+
+UX requirements:
+
+* clearly identify synthetic data;
+* use controlled choices rather than unrestricted text where possible;
+* show current state and valid next actions;
+* show prohibited transitions with explanations;
+* show before-and-after communication obligations;
+* show blockers, warnings and unavailable Foundation observations;
+* preserve unsaved drafts when a concurrency conflict occurs;
+* never use operational approval or readiness language.
+
+Do not redesign the broader application.
+
+## 16. Authorization boundary
+
+Open-development mode may permit synthetic lifecycle simulations.
+
+Restricted mode must preserve its existing controls.
+
+Neither mode may treat an unverified development actor as:
+
+* an authenticated customer-data operator;
+* a real evidence submitter;
+* an operational exception requester;
+* an exception approver;
+* a publisher;
+* a sender.
+
+All operational endpoints remain absent or blocked.
+
+## 17. Schema and migration policy
+
+Reuse existing application and Phase 2B-1 persistence tables wherever possible.
+
+Do not add a parallel participant, registration, attendance or suppression model.
+
+If an additive migration is required:
+
+* demonstrate the exact missing persistence requirement;
+* confirm it was assigned to Phase 2B-3 by the accepted assessment;
+* create only migration `0025`;
+* do not modify migrations `0001–0024`;
+* include required uniqueness constraints, indexes, foreign keys and transition checks;
+* preserve existing data through upgrade testing;
+* apply it only to disposable and isolated synthetic databases;
+* do not use `db push`.
+
+If the schema gap materially contradicts the Phase 2B-0 assessment, stop and report before changing it.
+
+## 18. Required tests
+
+Add tests covering:
+
+* every valid lifecycle transition;
+* every prohibited transition;
+* duplicate registration;
+* waitlist promotion;
+* repeated cancellation;
+* explicit re-registration;
+* event cancellation versus participant cancellation;
+* rescheduling across time zones and DST;
+* per-registrant attendance;
+* attendance unknown;
+* conflicting attendance observations;
+* attendance correction history;
+* attended, absent and neutral follow-up selection;
+* internal/test exclusion;
+* registration suppression;
+* governed exclusion when present;
+* missing governed observation;
+* suppression before simulated handoff;
+* immutable executed history;
+* future-obligation recalculation;
+* transaction rollback;
+* optimistic concurrency;
+* idempotent retries;
+* duplicate audit prevention;
+* whole-population pagination;
+* group isolation;
+* synthetic-data enforcement;
+* production-data rejection;
+* Phase 2B-2 orchestration invocation;
+* immutable simulation snapshots;
+* stable and changed fingerprints;
+* simulation-only status;
+* legacy-session isolation.
+
+## 19. Verification gate
+
+Run fresh:
+
+1. Participant-lifecycle tests.
+2. Registration and waitlist tests.
+3. Cancellation and rescheduling tests.
+4. Attendance and reconciliation tests.
+5. Suppression tests.
+6. Follow-up obligation tests.
+7. Concurrency, transaction and idempotency tests.
+8. Synthetic-data boundary tests.
+9. Phase 2B-2 adapter and orchestration tests.
+10. Rule-ID drift check.
+11. Nonincremental typechecks.
+12. Full catalog and 106-evaluator suite.
+13. Exception and readiness suites.
+14. Scheduling and audience suites.
+15. Completion suite.
+16. Complete API suite.
+17. Frontend regression suite.
+18. Fresh disposable-database migration test.
+19. Upgrade-preservation test.
+20. Database shutdown and cleanup verification.
+21. All five canonical hash checks.
+22. Temporal pin check.
+23. Browser verification of the synthetic participant simulator.
+
+Report separately:
+
+* test files;
+* top-level records;
+* nested subtests;
+* leaf tests;
+* grouping records;
+* failures;
+* skips;
+* cancellations;
+* TODOs;
+* setup and teardown failures;
+* migration results;
+* preserved-table results;
+* cleanup results;
+* browser scenarios.
+
+## 20. Evidence
+
+Create:
+
+`docs/verification/phase-2b-3-participant-lifecycle-and-suppression.md`
+
+Include:
+
+* starting and ending commits;
+* changed-file inventory;
+* source-of-truth matrix;
+* lifecycle state and transition matrix;
+* registration behavior;
+* waitlist behavior;
+* participant cancellation behavior;
+* event cancellation and rescheduling behavior;
+* attendance reconciliation contract;
+* follow-up variant mapping;
+* suppression decision contract;
+* transactional boundaries;
+* idempotency and concurrency evidence;
+* synthetic-data safeguards;
+* schema and migration evidence;
+* browser evidence;
+* complete verification results;
+* remaining blockers and later-phase dependencies.
+
+## 21. Completion rule
+
+Phase 2B-3 is complete only when:
+
+* registration immediately suppresses future recruitment;
+* participant, event and attendance states remain distinct;
+* attendance remains per registrant;
+* cancellation and rescheduling preserve history;
+* future obligations update deterministically;
+* suppression occurs before any simulated provider handoff;
+* lifecycle changes invoke the canonical orchestration service;
+* resulting snapshots remain immutable and simulation-only;
+* only synthetic data is accepted;
+* existing and legacy sessions remain unchanged;
+* every verification gate passes;
+* no Foundation connector, operational approval API, customer-data integration, external sending, publishing or deployment was introduced.
+
+Suggested commit title:
+
+`Integrate webinar participant lifecycle simulation`
+
+Stop after reporting. Do not begin Phase 2B-4.
+
+---
