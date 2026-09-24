@@ -41,12 +41,13 @@ test("actual open app allows synthetic planning but not operational authority", 
     assert.equal((await fetch(`${base}/campaigns/${campaign.id}`)).status, 200);
     const ownership = await (await fetch(`${base}/development/ownership/campaigns/${campaign.id}`)).json();
     assert.equal(ownership.unverified, true);
-    const changed = await send(`/development/ownership/campaigns/${campaign.id}`, { groupId: group.id, accountableOwnerId: ownership.ownership.accountableOwnerId }, "PUT");
+    const changed = await send(`/development/ownership/campaigns/${campaign.id}`, { groupId: group.id, accountableOwnerId: ownership.ownership.accountableOwnerId, rowVersion: ownership.ownership.rowVersion }, "PUT");
     assert.equal(changed.status, 200, await changed.clone().text());
     assert.equal((await changed.json()).ownership.createdBy, ownership.ownership.createdBy);
     const activity = campaign.map.activities?.[0] ?? campaign.map.nodes?.[0];
     assert.ok(activity, "Created campaign has synthetic planning activities");
-    const activityChanged = await send(`/development/ownership/activities/${activity.id}`, { groupId: group.id, accountableOwnerId: ownership.ownership.accountableOwnerId }, "PUT");
+    const activityOwnership = await (await fetch(`${base}/development/ownership/activities/${activity.id}`)).json();
+    const activityChanged = await send(`/development/ownership/activities/${activity.id}`, { groupId: group.id, accountableOwnerId: ownership.ownership.accountableOwnerId, rowVersion: activityOwnership.ownership.rowVersion }, "PUT");
     assert.equal(activityChanged.status, 200, await activityChanged.clone().text());
     const calendar = await (await fetch(`${base}/development/calendar?groupId=${group.id}`)).json();
     assert.equal(calendar.entries.length, 1);
@@ -54,6 +55,23 @@ test("actual open app allows synthetic planning but not operational authority", 
     assert.equal(calendar.entries[0].unverified, true);
     assert.ok(Array.isArray(calendar.entries[0].dates));
     assert.equal(new Set(calendar.entries.map((entry: {id: string}) => entry.id)).size, calendar.entries.length);
+    const pagedIds: string[] = [];
+    let cursor: string | null = null;
+    do {
+      const page = await (await fetch(`${base}/development/calendar?campaignId=${campaign.id}&limit=1${cursor ? `&after=${cursor}` : ""}`)).json();
+      assert.equal(page.returned, page.entries.length);
+      assert.equal(page.total, campaign.map.activities.length);
+      pagedIds.push(...page.entries.map((entry: { id: string }) => entry.id));
+      cursor = page.nextCursor;
+      assert.equal(page.hasMore, cursor !== null);
+    } while (cursor);
+    assert.deepEqual(pagedIds, campaign.map.activities.map((entry: { id: string }) => entry.id).sort());
+    const retry = await send(`/development/ownership/campaigns/${campaign.id}`, { groupId: group.id, accountableOwnerId: ownership.ownership.accountableOwnerId, rowVersion: ownership.ownership.rowVersion }, "PUT");
+    assert.equal(retry.status, 200);
+    const audits = await pool.query("SELECT count(*)::int AS count FROM organization_audit WHERE campaign_id=$1 AND activity_id IS NULL AND action='development_ownership_updated'", [campaign.id]);
+    assert.equal(audits.rows[0].count, 1);
+    const stale = await send(`/development/ownership/campaigns/${campaign.id}`, { groupId: ownership.ownership.groupId, accountableOwnerId: ownership.ownership.accountableOwnerId, rowVersion: ownership.ownership.rowVersion }, "PUT");
+    assert.equal(stale.status, 409);
     await assert.rejects(createOrganizationService().authorize({
       userId: ownership.ownership.createdBy, issuer: "unverified-development", subject: "browser-label",
     }, "read", { type: "campaign", id: campaign.id }));
@@ -64,6 +82,21 @@ test("actual open app allows synthetic planning but not operational authority", 
     const simulation = await (await send("/development/simulations", {})).json();
     assert.equal(simulation.authoritative, false);
     assert.equal(simulation.operationalReadiness, false);
+    const branchId = randomUUID();
+    const participantId = randomUUID();
+    await pool.query("INSERT INTO audiences(id,campaign_id,name,region) VALUES($1,$2,'Synthetic contamination probe','Global')", [branchId, campaign.id]);
+    try {
+      await pool.query("INSERT INTO webinar_people(id,campaign_id,audience_branch_id,name,is_synthetic) VALUES($1,$2,$3,$4,true)", [participantId, campaign.id, branchId, `Contamination probe ${participantId}`]);
+      await assert.rejects(assertPlanningDatabaseIsolation(), /participant\/customer/);
+      assert.equal((await fetch(`${base}/development/calendar`)).status, 503);
+    } finally {
+      try {
+        await pool.query("DELETE FROM webinar_people WHERE id=$1 AND campaign_id=$2", [participantId, campaign.id]);
+      } finally {
+        await pool.query("DELETE FROM audiences WHERE id=$1 AND campaign_id=$2", [branchId, campaign.id]);
+      }
+    }
+    await assertPlanningDatabaseIsolation();
     // Trusted disposable-db test fixture deliberately models a manual import
     // bypassing insert triggers; the HTTP app must fail closed afterward.
     const importedId = randomUUID();

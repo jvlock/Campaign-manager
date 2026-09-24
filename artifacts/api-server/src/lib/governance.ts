@@ -17,7 +17,8 @@ import {
   taxonomyVersions,
   communications,
 } from "@workspace/db";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { pagination } from "./pagination";
 import {
   GovernanceQuarantineError,
   PROVISIONAL_GOVERNANCE,
@@ -392,8 +393,9 @@ export async function listGovernanceAudit(filters: {
   entityType?: unknown;
   entityId?: unknown;
   limit?: unknown;
+  offset?: unknown;
 }) {
-  const conditions = [];
+  const conditions: SQL[] = [];
   if (filters.entityType !== undefined) {
     if (typeof filters.entityType !== "string" || !filters.entityType.trim()) {
       throw new GovernanceError("entityType must be a non-empty string");
@@ -403,22 +405,23 @@ export async function listGovernanceAudit(filters: {
   if (filters.entityId !== undefined) {
     conditions.push(eq(governanceAuditEvents.entityId, uuid(filters.entityId, "entityId")));
   }
-  const parsedLimit = filters.limit === undefined ? 100 : Number(filters.limit);
-  if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > 500) {
-    throw new GovernanceError("limit must be an integer between 1 and 500");
-  }
-  const rows = await db
+  const page = pagination(filters);
+  return db.transaction(async tx => {
+  const rows = await tx
     .select()
     .from(governanceAuditEvents)
     .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(desc(governanceAuditEvents.createdAt))
-    .limit(parsedLimit);
-  return rows.map((row) => ({
+    .orderBy(governanceAuditEvents.id)
+    .limit(page.limit).offset(page.offset);
+  const [count] = await tx.select({ total: sql<number>`count(*)::int` }).from(governanceAuditEvents)
+    .where(conditions.length ? and(...conditions) : undefined);
+  return { page, total: count.total, items: rows.map((row) => ({
     ...row,
     before: row.before ?? null,
     after: row.after ?? null,
     actorProvenance: (row.metadata as Record<string, unknown> | null)?.actorProvenance ?? "declared",
-  }));
+  })) };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 
 export async function listTerms(input: { versionId?: unknown; version?: unknown }) {

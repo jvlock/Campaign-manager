@@ -69,8 +69,12 @@ function body(req: Request) {
 
 router.get("/governance/audit", async (req, res, next) => {
   try {
-    res.json(await listGovernanceAudit(req.query));
+    const result = await listGovernanceAudit(req.query);
+    const nextOffset = result.total > result.page.offset + result.page.limit ? result.page.offset + result.page.limit : null;
+    res.setHeader("X-Pagination", JSON.stringify({ total: result.total, returned: result.items.length, nextOffset, hasMore: nextOffset !== null }));
+    res.json(result.items);
   } catch (error) {
+    if ((error as { status?: number }).status === 400) { res.status(400).json({ error: (error as Error).message }); return; }
     errorResponse(error, res, next);
   }
 });

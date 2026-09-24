@@ -35,9 +35,14 @@ paths:
   /development/groups:
     get:
       operationId: getDevelopmentGroups
+      parameters:
+        - {$ref: "#/components/parameters/PageLimit"}
+        - {$ref: "#/components/parameters/PageOffset"}
       responses:
         "200":
           description: Development teams, groups and unverified profile references; no memberships.
+          headers:
+            X-Pagination: {$ref: "#/components/headers/PopulationPage"}
           content:
             application/json:
               schema: {type: object, additionalProperties: true}
@@ -84,12 +89,25 @@ paths:
       operationId: getDevelopmentCalendar
       parameters:
         - {name: groupId, in: query, schema: {type: string, format: uuid}}
+        - {name: campaignId, in: query, schema: {type: string, format: uuid}}
+        - {name: after, in: query, schema: {type: string, format: uuid}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 100}}
       responses:
         "200":
-          description: Deduplicated activity summaries with date, time zone, scheduled dates, status and unverified accountable owner.
+          description: Stable activity-ID keyset page, filtered before counting. Live population; refresh from the first page to include newly inserted IDs preceding the cursor.
           content:
             application/json:
-              schema: {type: object, additionalProperties: true}
+              schema:
+                type: object
+                required: [entries, total, returned, hasMore, nextCursor]
+                properties:
+                  entries: {type: array, items: {type: object, additionalProperties: true}}
+                  total: {type: integer}
+                  returned: {type: integer}
+                  hasMore: {type: boolean}
+                  nextCursor: {type: [string, "null"]}
+                  unverified: {type: boolean}
+                  authoritative: {type: boolean}
   /development/simulations:
     post:
       operationId: simulateDevelopmentWorkflow
@@ -211,11 +229,16 @@ paths:
   /organization/campaigns:
     get:
       operationId: listOrganizationCampaigns
+      parameters:
+        - {$ref: "#/components/parameters/PageLimit"}
+        - {$ref: "#/components/parameters/PageOffset"}
       tags: [organization]
       description: Bounded authorized campaign summaries only; no legacy nested campaign detail or child records.
       responses:
         "200":
           description: Campaign summaries visible to the verified organizational principal
+          headers:
+            X-Pagination: {$ref: "#/components/headers/PopulationPage"}
           content:
             application/json:
               schema:
@@ -251,12 +274,17 @@ paths:
   /campaigns:
     get:
       operationId: listCampaigns
+      parameters:
+        - {$ref: "#/components/parameters/PageLimit"}
+        - {$ref: "#/components/parameters/PageOffset"}
       tags: [campaigns]
       deprecated: true
       description: Disabled legacy endpoint. Use bounded organizational campaign reads once authorized and provisioned.
       responses:
         "200":
           description: Campaigns
+          headers:
+            X-Pagination: {$ref: "#/components/headers/PopulationPage"}
           content:
             application/json:
               schema:
@@ -1017,10 +1045,15 @@ paths:
   /portfolio:
     get:
       operationId: getPortfolio
+      parameters:
+        - {$ref: "#/components/parameters/PageLimit"}
+        - {$ref: "#/components/parameters/PageOffset"}
       tags: [portfolio]
       responses:
         "200":
           description: Portfolio
+          headers:
+            X-Pagination: {$ref: "#/components/headers/PopulationPage"}
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Portfolio"}
@@ -1051,6 +1084,7 @@ paths:
       operationId: listGovernanceAudit
       tags: [governance]
       parameters:
+        - {$ref: "#/components/parameters/PageOffset"}
         - name: entityType
           in: query
           schema: {type: string}
@@ -1063,6 +1097,8 @@ paths:
       responses:
         "200":
           description: Governance audit events
+          headers:
+            X-Pagination: {$ref: "#/components/headers/PopulationPage"}
           content:
             application/json:
               schema:
@@ -1340,7 +1376,19 @@ paths:
             application/json:
               schema: {$ref: "#/components/schemas/AdapterStatus"}
 components:
+  headers:
+    PopulationPage:
+      description: 'JSON object with total (authorized scoped records), returned (this response), hasMore and nextOffset (null at end). Stable ID ordered live pages; restart on population changes. For composite objects each top-level collection receives the same limit/offset independently, totals/returned sum the collections. Generated client consumes all pages, rejects partial failures, and deduplicates by ID.'
+      schema: {type: string}
   parameters:
+    PageLimit:
+      name: limit
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 500, default: 100}
+    PageOffset:
+      name: offset
+      in: query
+      schema: {type: integer, minimum: 0, default: 0}
     Id:
       name: id
       in: path
@@ -1456,8 +1504,9 @@ components:
     DevelopmentOwnershipInput:
       type: object
       additionalProperties: false
-      required: [groupId, accountableOwnerId]
+      required: [groupId, accountableOwnerId, rowVersion]
       properties:
+        rowVersion: {type: integer, minimum: 1}
         groupId: {type: string, format: uuid}
         accountableOwnerId: {type: string, format: uuid}
     DevelopmentSimulationInput:

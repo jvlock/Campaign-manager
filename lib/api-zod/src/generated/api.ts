@@ -16,6 +16,19 @@ export const GetDevelopmentStatusResponse = zod.object({
 })
 
 
+export const getDevelopmentGroupsQueryLimitDefault = 100;
+export const getDevelopmentGroupsQueryLimitMax = 500;
+
+export const getDevelopmentGroupsQueryOffsetDefault = 0;
+export const getDevelopmentGroupsQueryOffsetMin = 0;
+
+
+
+export const GetDevelopmentGroupsQueryParams = zod.object({
+  "limit": zod.coerce.number().int().min(1).max(getDevelopmentGroupsQueryLimitMax).default(getDevelopmentGroupsQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(getDevelopmentGroupsQueryOffsetMin).default(getDevelopmentGroupsQueryOffsetDefault)
+})
+
 export const GetDevelopmentGroupsResponse = zod.record(zod.string(), zod.unknown())
 
 
@@ -46,7 +59,11 @@ export const UpdateDevelopmentOwnershipParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+
+
+
 export const UpdateDevelopmentOwnershipBody = zod.object({
+  "rowVersion": zod.number().int().min(1),
   "groupId": zod.string().uuid(),
   "accountableOwnerId": zod.string().uuid()
 })
@@ -54,11 +71,27 @@ export const UpdateDevelopmentOwnershipBody = zod.object({
 export const UpdateDevelopmentOwnershipResponse = zod.record(zod.string(), zod.unknown())
 
 
+export const getDevelopmentCalendarQueryLimitDefault = 100;
+export const getDevelopmentCalendarQueryLimitMax = 200;
+
+
+
 export const GetDevelopmentCalendarQueryParams = zod.object({
-  "groupId": zod.coerce.string().uuid().optional()
+  "groupId": zod.coerce.string().uuid().optional(),
+  "campaignId": zod.coerce.string().uuid().optional(),
+  "after": zod.coerce.string().uuid().optional(),
+  "limit": zod.coerce.number().int().min(1).max(getDevelopmentCalendarQueryLimitMax).default(getDevelopmentCalendarQueryLimitDefault)
 })
 
-export const GetDevelopmentCalendarResponse = zod.record(zod.string(), zod.unknown())
+export const GetDevelopmentCalendarResponse = zod.object({
+  "entries": zod.array(zod.record(zod.string(), zod.unknown())),
+  "total": zod.number().int(),
+  "returned": zod.number().int(),
+  "hasMore": zod.boolean(),
+  "nextCursor": zod.string().nullable(),
+  "unverified": zod.boolean().optional(),
+  "authoritative": zod.boolean().optional()
+})
 
 
 export const simulateDevelopmentWorkflowBodyLabelMax = 120;
@@ -273,6 +306,19 @@ export const HealthCheckResponse = zod.object({
 /**
  * Bounded authorized campaign summaries only; no legacy nested campaign detail or child records.
  */
+export const listOrganizationCampaignsQueryLimitDefault = 100;
+export const listOrganizationCampaignsQueryLimitMax = 500;
+
+export const listOrganizationCampaignsQueryOffsetDefault = 0;
+export const listOrganizationCampaignsQueryOffsetMin = 0;
+
+
+
+export const ListOrganizationCampaignsQueryParams = zod.object({
+  "limit": zod.coerce.number().int().min(1).max(listOrganizationCampaignsQueryLimitMax).default(listOrganizationCampaignsQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(listOrganizationCampaignsQueryOffsetMin).default(listOrganizationCampaignsQueryOffsetDefault)
+})
+
 
 
 
@@ -349,6 +395,19 @@ export const GetOrganizationCampaignResponse = zod.object({
  * Disabled legacy endpoint. Use bounded organizational campaign reads once authorized and provisioned.
  * @deprecated
  */
+export const listCampaignsQueryLimitDefault = 100;
+export const listCampaignsQueryLimitMax = 500;
+
+export const listCampaignsQueryOffsetDefault = 0;
+export const listCampaignsQueryOffsetMin = 0;
+
+
+
+export const ListCampaignsQueryParams = zod.object({
+  "limit": zod.coerce.number().int().min(1).max(listCampaignsQueryLimitMax).default(listCampaignsQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(listCampaignsQueryOffsetMin).default(listCampaignsQueryOffsetDefault)
+})
+
 
 
 
@@ -3388,6 +3447,19 @@ export const ExportCampaignParams = zod.object({
 export const ExportCampaignResponse = zod.string()
 
 
+export const getPortfolioQueryLimitDefault = 100;
+export const getPortfolioQueryLimitMax = 500;
+
+export const getPortfolioQueryOffsetDefault = 0;
+export const getPortfolioQueryOffsetMin = 0;
+
+
+
+export const GetPortfolioQueryParams = zod.object({
+  "limit": zod.coerce.number().int().min(1).max(getPortfolioQueryLimitMax).default(getPortfolioQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(getPortfolioQueryOffsetMin).default(getPortfolioQueryOffsetDefault)
+})
+
 
 
 
@@ -3470,11 +3542,15 @@ export const GetGovernanceResponse = zod.object({
 })
 
 
+export const listGovernanceAuditQueryOffsetDefault = 0;
+export const listGovernanceAuditQueryOffsetMin = 0;
+
 export const listGovernanceAuditQueryLimitMax = 500;
 
 
 
 export const ListGovernanceAuditQueryParams = zod.object({
+  "offset": zod.coerce.number().int().min(listGovernanceAuditQueryOffsetMin).default(listGovernanceAuditQueryOffsetDefault),
   "entityType": zod.coerce.string().optional(),
   "entityId": zod.coerce.string().uuid().optional(),
   "limit": zod.coerce.number().int().min(1).max(listGovernanceAuditQueryLimitMax).optional()

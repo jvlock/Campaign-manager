@@ -151,5 +151,5 @@ test("concurrent verified identities stay isolated and membership removal invali
   assert.deepEqual((await request("alice", "/organization/campaigns")).body, []);
   assert.equal((await request("alice", `/organization/campaigns/${ids.ca}`)).status, 404);
   await pool.query("UPDATE organization_memberships SET status='revoked', revoked_at=now() WHERE id=$1", [ids.ml]);
-  assert.deepEqual(await createOrganizationService().calendarSummary(principal(ids.leader)), []);
+  assert.deepEqual((await createOrganizationService().calendarSummary(principal(ids.leader))).items, []);
 });

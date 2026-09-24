@@ -7,6 +7,8 @@
  */
 
 export interface DevelopmentOwnershipInput {
+  /** @minimum 1 */
+  rowVersion: number;
   groupId: string;
   accountableOwnerId: string;
 }

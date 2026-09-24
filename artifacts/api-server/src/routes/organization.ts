@@ -21,12 +21,12 @@ async function campaignSummary(principal: VerifiedPrincipal, id: string) {
   });
 }
 
-router.get("/organization/campaigns", async (_req, res, next) => {
+router.get("/organization/campaigns", async (req, res, next) => {
   try {
     const principal = res.locals.organizationPrincipal as VerifiedPrincipal;
-    const ids = await service.visibleIds(principal, "campaign");
+    const page = await service.visibleIds(principal, "campaign", "read", req.query);
     const rows = [];
-    for (const id of ids) {
+    for (const id of page.items) {
       try {
         const row = await campaignSummary(principal, id);
         if (row) rows.push(row);
@@ -35,6 +35,8 @@ router.get("/organization/campaigns", async (_req, res, next) => {
         if (!(error instanceof OrganizationAccessError)) throw error;
       }
     }
+    if (rows.length !== page.returned) { res.status(409).json({ error: "Authorization changed while reading the page; retry from the first page." }); return; }
+    res.setHeader("X-Pagination", JSON.stringify({ total: page.total, returned: rows.length, nextOffset: page.nextOffset, hasMore: page.nextOffset !== null }));
     res.json(rows);
   } catch (error) { next(error); }
 });
@@ -56,6 +58,7 @@ router.use((_req, res) => {
   res.status(403).json({ error: { code: "scoped_operation_unavailable", message: "This operation is not enabled by the organizational authorization foundation." } });
 });
 router.use((error: unknown, _req: import("express").Request, res: import("express").Response, _next: import("express").NextFunction) => {
+  if ((error as { status?: number }).status === 400) { res.status(400).json({ error: (error as Error).message }); return; }
   if (error instanceof OrganizationAccessError) {
     res.status(404).json({ error: { code: "record_unavailable", message: "Record unavailable." } });
     return;

@@ -1,4 +1,5 @@
 import { pool } from "@workspace/db";
+import { pagination } from "../pagination";
 import {
   deny, isAuthorized, OrganizationAccessError,
   type OrganizationAction, type OrganizationRole, type PolicyGrant, type VerifiedPrincipal,
@@ -335,35 +336,51 @@ export function createOrganizationService() {
       work: (client: Client) => Promise<T>, requesterUserId?: string) {
       return transaction(async c => { await check(c, principal, action, resource, requesterUserId); return work(c); });
     },
-    visibleIds(principal: VerifiedPrincipal | null, type: "campaign" | "activity", action: OrganizationAction = "read") {
+    visibleIds(principal: VerifiedPrincipal | null, type: "campaign" | "activity", action: OrganizationAction = "read", input: { limit?: unknown; offset?: unknown } = {}) {
+      const page = pagination(input);
       return transaction(async c => {
         await identity(c, principal);
         const table = type === "campaign" ? "campaign_ownership" : "activity_ownership";
         const key = type === "campaign" ? "campaign_id" : "activity_id";
-        const rows = (await c.query(`SELECT ${key} AS id FROM ${table} ORDER BY ${key}`)).rows;
         const ids: string[] = [];
-        for (const row of rows) {
-          try { await check(c, principal, action, { type, id: row.id }); ids.push(row.id); }
-          catch (error) { if (!(error instanceof OrganizationAccessError)) throw error; }
+        let cursor: string | null = null;
+        let total = 0;
+        for (;;) {
+          const rows: { id: string }[] = (await c.query(`SELECT ${key} AS id FROM ${table} WHERE ($1::uuid IS NULL OR ${key}>$1) ORDER BY ${key} LIMIT 200`, [cursor])).rows;
+          if (!rows.length) break;
+          for (const row of rows) {
+            try { await check(c, principal, action, { type, id: row.id }); }
+            catch (error) { if (error instanceof OrganizationAccessError) continue; throw error; }
+            if (total >= page.offset && ids.length < page.limit) ids.push(row.id);
+            total++;
+          }
+          cursor = rows[rows.length - 1].id;
         }
-        return ids;
+        return { items: ids, total, returned: ids.length, nextOffset: total > page.offset + page.limit ? page.offset + page.limit : null };
       });
     },
-    calendarSummary(principal: VerifiedPrincipal | null): Promise<CalendarSummary[]> {
+    calendarSummary(principal: VerifiedPrincipal | null, input: { limit?: unknown; offset?: unknown; groupId?: string } = {}) {
+      const page = pagination(input);
       return transaction(async c => {
         await identity(c, principal);
-        // No LIMIT: the complete stable population is authorized before projection/counting.
-        const rows = (await c.query(
+        const summaries: CalendarSummary[] = [];
+        let cursor: string | null = null;
+        let total = 0;
+        for (;;) {
+        const rows: { id: string; name: string; type: string; status: string; group_id: string; accountable_owner_id: string; group_name: string; owner_name: string }[] = (await c.query(
           `SELECT a.id,a.name,a.type,a.status,o.group_id,o.accountable_owner_id,
            u.name AS group_name,p.name AS owner_name FROM activities a
            JOIN activity_ownership o ON o.activity_id=a.id
            JOIN organization_units u ON u.id=o.group_id JOIN users p ON p.id=o.accountable_owner_id
-           WHERE o.calendar_visibility='summary' ORDER BY a.id`,
+           WHERE o.calendar_visibility='summary' AND ($1::uuid IS NULL OR a.id>$1)
+           AND ($2::uuid IS NULL OR o.group_id=$2) ORDER BY a.id LIMIT 200`, [cursor, input.groupId ?? null],
         )).rows;
-        const summaries: CalendarSummary[] = [];
+        if (!rows.length) break;
         for (const row of rows) {
           try { await check(c, principal, "calendar_summary", { type: "activity", id: row.id }); }
           catch (error) { if (error instanceof OrganizationAccessError) continue; throw error; }
+          total++;
+          if (total <= page.offset || summaries.length >= page.limit) continue;
           const dates = (await c.query(
             `SELECT id AS "occurrenceId",session_date::text AS date,start_time::text AS time,
              timezone,duration_minutes AS "durationMinutes" FROM webinar_sessions
@@ -373,7 +390,9 @@ export function createOrganizationService() {
             planningStatus: row.status, owningGroup: { id: row.group_id, name: row.group_name },
             accountableOwner: { id: row.accountable_owner_id, name: row.owner_name }, dates });
         }
-        return summaries;
+        cursor = rows[rows.length - 1].id;
+        }
+        return { items: summaries, total, returned: summaries.length, nextOffset: total > page.offset + page.limit ? page.offset + page.limit : null };
       });
     },
     createGroup(actor: VerifiedPrincipal, input: { parentId: string; name: string; accountableOwnerId: string; administratorUserId: string; verificationEvidence: string }) {

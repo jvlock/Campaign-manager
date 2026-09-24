@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGetCampaign, useListCampaigns, useGetDevelopmentGroups, useGetDevelopmentOwnership, useGetDevelopmentCalendar, useCreateDevelopmentGroup, useUpdateDevelopmentOwnership, useSimulateDevelopmentWorkflow } from '@workspace/api-client-react';
@@ -12,7 +12,7 @@ import { ProvisionalBadge } from '@/components/governance/ProvisionalNotice';
 interface Group { id: string; name: string; kind: string; parentId: string | null; accountableOwnerId: string | null }
 interface Groups { groups: Group[]; profiles: { id: string; name: string }[] }
 interface Entry { id: string; campaignId: string; groupId: string; title: string; date: string | null; timeZone: string | null; status: string; accountableOwnerId: string | null; dates?: { id: string; date: string | null; timeZone: string | null; status: string }[] }
-interface Ownership { groupId?: string; accountableOwnerId?: string | null; group_id?: string; accountable_owner_id?: string | null; creatorId?: string | null }
+interface Ownership { rowVersion: number; groupId?: string; accountableOwnerId?: string | null; group_id?: string; accountable_owner_id?: string | null; creatorId?: string | null }
 interface CreateUnit { name: string; kind: string; parentId: string; accountableOwnerId: string }
 const selectClass = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
 
@@ -30,10 +30,12 @@ export default function Development() {
   const calendarCampaignId = new URLSearchParams(search).get('campaignId') || '';
   const client = useQueryClient();
   const [groupFilter, setGroupFilter] = useState('');
+  const [calendarCursor, setCalendarCursor] = useState<string | undefined>();
+  useEffect(() => { setCalendarCursor(undefined); }, [calendarCampaignId]);
   const [campaignId, setCampaignId] = useState('');
   const [activityId, setActivityId] = useState('');
   const [notice, setNotice] = useState('');
-  const groups = useGetDevelopmentGroups({ query: { queryKey: ['development-groups'], select: data => data as unknown as Groups, refetchInterval: 30000 } });
+  const groups = useGetDevelopmentGroups(undefined, { query: { queryKey: ['development-groups'], select: data => data as unknown as Groups, refetchInterval: 30000 } });
   const campaigns = useListCampaigns();
   const campaign = useGetCampaign(campaignId, { query: { queryKey: ['/api/campaigns', campaignId], enabled: Boolean(campaignId) } });
   const type = activityId ? 'activities' : 'campaigns';
@@ -43,12 +45,12 @@ export default function Development() {
     select: data => data as unknown as { ownership: Ownership },
     enabled: Boolean(recordId), refetchInterval: 30000,
   } });
-  const calendar = useGetDevelopmentCalendar(groupFilter ? { groupId: groupFilter } : undefined, { query: {
-    queryKey: ['development-calendar', groupFilter],
-    select: data => data as unknown as { entries: Entry[] },
+  const calendar = useGetDevelopmentCalendar({ groupId: groupFilter || undefined, campaignId: calendarCampaignId || undefined, after: calendarCursor }, { query: {
+    queryKey: ['development-calendar', groupFilter, calendarCampaignId, calendarCursor],
+    select: data => data as unknown as { entries: Entry[]; total: number; returned: number; hasMore: boolean; nextCursor: string | null },
     refetchInterval: 30000,
   } });
-  const calendarEntries = calendar.data?.entries.filter(entry => !calendarCampaignId || entry.campaignId === calendarCampaignId);
+  const calendarEntries = calendar.data?.entries;
   const createForm = useForm<CreateUnit>({ defaultValues: { name: '', kind: 'group', parentId: '', accountableOwnerId: '' } });
   const ownerForm = useForm({ values: {
     groupId: ownership.data?.ownership.groupId ?? ownership.data?.ownership.group_id ?? '',
@@ -102,10 +104,11 @@ export default function Development() {
               </label>
               <p className="text-xs text-muted-foreground break-all">Stable record ID: {recordId}. Creator attribution is unverified and is not changed by this form. Accountable owner and owning group are separate planning fields.</p>
               {ownership.isPending ? <p>Loading ownership…</p> : ownership.data && <Form {...ownerForm}>
-                <form className="space-y-3" onSubmit={ownerForm.handleSubmit(data => update.mutate({ type, id: recordId, data }))}>
+                <form className="space-y-3" onSubmit={ownerForm.handleSubmit(data => update.mutate({ type, id: recordId, data: { ...data, rowVersion: ownership.data!.ownership.rowVersion } }))}>
                   <FormField control={ownerForm.control} name="groupId" rules={{ required: 'Choose an owning group' }} render={({ field }) => <FormItem><FormLabel>Owning group</FormLabel><FormControl><select {...field} className={selectClass}><option value="">Choose group</option>{groups.data?.groups.filter(g => g.kind === 'group').map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></FormControl><FormMessage /></FormItem>} />
                   <FormField control={ownerForm.control} name="accountableOwnerId" rules={{ required: 'Choose an accountable owner' }} render={({ field }) => <FormItem><FormLabel>Accountable owner — unverified</FormLabel><FormControl><select {...field} className={selectClass}><option value="">Choose profile</option>{groups.data?.profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></FormControl><FormMessage /></FormItem>} />
                   <Button disabled={update.isPending}>Save planning ownership</Button>
+                  {update.isError && <Button type="button" variant="outline" onClick={() => { update.reset(); void ownership.refetch(); }}>Reload ownership</Button>}
                 </form>
               </Form>}
               <div className="border-t pt-4 space-y-2">
@@ -121,7 +124,12 @@ export default function Development() {
         <CardHeader><CardTitle>Group and consolidated calendar</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           {calendarCampaignId && <p className="text-sm">Filtered to campaign: <strong>{campaigns.data?.find(c => c.id === calendarCampaignId)?.name || calendarCampaignId}</strong>. <Link className="text-primary underline" href="/development">Show all campaigns</Link></p>}
-          <label className="block max-w-md text-sm font-medium">Calendar scope<select className={`${selectClass} mt-2`} value={groupFilter} onChange={e => setGroupFilter(e.target.value)}><option value="">All development groups</option>{groups.data?.groups.filter(g => g.kind === 'group').map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></label>
+          <label className="block max-w-md text-sm font-medium">Calendar scope<select className={`${selectClass} mt-2`} value={groupFilter} onChange={e => { setGroupFilter(e.target.value); setCalendarCursor(undefined); }}><option value="">All development groups</option>{groups.data?.groups.filter(g => g.kind === 'group').map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></label>
+          {calendar.data && <div role="status" className="flex items-center gap-3 text-sm">
+            <span>{calendar.data.returned} on this page · {calendar.data.total} in scope · {calendarCursor || calendar.data.hasMore ? 'Partial population' : 'Complete population'}</span>
+            {calendarCursor && <Button variant="outline" onClick={() => setCalendarCursor(undefined)}>First page / refresh</Button>}
+            {calendar.data.hasMore && <Button variant="outline" onClick={() => setCalendarCursor(calendar.data!.nextCursor!)}>Next page</Button>}
+          </div>}
           <p className="text-sm text-muted-foreground">Source dates and source time zones are shown without browser-time-zone conversion. Status is planning status, not operational approval.</p>
           {calendar.isPending ? <p>Loading calendar…</p> : calendarEntries?.length === 0 ? <p>No activities in this calendar scope.</p> : <div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead><tr className="border-b"><th className="p-2">Activity</th><th className="p-2">Owning group</th><th className="p-2">Source date / timing</th><th className="p-2">Source time zone</th><th className="p-2">Planning status</th></tr></thead><tbody>{calendarEntries?.map(entry => <tr className="border-b align-top" key={entry.id}><td className="p-2"><Link className="text-primary underline" href={`/campaigns/${entry.campaignId}`}>{entry.title}</Link><div className="text-xs text-muted-foreground">{entry.id}</div></td><td className="p-2">{groupName(entry.groupId)}</td><td className="p-2">{entry.dates?.length ? entry.dates.map(date => <div key={date.id}>{date.date || 'Not scheduled'}</div>) : entry.date || 'Not scheduled'}</td><td className="p-2">{entry.dates?.length ? entry.dates.map(date => <div key={date.id}>{date.timeZone || 'Not specified'}</div>) : entry.timeZone || 'Not specified'}</td><td className="p-2">{entry.status}{entry.dates?.map(date => <div key={date.id}>{date.status}</div>)}<ProvisionalBadge className="ml-2" /></td></tr>)}</tbody></table></div>}
         </CardContent>

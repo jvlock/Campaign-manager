@@ -3,7 +3,7 @@ import { COMPLETE_OBLIGATIONS } from "../webinar-standard-readiness/types";
 import { isBlockingType, resolveClaims } from "../webinar-standard-readiness/claims";
 import { validateIncomingResults } from "../webinar-standard-readiness/result-validation";
 import type { EvaluationContext, RuleEvaluationResult, RuleFinding } from "./types";
-import type { CompletionDoneEvaluator, CompletionProjection, CompletionSnapshotContext, CompletionFindingEnvelope } from "./completion-done-types";
+import type { CompletionDoneEvaluation, CompletionDoneEvaluator, CompletionProjection, CompletionSnapshotContext, CompletionFindingEnvelope } from "./completion-done-types";
 
 export const COMPLETION_DONE_RULE_ID = "WEB-DONE-001" as const;
 export const COMPLETION_DONE_RULE_IDS = Object.freeze([COMPLETION_DONE_RULE_ID] as const);
@@ -69,8 +69,9 @@ export function assertAcyclicCompletionDependencyGraph(graph: CompletionDependen
 
 assertAcyclicCompletionDependencyGraph(COMPLETION_DEPENDENCY_GRAPH);
 
-/** Stable, deliberately boring fingerprint: it is derived from the supplied
- * canonical inventory and never from a count or an environment value. */
+/** Legacy internal inventory binding, NOT release provenance or audit identity.
+ * Persistence must use createReleaseFingerprint's complete immutable provenance.
+ * Kept solely to preserve the established completion snapshot evaluation contract. */
 export function deriveCompletionRegistryFingerprint(catalog: WebinarStandardCatalog): string {
   return catalog.rules.map((rule) => rule.ruleId).join("|");
 }
@@ -112,12 +113,14 @@ function scope(snapshot: CompletionSnapshotContext, context: EvaluationContext):
   return issues;
 }
 
-let lastProjection: CompletionProjection | null = null;
-/** Projection is intentionally separate from the established RuleFinding
- * union; this accessor is useful to hosts that want rich diagnostics. */
-export function getLastCompletionProjection(): CompletionProjection | null { return lastProjection; }
-
 export function evaluateCompletionDone(catalog: WebinarStandardCatalog, context: EvaluationContext): RuleFinding {
+  return evaluateCompletionDoneWithDiagnostics(catalog, context).finding;
+}
+
+/** Temporary diagnostics belong exclusively to this invocation, never audit evidence. */
+export function evaluateCompletionDoneWithDiagnostics(catalog: WebinarStandardCatalog, context: EvaluationContext): CompletionDoneEvaluation {
+  let projection = projectionFailure("incomplete_evidence", ["A complete evaluation snapshot is required."]);
+  const evaluate = (): RuleFinding => {
   const snapshot = context.completionSnapshot;
   if (!snapshot) return finding("evidence_unavailable", "missing_evidence", ["A complete evaluation snapshot is required."]);
   const badScope = scope(snapshot, context);
@@ -133,7 +136,7 @@ export function evaluateCompletionDone(catalog: WebinarStandardCatalog, context:
     || snapshot.evidenceSnapshot.occurrenceId !== snapshot.occurrenceId
     || snapshot.evidenceSnapshot.snapshotCompleteness !== "complete")) badScope.push("Evidence snapshot is incomplete or mis-scoped.");
   if (badScope.length) {
-    lastProjection = projectionFailure("incomplete_invalid_context", badScope);
+    projection = projectionFailure("incomplete_invalid_context", badScope);
     return finding("fail", "invalid_context", badScope);
   }
 
@@ -158,7 +161,7 @@ export function evaluateCompletionDone(catalog: WebinarStandardCatalog, context:
     } else boundResults.push(candidate.result);
   }
   if (envelopeIssues.length) {
-    lastProjection = projectionFailure("incomplete_invalid_context", envelopeIssues);
+    projection = projectionFailure("incomplete_invalid_context", envelopeIssues);
     return finding("fail", "invalid_context", envelopeIssues);
   }
   const incoming = validateIncomingResults(boundResults, catalog);
@@ -173,7 +176,7 @@ export function evaluateCompletionDone(catalog: WebinarStandardCatalog, context:
     issues.push("WEB-DONE-001 cannot be its own prerequisite.");
   }
   if (issues.length) {
-    lastProjection = projectionFailure("incomplete_evaluator_unavailable", issues);
+    projection = projectionFailure("incomplete_evaluator_unavailable", issues);
     return finding("fail", "invalid_context", issues);
   }
   const results = incoming.results;
@@ -197,11 +200,11 @@ export function evaluateCompletionDone(catalog: WebinarStandardCatalog, context:
   const exceptionIssues = exceptions.issues.map((issue) => issue.message);
   if (exceptionIssues.length) issues.push(...exceptionIssues);
   if (invalidFailures.length) {
-    lastProjection = projectionFailure("incomplete_invalid_context", ["A result reports invalid context."]);
+    projection = projectionFailure("incomplete_invalid_context", ["A result reports invalid context."]);
     return finding("fail", "invalid_context", ["A result reports invalid context."]);
   }
   if (exceptionIssues.length) {
-    lastProjection = projectionFailure("incomplete_invalid_context", exceptionIssues);
+    projection = projectionFailure("incomplete_invalid_context", exceptionIssues);
     return finding("fail", "invalid_context", exceptionIssues);
   }
   const outcome: CompletionProjection["outcome"] = blockers.length ? "incomplete_blocker"
@@ -210,7 +213,7 @@ export function evaluateCompletionDone(catalog: WebinarStandardCatalog, context:
         : advisories.length ? "advisory"
           : resolved.size ? "resolvedByException" : "complete";
   const complete = outcome === "complete" || outcome === "resolvedByException" || outcome === "advisory";
-  lastProjection = Object.freeze({
+  projection = Object.freeze({
     outcome, complete, blockers: Object.freeze(blockers), evidenceUnavailable: Object.freeze(unavailable),
     operationalGaps: Object.freeze(operationalGaps), resolvedByException: Object.freeze([...resolved]),
     advisories: Object.freeze(advisories), issues: Object.freeze(issues),
@@ -219,6 +222,9 @@ export function evaluateCompletionDone(catalog: WebinarStandardCatalog, context:
     ? "invalid_context" : unavailable.length ? "missing_evidence" : "violation",
     [...blockers, ...unavailable].map((result) => result.rule.failureMessage).concat(operationalGaps));
   return finding("pass", "satisfied", advisories.map((result) => `Advisory retained: ${result.ruleId}.`));
+  };
+  const result = evaluate();
+  return Object.freeze({ finding: result, projection });
 }
 
 export function createCompletionDoneEvaluator(catalog: WebinarStandardCatalog): Readonly<Record<typeof COMPLETION_DONE_RULE_ID, CompletionDoneEvaluator>> {

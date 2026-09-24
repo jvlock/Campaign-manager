@@ -367,5 +367,51 @@ export async function customFetch<T = unknown>(
     throw new ApiError(response, errorData, requestInfo);
   }
 
-  return (await parseSuccessBody(response, responseType, requestInfo)) as T;
+  let result = await parseSuccessBody(response, responseType, requestInfo);
+  // Legacy JSON shapes remain compatible. Paginated collection endpoints expose
+  // their explicit contract in X-Pagination; hooks resolve only after ALL pages.
+  // A later-page error rejects the query instead of presenting a partial list.
+  let current = response;
+  let previousOffset = -1;
+  const initial = response.headers.get("X-Pagination");
+  const expectedTotal = initial ? JSON.parse(initial).total : undefined;
+  const merge = (left: unknown, right: unknown): unknown => {
+    if (Array.isArray(left) && Array.isArray(right)) {
+      const records = new Map<string, unknown>();
+      for (const item of [...left, ...right]) {
+        if (!item || typeof item !== "object" || !("id" in item)) throw new Error("Paginated record lacks a stable ID");
+        records.set(String(item.id), item);
+      }
+      return [...records.values()];
+    }
+    if (left && right && typeof left === "object" && typeof right === "object") {
+      const combined = { ...left } as Record<string, unknown>;
+      for (const [key, value] of Object.entries(right)) {
+        combined[key] = Array.isArray(value) ? merge(combined[key], value) : value;
+      }
+      return combined;
+    }
+    throw new Error("Invalid paginated collection response");
+  };
+  while (method === "GET" && current.headers.has("X-Pagination")) {
+    const page = JSON.parse(current.headers.get("X-Pagination")!);
+    if (page.total !== expectedTotal) throw new Error("Population changed while loading. Refresh to retry.");
+    if (page.nextOffset === null) break;
+    if (!Number.isSafeInteger(page.nextOffset) || page.nextOffset <= previousOffset) throw new Error("Invalid pagination continuation");
+    previousOffset = page.nextOffset;
+    const originalUrl = resolveUrl(input);
+    const nextUrl = new URL(originalUrl, "http://pagination.invalid");
+    nextUrl.searchParams.set("offset", String(page.nextOffset));
+    const target = originalUrl.startsWith("/") ? `${nextUrl.pathname}${nextUrl.search}` : nextUrl.toString();
+    current = await fetch(target, { ...init, method, headers });
+    if (!current.ok) throw new ApiError(current, await parseErrorBody(current, method), requestInfo);
+    if (!current.headers.has("X-Pagination")) throw new Error("Pagination contract missing on continuation");
+    result = merge(result, await parseSuccessBody(current, responseType, requestInfo));
+  }
+  if (initial && Number(new URL(resolveUrl(input), "http://pagination.invalid").searchParams.get("offset") ?? 0) === 0) {
+    const returned = Array.isArray(result) ? result.length
+      : Object.values(result as Record<string, unknown>).reduce<number>((sum, value) => sum + (Array.isArray(value) ? value.length : 0), 0);
+    if (returned !== expectedTotal) throw new Error("Population changed while loading. Partial results were discarded; refresh to retry.");
+  }
+  return result as T;
 }

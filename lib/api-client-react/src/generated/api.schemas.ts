@@ -25,6 +25,8 @@ export interface DevelopmentGroupInput {
 }
 
 export interface DevelopmentOwnershipInput {
+  /** @minimum 1 */
+  rowVersion: number;
   groupId: string;
   accountableOwnerId: string;
 }
@@ -1955,6 +1957,10 @@ export type ConflictResponse = Error;
  */
 export type NotFoundResponse = Error;
 
+export type PageLimitParameter = number;
+
+export type PageOffsetParameter = number;
+
 export type TaxonomyVersionParameter = string;
 
 export type RecordTypeParameter = string;
@@ -1980,6 +1986,18 @@ export type GetDevelopmentStatus200 = {
   operationalActionsEnabled: false;
 };
 
+export type GetDevelopmentGroupsParams = {
+/**
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: PageLimitParameter;
+/**
+ * @minimum 0
+ */
+offset?: PageOffsetParameter;
+};
+
 export type GetDevelopmentGroups200 = { [key: string]: unknown };
 
 export type CreateDevelopmentGroup201 = { [key: string]: unknown };
@@ -1990,13 +2008,71 @@ export type UpdateDevelopmentOwnership200 = { [key: string]: unknown };
 
 export type GetDevelopmentCalendarParams = {
 groupId?: string;
+campaignId?: string;
+after?: string;
+/**
+ * @minimum 1
+ * @maximum 200
+ */
+limit?: number;
 };
 
-export type GetDevelopmentCalendar200 = { [key: string]: unknown };
+export type GetDevelopmentCalendar200EntriesItem = { [key: string]: unknown };
+
+export type GetDevelopmentCalendar200 = {
+  entries: GetDevelopmentCalendar200EntriesItem[];
+  total: number;
+  returned: number;
+  hasMore: boolean;
+  /** @nullable */
+  nextCursor: string | null;
+  unverified?: boolean;
+  authoritative?: boolean;
+};
 
 export type SimulateDevelopmentWorkflow200 = { [key: string]: unknown };
 
+export type ListOrganizationCampaignsParams = {
+/**
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: PageLimitParameter;
+/**
+ * @minimum 0
+ */
+offset?: PageOffsetParameter;
+};
+
+export type ListCampaignsParams = {
+/**
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: PageLimitParameter;
+/**
+ * @minimum 0
+ */
+offset?: PageOffsetParameter;
+};
+
+export type GetPortfolioParams = {
+/**
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: PageLimitParameter;
+/**
+ * @minimum 0
+ */
+offset?: PageOffsetParameter;
+};
+
 export type ListGovernanceAuditParams = {
+/**
+ * @minimum 0
+ */
+offset?: PageOffsetParameter;
 entityType?: string;
 entityId?: string;
 /**

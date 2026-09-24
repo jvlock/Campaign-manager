@@ -2,9 +2,30 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { CompletionSnapshotContext } from "../../src/lib/webinar-standard-evaluation/completion-done-types";
 import {
-  COMPLETION_DONE_RULE_ID, deriveCompletionRegistryFingerprint, evaluateCompletionDone,
+  COMPLETION_DONE_RULE_ID, deriveCompletionRegistryFingerprint, evaluateCompletionDone, evaluateCompletionDoneWithDiagnostics,
 } from "../../src/lib/webinar-standard-evaluation/completion-done";
 import { catalog, makeContext, referenceTime, registry } from "./fixtures";
+
+test("concurrent completion diagnostics are invocation-local, including missing snapshots", async () => {
+  const contexts = [
+    { ...makeContext(), completionSnapshot: snapshot(completeResults()) },
+    { ...makeContext(), completionSnapshot: snapshot(completeResults(), { eventId: "other-event" }) },
+    makeContext(),
+  ];
+  const expected = contexts.map(context => evaluateCompletionDoneWithDiagnostics(catalog, context));
+  const actual = await Promise.all(Array.from({ length: 90 }, async (_, index) => {
+    await new Promise<void>(resolve => setImmediate(resolve));
+    const result = evaluateCompletionDoneWithDiagnostics(catalog, contexts[index % 3]!);
+    await new Promise<void>(resolve => setImmediate(resolve));
+    assert.deepEqual(result, expected[index % 3]);
+    assert.deepEqual(result.finding, evaluateCompletionDone(catalog, contexts[index % 3]!));
+    return result;
+  }));
+  assert.equal(actual[0]!.projection.complete, true);
+  assert.equal(actual[1]!.projection.outcome, "incomplete_invalid_context");
+  assert.equal(actual[2]!.projection.outcome, "incomplete_evidence");
+  assert.notEqual(actual[0]!.projection, actual[3]!.projection);
+});
 
 function snapshot(results: readonly unknown[], overrides: Partial<CompletionSnapshotContext> = {}): CompletionSnapshotContext {
   const fingerprint = deriveCompletionRegistryFingerprint(catalog);

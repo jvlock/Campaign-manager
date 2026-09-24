@@ -26,3 +26,4 @@ export * from "./communication-details";
 export * from "./deliverables";
 export * from "./organization";
 export * from "./development-planning";
+export * from "./webinar-persistence";

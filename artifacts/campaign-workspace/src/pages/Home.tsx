@@ -7,8 +7,9 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
-  const { data: campaigns, isLoading: isCampaignsLoading } = useListCampaigns();
-  const { data: portfolio, isLoading: isPortfolioLoading } = useGetPortfolio();
+  const { data: campaigns, isLoading: isCampaignsLoading, error: campaignError } = useListCampaigns();
+  const { data: portfolio, isLoading: isPortfolioLoading, error: portfolioError } = useGetPortfolio();
+  if (campaignError || portfolioError) return <div role="alert" className="p-10">Unable to load the complete population. {(campaignError || portfolioError)?.message} Refresh to retry.</div>;
 
   return (
     <div className="flex-1 overflow-auto p-6 md:p-10 space-y-8">

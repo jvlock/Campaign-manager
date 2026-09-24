@@ -245,14 +245,16 @@ test("evaluator and evidence modules retain pure domain dependencies and no ambi
         strictImports: governedEvaluators || governedHelpers || governedTypes
           || completionDone || completionDoneTypes || completionStage || completionStageTypes
           || completionFollowUp || completionFollowUpTypes ? true : undefined,
-        exactImports: completionDone ? {
+        exactImports: folder === "webinar-standard-evaluation" && filename === "release-fingerprint.ts" ? {
+          "node:crypto": ["createHash"],
+        } : completionDone ? {
           "../webinar-standard-catalog/types": ["WebinarStandardCatalog", "RuleId"],
           "../webinar-standard-readiness/types": ["COMPLETE_OBLIGATIONS"],
           "../webinar-standard-readiness/claims": ["isBlockingType", "resolveClaims"],
           "../webinar-standard-readiness/result-validation": ["validateIncomingResults"],
           "./types": ["EvaluationContext", "RuleEvaluationResult", "RuleFinding"],
           "./completion-done-types": [
-            "CompletionDoneEvaluator", "CompletionProjection", "CompletionSnapshotContext", "CompletionFindingEnvelope",
+            "CompletionDoneEvaluation", "CompletionDoneEvaluator", "CompletionProjection", "CompletionSnapshotContext", "CompletionFindingEnvelope",
           ],
         } : completionDoneTypes ? {
           "../webinar-standard-catalog/types": ["RuleId", "StandardId", "StandardVersion", "WebinarStandardCatalog"],

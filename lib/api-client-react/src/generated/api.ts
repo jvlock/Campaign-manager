@@ -60,8 +60,10 @@ import type {
   GetDevelopmentCalendar200,
   GetDevelopmentCalendarParams,
   GetDevelopmentGroups200,
+  GetDevelopmentGroupsParams,
   GetDevelopmentOwnership200,
   GetDevelopmentStatus200,
+  GetPortfolioParams,
   Governance,
   GovernanceActorReason,
   GovernanceApproval,
@@ -75,10 +77,12 @@ import type {
   LandingPageDeliverable,
   LandingPageInput,
   LandingPageUpdate,
+  ListCampaignsParams,
   ListGovernanceApprovalsParams,
   ListGovernanceAuditParams,
   ListGovernanceCommentsParams,
   ListGovernanceTermsParams,
+  ListOrganizationCampaignsParams,
   MapData,
   MapInput,
   NotFoundResponse,
@@ -224,17 +228,24 @@ export function useGetDevelopmentStatus<TData = Awaited<ReturnType<typeof getDev
 
 
 
-export const getGetDevelopmentGroupsUrl = () => {
+export const getGetDevelopmentGroupsUrl = (params?: GetDevelopmentGroupsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/development/groups`
+  return stringifiedParams.length > 0 ? `/api/development/groups?${stringifiedParams}` : `/api/development/groups`
 }
 
-export const getDevelopmentGroups = async ( options?: Parameters<typeof customFetch>[1]): Promise<GetDevelopmentGroups200> => {
+export const getDevelopmentGroups = async (params?: GetDevelopmentGroupsParams, options?: Parameters<typeof customFetch>[1]): Promise<GetDevelopmentGroups200> => {
 
-  return customFetch<GetDevelopmentGroups200>(getGetDevelopmentGroupsUrl(),
+  return customFetch<GetDevelopmentGroups200>(getGetDevelopmentGroupsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -247,23 +258,23 @@ export const getDevelopmentGroups = async ( options?: Parameters<typeof customFe
 
 
 
-export const getGetDevelopmentGroupsQueryKey = () => {
+export const getGetDevelopmentGroupsQueryKey = (params?: GetDevelopmentGroupsParams,) => {
     return [
-    `/api/development/groups`
+    `/api/development/groups`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetDevelopmentGroupsQueryOptions = <TData = Awaited<ReturnType<typeof getDevelopmentGroups>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetDevelopmentGroupsQueryOptions = <TData = Awaited<ReturnType<typeof getDevelopmentGroups>>, TError = ErrorType<unknown>>(params?: GetDevelopmentGroupsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDevelopmentGroupsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetDevelopmentGroupsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDevelopmentGroups>>> = ({ signal }) => getDevelopmentGroups({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDevelopmentGroups>>> = ({ signal }) => getDevelopmentGroups(params, { signal, ...requestOptions });
 
 
 
@@ -278,11 +289,11 @@ export type GetDevelopmentGroupsQueryError = ErrorType<unknown>
 
 
 export function useGetDevelopmentGroups<TData = Awaited<ReturnType<typeof getDevelopmentGroups>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetDevelopmentGroupsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetDevelopmentGroupsQueryOptions(options)
+  const queryOptions = getGetDevelopmentGroupsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1389,20 +1400,27 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
-export const getListOrganizationCampaignsUrl = () => {
+export const getListOrganizationCampaignsUrl = (params?: ListOrganizationCampaignsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/organization/campaigns`
+  return stringifiedParams.length > 0 ? `/api/organization/campaigns?${stringifiedParams}` : `/api/organization/campaigns`
 }
 
 /**
  * Bounded authorized campaign summaries only; no legacy nested campaign detail or child records.
  */
-export const listOrganizationCampaigns = async ( options?: Parameters<typeof customFetch>[1]): Promise<CampaignSummary[]> => {
+export const listOrganizationCampaigns = async (params?: ListOrganizationCampaignsParams, options?: Parameters<typeof customFetch>[1]): Promise<CampaignSummary[]> => {
 
-  return customFetch<CampaignSummary[]>(getListOrganizationCampaignsUrl(),
+  return customFetch<CampaignSummary[]>(getListOrganizationCampaignsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -1415,23 +1433,23 @@ export const listOrganizationCampaigns = async ( options?: Parameters<typeof cus
 
 
 
-export const getListOrganizationCampaignsQueryKey = () => {
+export const getListOrganizationCampaignsQueryKey = (params?: ListOrganizationCampaignsParams,) => {
     return [
-    `/api/organization/campaigns`
+    `/api/organization/campaigns`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListOrganizationCampaignsQueryOptions = <TData = Awaited<ReturnType<typeof listOrganizationCampaigns>>, TError = ErrorType<AuthenticationRequiredResponse | ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListOrganizationCampaignsQueryOptions = <TData = Awaited<ReturnType<typeof listOrganizationCampaigns>>, TError = ErrorType<AuthenticationRequiredResponse | ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>>(params?: ListOrganizationCampaignsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListOrganizationCampaignsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListOrganizationCampaignsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrganizationCampaigns>>> = ({ signal }) => listOrganizationCampaigns({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrganizationCampaigns>>> = ({ signal }) => listOrganizationCampaigns(params, { signal, ...requestOptions });
 
 
 
@@ -1446,11 +1464,11 @@ export type ListOrganizationCampaignsQueryError = ErrorType<AuthenticationRequir
 
 
 export function useListOrganizationCampaigns<TData = Awaited<ReturnType<typeof listOrganizationCampaigns>>, TError = ErrorType<AuthenticationRequiredResponse | ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListOrganizationCampaignsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListOrganizationCampaignsQueryOptions(options)
+  const queryOptions = getListOrganizationCampaignsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1537,21 +1555,28 @@ export function useGetOrganizationCampaign<TData = Awaited<ReturnType<typeof get
 
 
 
-export const getListCampaignsUrl = () => {
+export const getListCampaignsUrl = (params?: ListCampaignsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/campaigns`
+  return stringifiedParams.length > 0 ? `/api/campaigns?${stringifiedParams}` : `/api/campaigns`
 }
 
 /**
  * Disabled legacy endpoint. Use bounded organizational campaign reads once authorized and provisioned.
  * @deprecated
  */
-export const listCampaigns = async ( options?: Parameters<typeof customFetch>[1]): Promise<CampaignSummary[]> => {
+export const listCampaigns = async (params?: ListCampaignsParams, options?: Parameters<typeof customFetch>[1]): Promise<CampaignSummary[]> => {
 
-  return customFetch<CampaignSummary[]>(getListCampaignsUrl(),
+  return customFetch<CampaignSummary[]>(getListCampaignsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -1564,23 +1589,23 @@ export const listCampaigns = async ( options?: Parameters<typeof customFetch>[1]
 
 
 
-export const getListCampaignsQueryKey = () => {
+export const getListCampaignsQueryKey = (params?: ListCampaignsParams,) => {
     return [
-    `/api/campaigns`
+    `/api/campaigns`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListCampaignsQueryOptions = <TData = Awaited<ReturnType<typeof listCampaigns>>, TError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListCampaignsQueryOptions = <TData = Awaited<ReturnType<typeof listCampaigns>>, TError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>>(params?: ListCampaignsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListCampaignsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListCampaignsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCampaigns>>> = ({ signal }) => listCampaigns({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCampaigns>>> = ({ signal }) => listCampaigns(params, { signal, ...requestOptions });
 
 
 
@@ -1598,11 +1623,11 @@ export type ListCampaignsQueryError = ErrorType<ScopedOperationUnavailableRespon
  */
 
 export function useListCampaigns<TData = Awaited<ReturnType<typeof listCampaigns>>, TError = ErrorType<ScopedOperationUnavailableResponse | AuthenticationUnavailableResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListCampaignsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListCampaignsQueryOptions(options)
+  const queryOptions = getListCampaignsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -5538,17 +5563,24 @@ export function useExportCampaign<TData = Awaited<ReturnType<typeof exportCampai
 
 
 
-export const getGetPortfolioUrl = () => {
+export const getGetPortfolioUrl = (params?: GetPortfolioParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/portfolio`
+  return stringifiedParams.length > 0 ? `/api/portfolio?${stringifiedParams}` : `/api/portfolio`
 }
 
-export const getPortfolio = async ( options?: Parameters<typeof customFetch>[1]): Promise<Portfolio> => {
+export const getPortfolio = async (params?: GetPortfolioParams, options?: Parameters<typeof customFetch>[1]): Promise<Portfolio> => {
 
-  return customFetch<Portfolio>(getGetPortfolioUrl(),
+  return customFetch<Portfolio>(getGetPortfolioUrl(params),
   {
     ...options,
     method: 'GET'
@@ -5561,23 +5593,23 @@ export const getPortfolio = async ( options?: Parameters<typeof customFetch>[1])
 
 
 
-export const getGetPortfolioQueryKey = () => {
+export const getGetPortfolioQueryKey = (params?: GetPortfolioParams,) => {
     return [
-    `/api/portfolio`
+    `/api/portfolio`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetPortfolioQueryOptions = <TData = Awaited<ReturnType<typeof getPortfolio>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortfolio>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetPortfolioQueryOptions = <TData = Awaited<ReturnType<typeof getPortfolio>>, TError = ErrorType<unknown>>(params?: GetPortfolioParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortfolio>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetPortfolioQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetPortfolioQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPortfolio>>> = ({ signal }) => getPortfolio({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPortfolio>>> = ({ signal }) => getPortfolio(params, { signal, ...requestOptions });
 
 
 
@@ -5592,11 +5624,11 @@ export type GetPortfolioQueryError = ErrorType<unknown>
 
 
 export function useGetPortfolio<TData = Awaited<ReturnType<typeof getPortfolio>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortfolio>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetPortfolioParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortfolio>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetPortfolioQueryOptions(options)
+  const queryOptions = getGetPortfolioQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

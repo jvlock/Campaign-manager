@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { syncCapacityConflicts } from "../lib/implementation-tasks";
+import { pagination, pageHeaders } from "../lib/pagination";
 import { and, desc, eq, inArray, not, or, sql } from "drizzle-orm";
 import {
   db, campaigns, campaignStrategy, activities, activityConnections,
@@ -172,8 +173,20 @@ async function detail(c: typeof campaigns.$inferSelect) {
   };
 }
 
-router.get("/campaigns", async (_req, res, next) => {
-  try { res.json((await db.select().from(campaigns)).map(summary)); } catch (e) { next(e); }
+router.get("/campaigns", async (req, res, next) => {
+  try {
+    const page = pagination(req.query);
+    const { rows, count } = await db.transaction(async tx => {
+      const rows = await tx.select().from(campaigns).orderBy(campaigns.id).limit(page.limit).offset(page.offset);
+      const [count] = await tx.select({ total: sql<number>`count(*)::int` }).from(campaigns);
+      return { rows, count };
+    }, { isolationLevel: "repeatable read", accessMode: "read only" });
+    pageHeaders(res, page, [count.total], rows.length);
+    res.json(rows.map(summary));
+  } catch (e) {
+    if ((e as { status?: number }).status === 400) { res.status(400).json({ error: (e as Error).message }); return; }
+    next(e);
+  }
 });
 
 router.post("/campaigns", async (req, res, next) => {
@@ -916,12 +929,24 @@ router.post("/campaigns/:id/utm-links", async (req, res, next) => {
   }
 });
 
-router.get("/portfolio", async (_req, res, next) => {
+router.get("/portfolio", async (req, res, next) => {
   try {
-    const cs = await db.select().from(campaigns);
-    const fs = await db.select().from(conflicts);
-    res.json({ campaigns: cs.map(summary), conflicts: fs.map((f) => ({ id: f.id, classification: f.classification, severity: f.severity, title: f.title, reason: f.reason, campaigns: (f.campaignIds as string[]).map((id) => cs.find((c) => c.id === id)?.name ?? id), dates: f.dates, recommendation: f.recommendation, owner: f.owner, status: f.status })), summary: { campaigns: cs.length, live: cs.filter((c) => c.lifecycle === "Live").length, conflicts: fs.filter((f) => f.status !== "Resolved").length, ready: cs.filter((c) => c.readiness >= 70).length } });
-  } catch (e) { next(e); }
+    const page = pagination(req.query);
+    const { cs, fs, counts, conflictCounts, names } = await db.transaction(async tx => {
+    const cs = await tx.select().from(campaigns).orderBy(campaigns.id).limit(page.limit).offset(page.offset);
+    const fs = await tx.select().from(conflicts).orderBy(conflicts.id).limit(page.limit).offset(page.offset);
+    const [counts] = await tx.select({ campaigns: sql<number>`count(*)::int`, live: sql<number>`count(*) filter (where lifecycle='Live')::int`, ready: sql<number>`count(*) filter (where readiness>=70)::int` }).from(campaigns);
+    const [conflictCounts] = await tx.select({ total: sql<number>`count(*)::int`, conflicts: sql<number>`count(*) filter (where status<>'Resolved')::int` }).from(conflicts);
+    const referencedIds = [...new Set(fs.flatMap(f => f.campaignIds as string[]))];
+    const names = referencedIds.length ? await tx.select({ id: campaigns.id, name: campaigns.name }).from(campaigns).where(inArray(campaigns.id, referencedIds)) : [];
+    return { cs, fs, counts, conflictCounts, names };
+    }, { isolationLevel: "repeatable read", accessMode: "read only" });
+    pageHeaders(res, page, [counts.campaigns, conflictCounts.total], cs.length + fs.length);
+    res.json({ campaigns: cs.map(summary), conflicts: fs.map((f) => ({ id: f.id, classification: f.classification, severity: f.severity, title: f.title, reason: f.reason, campaigns: (f.campaignIds as string[]).map((id) => names.find((c) => c.id === id)?.name ?? id), dates: f.dates, recommendation: f.recommendation, owner: f.owner, status: f.status })), summary: { ...counts, conflicts: conflictCounts.conflicts } });
+  } catch (e) {
+    if ((e as { status?: number }).status === 400) { res.status(400).json({ error: (e as Error).message }); return; }
+    next(e);
+  }
 });
 
 router.post("/conflicts/run", async (_req, res, next) => {
@@ -957,9 +982,11 @@ router.post("/conflicts/run", async (_req, res, next) => {
     }
     const emeas = cs.filter((c) => c.region === "EMEA" && c.audience.toLowerCase().includes("asset manager"));
     if (emeas.length > 1) {
-      const ids = emeas.slice(0, 2).map((c) => c.id);
+      const ids = emeas.map((c) => c.id).sort();
       const existing = await db.select().from(conflicts).where(eq(conflicts.title, "EMEA asset manager audience pressure"));
-      if (!existing.length) await db.insert(conflicts).values({ classification: "Coordination required", severity: "High", title: "EMEA asset manager audience pressure", reason: "Two Index campaigns target the same audience in the November launch window.", campaignIds: ids, dates: "November 2026", recommendation: "Sequence communications or coordinate a shared audience plan.", owner: "Portfolio lead", status: "Open" });
+      const pressure = { reason: `${ids.length} EMEA campaigns mention asset managers. This is a planning coordination candidate, not verified audience or schedule overlap.`, campaignIds: ids, dates: "Timing not verified" };
+      if (!existing.length) await db.insert(conflicts).values({ classification: "Coordination required", severity: "High", title: "EMEA asset manager audience pressure", ...pressure, recommendation: "Review timing and audience scope before coordinating communications.", owner: "Portfolio lead", status: "Open" });
+      else await db.update(conflicts).set(pressure).where(eq(conflicts.id, existing[0].id));
     }
     const rows = await db.select().from(conflicts);
     res.json(rows.map((f) => ({ id: f.id, classification: f.classification, severity: f.severity, title: f.title, reason: f.reason, campaigns: (f.campaignIds as string[]).map((id) => cs.find((c) => c.id === id)?.name ?? id), dates: f.dates, recommendation: f.recommendation, owner: f.owner, status: f.status })));

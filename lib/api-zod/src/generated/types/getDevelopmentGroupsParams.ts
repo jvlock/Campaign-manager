@@ -5,18 +5,17 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { PageLimitParameter } from './pageLimitParameter';
 import type { PageOffsetParameter } from './pageOffsetParameter';
 
-export type ListGovernanceAuditParams = {
-/**
- * @minimum 0
- */
-offset?: PageOffsetParameter;
-entityType?: string;
-entityId?: string;
+export type GetDevelopmentGroupsParams = {
 /**
  * @minimum 1
  * @maximum 500
  */
-limit?: number;
+limit?: PageLimitParameter;
+/**
+ * @minimum 0
+ */
+offset?: PageOffsetParameter;
 };

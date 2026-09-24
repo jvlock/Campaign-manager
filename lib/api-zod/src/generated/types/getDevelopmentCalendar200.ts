@@ -5,5 +5,15 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { GetDevelopmentCalendar200EntriesItem } from './getDevelopmentCalendar200EntriesItem';
 
-export type GetDevelopmentCalendar200 = { [key: string]: unknown };
+export type GetDevelopmentCalendar200 = {
+  entries: GetDevelopmentCalendar200EntriesItem[];
+  total: number;
+  returned: number;
+  hasMore: boolean;
+  /** @nullable */
+  nextCursor: string | null;
+  unverified?: boolean;
+  authoritative?: boolean;
+};

@@ -34,6 +34,9 @@ export default function CampaignDetail() {
   const [strategyDraft, setStrategyDraft] = useState<Record<string, string>>({});
   const [inheritanceDraft, setInheritanceDraft] = useState<Record<string, string>>({});
   const [isSavingStrategy, setIsSavingStrategy] = useState(false);
+  const [strategyConflict, setStrategyConflict] = useState(false);
+  const [strategyReload, setStrategyReload] = useState(0);
+  const strategyVersion = useRef<number | undefined>(undefined);
   const [isExporting, setIsExporting] = useState(false);
   const strategyInitializedForId = useRef<string | null>(null);
 
@@ -52,8 +55,10 @@ export default function CampaignDetail() {
         landingDestination: String(inherited.landingDestination ?? ''),
       });
       strategyInitializedForId.current = campaign.id;
+      strategyVersion.current = campaign.rowVersion;
+      setStrategyConflict(false);
     }
-  }, [campaign]);
+  }, [campaign, strategyReload]);
 
   useEffect(() => {
     if (tabFromUrl && tabFromUrl !== activeTab) {
@@ -69,12 +74,12 @@ export default function CampaignDetail() {
   };
 
   const saveStrategy = () => {
-    if (!campaign) return;
+    if (!campaign || strategyConflict || strategyVersion.current === undefined) return;
     setIsSavingStrategy(true);
     updateCampaign.mutate({
       id: campaign.id,
       data: {
-        rowVersion: Number((campaign as any).rowVersion ?? 1),
+        rowVersion: strategyVersion.current,
         strategy: strategyDraft,
         inheritance: {
           deliveryStartDate: inheritanceDraft.deliveryStartDate || null,
@@ -90,14 +95,17 @@ export default function CampaignDetail() {
         }
       }
     }, {
-      onSuccess: () => {
+      onSuccess: (saved) => {
         setIsSavingStrategy(false);
+        strategyVersion.current = saved.rowVersion;
         queryClient.invalidateQueries({ queryKey: getGetCampaignQueryKey(campaign.id) });
         toast({ title: 'Strategy saved' });
       },
       onError: (err) => {
         setIsSavingStrategy(false);
-        toast({ title: 'Failed to save strategy', variant: 'destructive' });
+        const status = (err as { status?: number }).status;
+        if (status === 409 || status === 428) setStrategyConflict(true);
+        toast({ title: status === 409 || status === 428 ? 'Strategy changed elsewhere — reload before saving' : 'Failed to save strategy', variant: 'destructive' });
       }
     });
   };
@@ -233,11 +241,16 @@ export default function CampaignDetail() {
             <div className="space-y-6">
                <div className="flex items-center justify-between">
                  <h2 className="text-xl font-semibold">Strategic Brief</h2>
-                 <Button onClick={saveStrategy} disabled={isSavingStrategy || !campaign}>
+                 <Button onClick={saveStrategy} disabled={isSavingStrategy || !campaign || strategyConflict}>
                    {isSavingStrategy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                    Save Strategy
                  </Button>
                </div>
+               {strategyConflict && <div role="alert" className="space-y-2"><p>Your unsaved strategy is preserved. Another edit changed this campaign.</p><Button variant="outline" onClick={async () => {
+                 await queryClient.invalidateQueries({ queryKey: getGetCampaignQueryKey(campaign.id) });
+                 strategyInitializedForId.current = null;
+                 setStrategyReload(value => value + 1);
+               }}>Discard draft and reload latest strategy</Button></div>}
 
                <div className="grid gap-6 md:grid-cols-2">
                  <div className="space-y-1">

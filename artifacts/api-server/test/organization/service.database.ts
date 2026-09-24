@@ -53,13 +53,13 @@ test("organization database lifecycle: explicit grants, revocation, calendar, tr
   const publicB = await activity(campaignB,b.id,bOwner,"summary");
   await service.authorize(planner,"plan",{ type: "activity", id: publicA });
   await assert.rejects(service.authorize(planner,"plan",{ type: "activity", id: publicB }));
-  assert.deepEqual(new Set(await service.visibleIds(planner,"activity")),new Set([publicA,privateA]));
+  assert.deepEqual(new Set((await service.visibleIds(planner,"activity")).items),new Set([publicA,privateA]));
   const leaderMembership = await service.verifyMembership(admin, { unitId: teamId, userId: leader.userId, evidence: "designated leader" });
   await service.grant(aOwner, { membershipId: leaderMembership.id, unitId: a.id, action: "calendar_view" });
   await pool.query(`INSERT INTO webinar_sessions(campaign_id,activity_id,name,session_date,start_time,duration_minutes,timezone,platform)
     VALUES($1,$2,'First','2026-11-01','01:30',60,'America/New_York','manual'),
     ($1,$2,'Second','2026-11-02','13:00',45,'Europe/London','manual')`, [campaignA,publicA]);
-  const calendar = await service.calendarSummary(leader);
+  const calendar = (await service.calendarSummary(leader)).items;
   assert.equal(calendar.length,1);
   assert.equal(calendar[0].activityId,publicA);
   assert.equal(calendar[0].planningStatus,"Tentative");
@@ -69,13 +69,13 @@ test("organization database lifecycle: explicit grants, revocation, calendar, tr
     ["accountableOwner","activityId","activityType","dates","owningGroup","planningStatus","title"]);
   await pool.query("UPDATE activities SET status='Cancelled' WHERE id=$1",[publicA]);
   await pool.query("UPDATE webinar_sessions SET session_date='2026-11-03' WHERE activity_id=$1 AND name='First'",[publicA]);
-  const rescheduled = await service.calendarSummary(leader);
+  const rescheduled = (await service.calendarSummary(leader)).items;
   assert.equal(rescheduled[0].planningStatus,"Cancelled");
   assert.equal(rescheduled[0].dates[1].date,"2026-11-03");
   assert.equal(rescheduled[0].activityId,publicA);
   const concurrent = await Promise.all(Array.from({length:20},(_,i) =>
     service.visibleIds(i % 2 ? leader : planner,"activity")));
-  concurrent.forEach((ids,i) => assert.deepEqual(new Set(ids),new Set(i % 2 ? [] : [publicA,privateA])));
+  concurrent.forEach((page,i) => assert.deepEqual(new Set(page.items),new Set(i % 2 ? [] : [publicA,privateA])));
   await assert.rejects(service.authorize(leader,"read",{ type: "activity", id: publicA }));
   await assert.rejects(service.authorize(leader,"execute",{ type: "activity", id: publicA }));
   const collaboration = await service.grant(bOwner, { membershipId: plannerA.id, activityId: publicB, action: "record_view" });
@@ -101,7 +101,7 @@ test("organization database lifecycle: explicit grants, revocation, calendar, tr
   assert.equal(transferred.calendar_visibility,"private");
   assert.equal((await pool.query("SELECT owner FROM activities WHERE id=$1",[publicA])).rows[0].owner,"old textual owner");
   await assert.rejects(service.authorize(planner,"read",{ type: "activity", id: publicA }));
-  assert.equal((await service.calendarSummary(leader)).length,0);
+  assert.equal((await service.calendarSummary(leader)).items.length,0);
   await service.setCalendarVisibility(planner,privateA,"summary");
   const historicalViewer = await service.verifyMembership(aOwner,{unitId:a.id,userId:witness.userId,evidence:"historical reporting"});
   await service.grant(aOwner,{membershipId:historicalViewer.id,activityId:privateA,action:"record_view"});
@@ -115,7 +115,7 @@ test("organization database lifecycle: explicit grants, revocation, calendar, tr
   await service.archiveGroup(aOwner,a.id);
   await service.authorize(witness,"read",{type:"activity",id:privateA});
   await assert.rejects(service.authorize(witness,"read",{type:"campaign",id:campaignA}));
-  assert.equal((await service.calendarSummary(leader))[0].activityId,privateA);
+  assert.equal((await service.calendarSummary(leader)).items[0].activityId,privateA);
   await assert.rejects(service.authorize(witness,"plan",{type:"activity",id:privateA}));
   await assert.rejects(service.verifyMembership(aOwner,{unitId:a.id,userId:witness.userId,evidence:"no new work"}));
   await assert.rejects(service.mapHistoricalOwnership(bOwner,{ resource:{ type:"activity",id:publicB },
@@ -150,7 +150,12 @@ test("complete calendar population is stable, unique and unscheduled dates stay 
   }
   const viewer = { userId:viewerId,issuer:"isolated-fixture",subject:viewerId };
   const result = await service.calendarSummary(viewer);
-  assert.deepEqual(result.map(row=>row.activityId),expected);
-  assert.ok(result.every(row=>row.dates.length===0));
+  assert.equal(result.total,121);
+  assert.equal(result.returned,100);
+  assert.equal(result.nextOffset,100);
+  const second = await service.calendarSummary(viewer,{offset:result.nextOffset!});
+  assert.equal(second.nextOffset,null);
+  assert.deepEqual([...result.items,...second.items].map(row=>row.activityId),expected);
+  assert.ok(result.items.every(row=>row.dates.length===0));
   assert.deepEqual(await service.calendarSummary(viewer),result);
 });

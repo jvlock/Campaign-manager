@@ -9,10 +9,11 @@ import { getGetPortfolioQueryKey } from '@workspace/api-client-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Portfolio() {
-  const { data: portfolio, isLoading } = useGetPortfolio();
+  const { data: portfolio, isLoading, error } = useGetPortfolio();
   const runDetection = useRunConflictDetection();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  if (error) return <div role="alert" className="p-10">Unable to load the complete portfolio. {error.message} Refresh to retry.</div>;
 
   const handleRunDetection = () => {
     runDetection.mutate(undefined, {

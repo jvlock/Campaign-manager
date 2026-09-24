@@ -8,3 +8,9 @@ Open planning does not require a chosen identity provider, but it must use an ex
 **Why:** The owner superseded the earlier authentication-first sequencing after it blocked the development planning experience. This did not relax live sending, publishing, real approval, Foundation authority or operational-readiness controls.
 
 **How to apply:** Preserve the restricted authorization implementation and keep unverified development attribution and simulations out of operational evidence. Treat provider selection as deferred until restricted activation, not a prerequisite to synthetic planning. Verify actual isolation and explicit server mode before exposing planning routes.
+
+The owner explicitly accepted isolated open planning as the correct “open initially, lock down later” approach, but only as a bounded increment. Persistence-only completion must not be described as completion of the original integration sequence.
+
+**Why:** Usable planning and simulated persistence do not supply authenticated evidence, governed sources, or operational readiness.
+
+**How to apply:** Reconcile completion claims against the accepted assessment; preserve later adapter/API boundaries rather than implementing them implicitly to make a foundation report look complete.

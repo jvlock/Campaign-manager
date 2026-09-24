@@ -8,4 +8,11 @@
 
 export type GetDevelopmentCalendarParams = {
 groupId?: string;
+campaignId?: string;
+after?: string;
+/**
+ * @minimum 1
+ * @maximum 200
+ */
+limit?: number;
 };
