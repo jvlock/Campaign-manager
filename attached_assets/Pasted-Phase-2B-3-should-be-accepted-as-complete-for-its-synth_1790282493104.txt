@@ -1,0 +1,631 @@
+Phase 2B-3 should be accepted as complete for its synthetic-only scope. The participant lifecycle now has the necessary structural separation: event state, registration, attendance, communications and suppression are not being collapsed into one status.
+
+The next increment is Phase 2B-4: integrate governed taxonomy, naming, campaign codes and UTM observations from the Governance Foundation. This must remain server-side and fail closed when authoritative output is unavailable.
+
+---
+
+# Phase 2B-4 — Governance Foundation Observation Integration
+
+Integrate Governance Foundation outputs into the Campaign Manager webinar orchestration as authoritative governed observations.
+
+The Foundation remains authoritative for:
+
+* taxonomy;
+* standardized internal naming;
+* campaign codes;
+* UTM generation;
+* applicable governed classifications.
+
+This increment must not duplicate Foundation logic locally, permit manual bypasses, add live sending, publish campaigns, process customer data, or deploy to production.
+
+## 1. Starting state
+
+Expected branch:
+
+`feature/webinar-standard-engine`
+
+Expected starting commit:
+
+`e17653294165597d01270523aac16bbb05b5b038`
+
+Authoritative sources:
+
+* all five canonical webinar standards under `docs/standards/webinar/`;
+* `docs/verification/phase-2b-0-integration-assessment.md`;
+* `docs/verification/phase-2b-0a-acceptance-and-owner-decisions.md`;
+* `docs/verification/phase-2b-1-completion.md`;
+* `docs/verification/phase-2b-2-domain-adapters.md`;
+* `docs/verification/phase-2b-3-participant-lifecycle-and-suppression.md`;
+* `docs/verification/phase-2b-phase-classification.md`;
+* existing Governance Foundation documentation, schemas, services and tests;
+* existing Campaign Manager taxonomy, naming, campaign-code and UTM code;
+* current migrations `0001–0025`.
+
+Before editing, confirm:
+
+* repository, branch, HEAD, direct parent and working-tree state;
+* ancestry from the expected starting commit;
+* 106/106 evaluator coverage;
+* canonical hashes;
+* Temporal `0.5.1` pin;
+* all 25 migrations;
+* open-development safeguards;
+* restricted-mode behavior;
+* synthetic database identity;
+* current Foundation-related evaluators and observation types;
+* current Foundation service or repository access;
+* whether a versioned Foundation API already exists;
+* whether a synthetic or nonproduction Foundation environment exists;
+* how authentication, service identity and provenance currently work.
+
+Inspect every intervening commit if HEAD moved. Stop for unexplained substantive changes.
+
+Do not commit instruction uploads or unrelated assets.
+
+## 2. Preflight the actual Foundation capability
+
+Before building a connector, inventory the Foundation implementation.
+
+Determine:
+
+* authoritative repository or service;
+* available endpoints or internal service contracts;
+* request and response schemas;
+* authentication requirements;
+* environment separation;
+* taxonomy versioning;
+* naming ruleset versioning;
+* campaign-code generation;
+* UTM generation;
+* request identifiers;
+* input fingerprints;
+* response timestamps;
+* provenance metadata;
+* validity and expiration;
+* deprecation behavior;
+* idempotency behavior;
+* error responses;
+* rate limits;
+* retry guidance;
+* existing contract tests;
+* whether results are persisted by Foundation;
+* whether historical results can be retrieved.
+
+Do not infer that a working user interface means a stable integration API exists.
+
+If no versioned service contract exists, implement the Campaign Manager provider interface and a synthetic contract adapter, but do not invent or claim a live Foundation connection.
+
+## 3. Required integration states
+
+The system must distinguish these states explicitly:
+
+| State                      | Meaning                                                      |
+| -------------------------- | ------------------------------------------------------------ |
+| Evaluator implemented      | Campaign Manager contains the applicable standards evaluator |
+| Observation available      | A valid, versioned governed result has been supplied         |
+| Connector configured       | A Foundation provider is configured for this environment     |
+| Connector reachable        | The provider successfully responded                          |
+| Live production connection | An approved production service and identity are connected    |
+
+Do not collapse these states into a single “connected” or “ready” indicator.
+
+Open-development mode may reach only an approved synthetic or nonproduction Foundation environment.
+
+Do not connect to production Foundation data or services in this increment without explicit authorization.
+
+## 4. Provider interface
+
+Create one internal server-side `GovernanceFoundationProvider` interface or equivalent.
+
+It must support governed requests for:
+
+* taxonomy classification;
+* standardized internal title;
+* campaign code;
+* UTM output;
+* any other Foundation observation explicitly required by canonical webinar rules.
+
+The provider interface must return:
+
+* observation type;
+* governed output;
+* Foundation service identifier;
+* exact service or ruleset version;
+* effective taxonomy version;
+* request or transaction reference;
+* normalized input fingerprint;
+* response timestamp;
+* validity status;
+* valid-from and expiration, where applicable;
+* deprecation status;
+* provenance;
+* warnings;
+* structured errors.
+
+Requirements:
+
+* no Foundation requests from browser components;
+* no secrets in frontend bundles;
+* no evaluator-specific network calls;
+* no direct Foundation calls from UI routes;
+* no locally generated substitute presented as Foundation output;
+* no free-text override of a missing governed result;
+* exhaustive handling of response status.
+
+## 5. Canonical request construction
+
+Create deterministic request builders from existing Campaign Manager source records.
+
+At minimum, construct inputs for:
+
+* campaign identity;
+* webinar activity;
+* occurrence;
+* product family or governed product selection;
+* audience;
+* geography;
+* industry;
+* channel;
+* activity type;
+* communication type;
+* destination;
+* content or asset reference;
+* language;
+* dates required by naming or code generation;
+* existing stable identifiers.
+
+Requirements:
+
+* include only data required by the Foundation contract;
+* use stable identifiers where available;
+* normalize values deterministically;
+* preserve missing versus empty versus not applicable;
+* do not infer governed taxonomy values from display labels;
+* do not send customer or participant data;
+* calculate the input fingerprint before provider invocation;
+* identical normalized inputs must produce the same fingerprint;
+* changed governed inputs must produce a different fingerprint.
+
+## 6. Governed observation validation
+
+Treat every provider response as untrusted until validated.
+
+Validate:
+
+* response schema;
+* observation type;
+* request reference;
+* input fingerprint;
+* service version;
+* taxonomy version;
+* activity and communication scope;
+* response timestamp;
+* validity window;
+* deprecation status;
+* required provenance;
+* output completeness;
+* absence of unknown or prohibited fields.
+
+Reject or mark unavailable any response that is:
+
+* malformed;
+* incomplete;
+* for a different input fingerprint;
+* for another activity or occurrence;
+* expired;
+* from an unsupported version;
+* from a prohibited environment;
+* missing provenance;
+* internally inconsistent;
+* partially successful where a complete atomic result is required.
+
+Do not repair malformed governed output locally.
+
+## 7. Observation persistence
+
+Use the Phase 2B-1 governed-observation persistence foundation.
+
+Persist each accepted observation as immutable history containing:
+
+* activity and occurrence scope;
+* communication or deliverable scope where applicable;
+* normalized input fingerprint;
+* governed result;
+* exact Foundation versions;
+* request reference;
+* provenance;
+* validity information;
+* received timestamp;
+* supersession relationship;
+* Campaign Manager release fingerprint;
+* environment classification;
+* simulation-only status where applicable.
+
+Requirements:
+
+* do not overwrite historical observations;
+* a new observation supersedes rather than silently replaces the prior record;
+* retries with the same request and result remain idempotent;
+* conflicting results for identical inputs must be surfaced;
+* expired or deprecated observations remain auditable but cannot satisfy current readiness;
+* source facts remain separate from governed observations;
+* governed observations remain separate from evaluation results.
+
+## 8. Cache behavior
+
+If local caching is appropriate, the cache must not become the authoritative source.
+
+Cache keys must include:
+
+* observation type;
+* input fingerprint;
+* Foundation service version;
+* effective taxonomy version;
+* environment.
+
+Requirements:
+
+* respect Foundation validity and expiration;
+* invalidate when governed input changes;
+* invalidate when the required version changes;
+* never treat stale output as current;
+* show when a cached observation is used;
+* preserve original provenance;
+* do not serve production observations in open-development mode;
+* do not permit cache fallback when the canonical rule requires a fresh result;
+* distinguish unavailable, stale, expired and deprecated.
+
+Document the cache decision even if no cache is implemented.
+
+## 9. Failure behavior
+
+Foundation-dependent evaluation must fail closed.
+
+Handle separately:
+
+* provider not configured;
+* provider unreachable;
+* timeout;
+* authentication failure;
+* authorization failure;
+* rate limiting;
+* invalid request;
+* malformed response;
+* fingerprint mismatch;
+* unsupported version;
+* deprecated version;
+* expired observation;
+* partial response;
+* conflicting response;
+* internal provider failure.
+
+Expected behavior:
+
+* draft planning may continue;
+* non-Foundation evaluation may continue;
+* the missing governed observation remains visible;
+* affected rules show the correct incomplete or blocked result;
+* operational readiness cannot be established;
+* no local substitute is generated;
+* retries follow bounded provider guidance;
+* failure diagnostics do not expose secrets;
+* users receive a clear, actionable development message.
+
+Do not convert an outage into a valid empty observation.
+
+## 10. Retry and idempotency
+
+Implement bounded, safe retry behavior.
+
+Requirements:
+
+* reuse the same idempotency or request reference for a retry of the same logical request where the Foundation contract supports it;
+* do not retry validation errors;
+* do not retry authentication or authorization failures blindly;
+* honor provider rate-limit guidance;
+* use bounded backoff for transient failures;
+* avoid duplicate persisted observations;
+* record retry count and final disposition;
+* protect against concurrent duplicate requests;
+* do not introduce an unbounded background retry process.
+
+## 11. Orchestration integration
+
+Integrate governed observations through the single Phase 2B-2 orchestration boundary.
+
+Required sequence:
+
+1. Load source records.
+2. Assemble normalized governed inputs.
+3. Resolve a valid existing observation or invoke the configured provider.
+4. Validate the observation.
+5. Persist it immutably.
+6. Map it into canonical engine input.
+7. Invoke applicable evaluators.
+8. Calculate readiness and completion.
+9. Persist a new immutable simulation snapshot.
+10. Return request-local diagnostics.
+
+Requirements:
+
+* evaluators remain pure and do not call Foundation;
+* routes and UI do not call individual evaluators;
+* missing observations stay explicit;
+* updated observations create new input fingerprints and snapshots where relevant;
+* historical snapshots retain the exact Foundation versions used;
+* a valid taxonomy result cannot substitute for missing naming, campaign-code or UTM output;
+* each governed observation satisfies only its applicable rules.
+
+## 12. Standardized naming
+
+For standardized internal titles:
+
+* consume only Foundation-governed output;
+* preserve the human-readable title and required structured components;
+* retain the exact ruleset version;
+* prevent manual edits from being represented as governed output;
+* permit a separately labelled planning draft if current product behavior requires it;
+* show differences between a draft title and governed title;
+* do not silently overwrite user-entered planning context;
+* require regeneration when governed inputs change.
+
+## 13. Campaign codes
+
+For campaign codes:
+
+* treat the Foundation-issued code as authoritative;
+* enforce exact activity and campaign scope;
+* preserve uniqueness and provenance;
+* prevent local code generation from bypassing Foundation;
+* treat code conflicts as errors requiring resolution;
+* do not recycle historical codes;
+* do not create a production code in a synthetic environment;
+* clearly distinguish simulated or reserved development codes.
+
+## 14. UTM output
+
+For UTM generation:
+
+* obtain the governed parameter set from Foundation;
+* preserve exact casing, normalization and version;
+* persist both structured parameters and the resulting governed URL or output;
+* validate the destination before combining it with governed parameters;
+* do not treat a manually assembled UTM as governed;
+* ensure the output is scoped to the correct communication and destination;
+* regenerate when governed inputs or destination change;
+* retain prior versions for audit;
+* never expose secrets or internal service credentials in URLs.
+
+## 15. Taxonomy
+
+For governed taxonomy:
+
+* map Foundation identifiers to existing application references;
+* preserve stable taxonomy identifiers, labels and version;
+* do not use labels as durable keys;
+* retain deprecated classifications for history;
+* prevent deprecated values from satisfying current rules unless explicitly permitted;
+* surface unmapped identifiers as errors;
+* do not add Foundation taxonomy administration to Campaign Manager;
+* do not import the full Foundation catalog unless the accepted contract requires it.
+
+The Foundation remains the authoritative catalog owner.
+
+## 16. Development UI
+
+Add only the limited UI required to inspect governed observations in open development.
+
+Show:
+
+* observation type;
+* governed output;
+* available, unavailable, stale, expired or deprecated status;
+* Foundation service version;
+* taxonomy or ruleset version;
+* request reference;
+* input fingerprint;
+* received and expiration timestamps;
+* whether the result came from a configured synthetic provider or a cached observation;
+* affected readiness rules;
+* simulation-only status.
+
+Provide a development action to request or refresh an observation only when a synthetic provider is configured.
+
+Do not allow users to type a governed result manually.
+
+Do not show “Foundation connected” unless a provider call has been successfully validated.
+
+## 17. Security
+
+Requirements:
+
+* server-side provider calls only;
+* secrets loaded through approved server configuration;
+* no secrets in logs, snapshots, browser payloads or error messages;
+* explicit environment allowlist;
+* production endpoint blocked in open-development mode;
+* synthetic endpoint blocked from being represented as production;
+* TLS validation retained;
+* bounded request size;
+* response-size limit;
+* timeout enforcement;
+* audit provider invocations without storing unnecessary payloads;
+* no customer or participant data sent to Foundation.
+
+Missing or invalid security configuration must fail closed.
+
+## 18. Schema and migration policy
+
+Reuse the governed-observation and provenance persistence introduced in Phase 2B-1.
+
+Do not create a parallel Foundation-results model.
+
+If a schema change is genuinely required:
+
+* document the exact missing field or constraint;
+* show why migrations `0024–0025` cannot support it;
+* confirm the requirement was identified in the Phase 2B-0 assessment;
+* create only additive migration `0026`;
+* do not edit migrations `0001–0025`;
+* preserve all existing payloads in upgrade testing;
+* apply only to disposable or isolated synthetic databases;
+* do not use `db push`.
+
+Stop before adding a migration if the proposed change materially expands the authorized model.
+
+## 19. Contract and regression tests
+
+Add tests covering:
+
+* deterministic request construction;
+* stable and changed input fingerprints;
+* valid taxonomy observation;
+* valid standardized-title observation;
+* valid campaign-code observation;
+* valid UTM observation;
+* multiple observation types for one activity;
+* malformed response;
+* incomplete response;
+* mismatched fingerprint;
+* wrong activity or occurrence;
+* expired observation;
+* deprecated version;
+* unsupported version;
+* missing provenance;
+* unavailable provider;
+* timeout;
+* authentication failure;
+* authorization failure;
+* rate limiting;
+* transient retry;
+* no retry for validation failures;
+* concurrent duplicate requests;
+* idempotent persistence;
+* conflicting results;
+* cache hit, miss, invalidation and expiration if caching exists;
+* synthetic/production environment separation;
+* secret nonexposure;
+* orchestration invocation;
+* readiness effects;
+* immutable snapshots;
+* historical version preservation;
+* no manual governed-output entry;
+* no local fallback generation;
+* no customer or participant data in requests;
+* legacy-session isolation.
+
+Use a deterministic fake provider for automated tests. Do not make the main test suite depend on an external live service.
+
+## 20. Verification gate
+
+Run fresh:
+
+1. Foundation provider contract tests.
+2. Request-builder tests.
+3. Observation-validation tests.
+4. Persistence and provenance tests.
+5. Retry, idempotency and concurrency tests.
+6. Cache tests, if applicable.
+7. Security and environment-isolation tests.
+8. Phase 2B-2 adapter and orchestration tests.
+9. Phase 2B-3 participant-lifecycle and suppression tests.
+10. Rule-ID drift check.
+11. Nonincremental typechecks.
+12. Full catalog and 106-evaluator suite.
+13. Exception and readiness suites.
+14. Scheduling and audience suites.
+15. Completion suite.
+16. Complete API suite.
+17. Frontend regression suite.
+18. Fresh disposable-database migration test.
+19. Upgrade-preservation test.
+20. Database shutdown and cleanup verification.
+21. All five canonical hash checks.
+22. Temporal pin check.
+23. Browser verification of governed-observation inspection.
+
+If an approved nonproduction Foundation endpoint exists, run a separate smoke test that does not alter or weaken the deterministic automated suite.
+
+Report separately:
+
+* test files;
+* top-level records;
+* nested subtests;
+* leaf tests;
+* grouping records;
+* failures;
+* skips;
+* cancellations;
+* TODOs;
+* setup and teardown failures;
+* migration results;
+* preserved-table results;
+* database cleanup;
+* external smoke-test status;
+* browser scenarios.
+
+## 21. Evidence
+
+Create:
+
+`docs/verification/phase-2b-4-foundation-observation-integration.md`
+
+Include:
+
+* starting and ending commits;
+* changed-file inventory;
+* Foundation capability inventory;
+* authoritative source and environment;
+* provider contract;
+* request and response schemas;
+* input normalization;
+* fingerprint behavior;
+* validation rules;
+* failure matrix;
+* retry and idempotency behavior;
+* persistence and provenance;
+* cache decision;
+* orchestration integration;
+* readiness effects;
+* security controls;
+* schema and migration evidence;
+* synthetic-provider evidence;
+* external smoke-test evidence, if authorized;
+* verification results;
+* unresolved production dependencies.
+
+## 22. Completion classification
+
+Classify Phase 2B-4 precisely:
+
+### Complete — synthetic integration
+
+Use this classification when:
+
+* the provider interface is implemented;
+* deterministic contract tests pass;
+* governed observations integrate into orchestration;
+* provenance and failure behavior work;
+* the development UI exposes observations accurately;
+* only a fake or synthetic provider is connected.
+
+### Complete — nonproduction Foundation integration
+
+Use this classification only when:
+
+* an approved nonproduction Foundation endpoint exists;
+* a real request and response were validated;
+* version and provenance were confirmed;
+* environment isolation passed.
+
+### Production-connected
+
+Do not use this classification without separately authorized production credentials, endpoint, security review and deployment evidence.
+
+Suggested commit title:
+
+`Integrate governed Foundation observations`
+
+Stop after reporting. Do not begin Phase 2B-5.
+
+---
