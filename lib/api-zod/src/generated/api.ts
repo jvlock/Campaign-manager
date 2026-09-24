@@ -177,6 +177,271 @@ export const SimulateDevelopmentWorkflowResponse = zod.object({
 })
 
 
+/**
+ * Open-development only; exact-standard synthetic occurrence, no customer data.
+ */
+export const GetSyntheticParticipantContextQueryParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "activityId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const getSyntheticParticipantContextResponseTwoRevisionMin = 0;
+
+
+
+export const GetSyntheticParticipantContextResponse = zod.object({
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "sessionId": zod.string().uuid()
+}).and(zod.object({
+  "revision": zod.number().int().min(getSyntheticParticipantContextResponseTwoRevisionMin),
+  "eventStatus": zod.enum(['draft', 'open_for_registration', 'scheduled', 'in_progress', 'completed', 'cancelled']),
+  "sessionDate": zod.string(),
+  "startTime": zod.string(),
+  "timezone": zod.string(),
+  "participantCount": zod.number().int().optional(),
+  "audienceBranchIds": zod.array(zod.string().uuid()),
+  "operationalStatus": zod.enum(['simulation-only']),
+  "label": zod.string()
+}))
+
+
+export const listSyntheticParticipantFixturesQueryLimitDefault = 25;
+export const listSyntheticParticipantFixturesQueryLimitMax = 100;
+
+export const listSyntheticParticipantFixturesQueryOffsetDefault = 0;
+export const listSyntheticParticipantFixturesQueryOffsetMin = 0;
+
+export const listSyntheticParticipantFixturesQueryAfterRegExp = new RegExp('^fixture-[0-9]{1,8}$');
+
+
+export const ListSyntheticParticipantFixturesQueryParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "activityId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid(),
+  "limit": zod.coerce.number().int().min(1).max(listSyntheticParticipantFixturesQueryLimitMax).default(listSyntheticParticipantFixturesQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(listSyntheticParticipantFixturesQueryOffsetMin).default(listSyntheticParticipantFixturesQueryOffsetDefault),
+  "after": zod.coerce.string().regex(listSyntheticParticipantFixturesQueryAfterRegExp).optional(),
+  "audienceBranchId": zod.coerce.string().uuid().optional().describe('Optional development branch filter, not an identity or group authorization assertion')
+})
+
+export const ListSyntheticParticipantFixturesResponse = zod.object({
+  "total": zod.number().int(),
+  "limit": zod.number().int(),
+  "offset": zod.number().int(),
+  "returned": zod.number().int(),
+  "nextOffset": zod.number().int().nullable(),
+  "nextCursor": zod.string().nullable().describe('Fixture-key cursor for the next page; null when complete'),
+  "operationalStatus": zod.enum(['simulation-only']),
+  "label": zod.string(),
+  "fixtures": zod.array(zod.object({
+  "personId": zod.string().uuid(),
+  "fixtureKey": zod.string(),
+  "audienceClass": zod.enum(['customer', 'internal', 'test']),
+  "syntheticEmail": zod.string(),
+  "registrationStatus": zod.enum(['not_registered', 'registered', 'waitlisted', 'cancelled']),
+  "attendanceStatus": zod.enum(['unknown', 'attended', 'absent'])
+}))
+})
+
+
+export const createSyntheticParticipantFixtureBodyTwoFixtureKeyRegExp = new RegExp('^fixture-[0-9]{1,8}$');
+export const createSyntheticParticipantFixtureBodyTwoExpectedRevisionMin = 0;
+
+
+
+export const CreateSyntheticParticipantFixtureBody = zod.object({
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "sessionId": zod.string().uuid()
+}).and(zod.object({
+  "fixtureKey": zod.string().regex(createSyntheticParticipantFixtureBodyTwoFixtureKeyRegExp),
+  "audienceBranchId": zod.string().uuid(),
+  "audienceClass": zod.enum(['customer', 'internal', 'test']),
+  "expectedRevision": zod.number().int().min(createSyntheticParticipantFixtureBodyTwoExpectedRevisionMin),
+  "idempotencyKey": zod.string().uuid(),
+  "calculationAt": zod.coerce.date()
+}))
+
+export const CreateSyntheticParticipantFixtureResponse = zod.object({
+  "personId": zod.string().uuid(),
+  "fixtureKey": zod.string(),
+  "syntheticEmail": zod.string(),
+  "replayed": zod.boolean(),
+  "label": zod.string()
+})
+
+
+export const listSyntheticParticipantPopulationQueryLimitDefault = 25;
+export const listSyntheticParticipantPopulationQueryLimitMax = 100;
+
+export const listSyntheticParticipantPopulationQueryOffsetDefault = 0;
+export const listSyntheticParticipantPopulationQueryOffsetMin = 0;
+
+
+
+export const ListSyntheticParticipantPopulationQueryParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "activityId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid(),
+  "limit": zod.coerce.number().int().min(1).max(listSyntheticParticipantPopulationQueryLimitMax).default(listSyntheticParticipantPopulationQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(listSyntheticParticipantPopulationQueryOffsetMin).default(listSyntheticParticipantPopulationQueryOffsetDefault),
+  "after": zod.coerce.string().uuid().optional(),
+  "audienceBranchId": zod.coerce.string().uuid().optional().describe('Optional development branch filter, not an identity or group authorization assertion')
+})
+
+export const ListSyntheticParticipantPopulationResponse = zod.object({
+  "total": zod.number().int(),
+  "limit": zod.number().int(),
+  "offset": zod.number().int(),
+  "returned": zod.number().int(),
+  "nextOffset": zod.number().int().nullable(),
+  "nextCursor": zod.string().nullable().describe('Stable participant ID cursor for the next page; null when complete'),
+  "operationalStatus": zod.enum(['simulation-only']),
+  "label": zod.string(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "state": zod.string(),
+  "recruitmentEligible": zod.boolean().optional(),
+  "suppressions": zod.array(zod.string()),
+  "obligations": zod.array(zod.object({
+  "communicationId": zod.string(),
+  "kind": zod.string(),
+  "disposition": zod.string(),
+  "dueAtEpochMs": zod.number().int().nullish(),
+  "reason": zod.string(),
+  "variant": zod.string().nullish()
+}))
+}))
+})
+
+
+export const InspectSyntheticParticipantSuppressionQueryParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "activityId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid(),
+  "audienceBranchId": zod.coerce.string().uuid().optional().describe('Optional development branch filter, not an identity or group authorization assertion'),
+  "personId": zod.coerce.string().uuid(),
+  "kind": zod.enum(['recruitment_1', 'recruitment_2', 'recruitment_3', 'final_recruitment', 'registration_confirmation', 'calendar_information', 'reminder_24_hour', 'reminder_1_hour', 'event_change_notice', 'event_cancellation_notice', 'attended_follow_up', 'absent_follow_up', 'attendance_reconciliation', 'neutral_follow_up', 'waitlist_confirmation', 'waitlist_promotion', 'waitlist_closure', 'participant_cancellation_confirmation', 'qa_test_send']),
+  "calculationAt": zod.date()
+})
+
+export const InspectSyntheticParticipantSuppressionResponse = zod.object({
+  "allowed": zod.literal(false),
+  "reasonCode": zod.string(),
+  "explanation": zod.string(),
+  "participantId": zod.string(),
+  "occurrenceId": zod.string(),
+  "communicationId": zod.string().nullable().describe('Null when no configured canonical communication identity exists; never a fabricated identifier'),
+  "evaluatedAt": zod.coerce.date(),
+  "sourceReferences": zod.array(zod.string()),
+  "releaseFingerprint": zod.string(),
+  "operationalStatus": zod.enum(['simulation-only'])
+})
+
+
+/**
+ * Immutable synthetic source events, obligation changes and snapshot references; occurrence and fixture scoped.
+ */
+export const getSyntheticParticipantHistoryQueryLimitDefault = 25;
+export const getSyntheticParticipantHistoryQueryLimitMax = 100;
+
+export const getSyntheticParticipantHistoryQueryOffsetDefault = 0;
+export const getSyntheticParticipantHistoryQueryOffsetMin = 0;
+
+
+
+export const GetSyntheticParticipantHistoryQueryParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "activityId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid(),
+  "personId": zod.coerce.string().uuid(),
+  "limit": zod.coerce.number().int().min(1).max(getSyntheticParticipantHistoryQueryLimitMax).default(getSyntheticParticipantHistoryQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(getSyntheticParticipantHistoryQueryOffsetMin).default(getSyntheticParticipantHistoryQueryOffsetDefault),
+  "audienceBranchId": zod.coerce.string().uuid().optional().describe('Optional development branch filter, not an identity or group authorization assertion')
+})
+
+export const GetSyntheticParticipantHistoryResponse = zod.object({
+  "total": zod.number().int(),
+  "limit": zod.number().int(),
+  "offset": zod.number().int(),
+  "operationalStatus": zod.enum(['simulation-only']),
+  "label": zod.string(),
+  "events": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "action": zod.string(),
+  "sourceReference": zod.string().uuid(),
+  "observedAt": zod.coerce.date(),
+  "payload": zod.record(zod.string(), zod.unknown()),
+  "obligations": zod.array(zod.record(zod.string(), zod.unknown())),
+  "snapshotIds": zod.array(zod.string().uuid())
+}))
+})
+
+
+export const transitionSyntheticParticipantBodyTwoExpectedRevisionMin = 0;
+
+export const transitionSyntheticParticipantBodyTwoSessionDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const transitionSyntheticParticipantBodyTwoStartTimeRegExp = new RegExp('^\\d{2}:\\d{2}(:\\d{2})?$');
+
+
+export const TransitionSyntheticParticipantBody = zod.object({
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "sessionId": zod.string().uuid()
+}).and(zod.object({
+  "action": zod.enum(['register', 'waitlist', 'promote', 'cancel-registration', 'cancel-occurrence', 'complete-occurrence', 'reschedule', 'record-attendance', 'reconcile-attendance']),
+  "personId": zod.string().uuid().optional(),
+  "sourceReference": zod.string().uuid(),
+  "expectedRevision": zod.number().int().min(transitionSyntheticParticipantBodyTwoExpectedRevisionMin),
+  "idempotencyKey": zod.string().uuid(),
+  "calculationAt": zod.coerce.date(),
+  "attendance": zod.enum(['attended', 'absent']).optional(),
+  "sessionDate": zod.string().regex(transitionSyntheticParticipantBodyTwoSessionDateRegExp).optional(),
+  "startTime": zod.string().regex(transitionSyntheticParticipantBodyTwoStartTimeRegExp).optional(),
+  "timezone": zod.string().optional(),
+  "actualEndAt": zod.coerce.date().optional(),
+  "audienceBranchId": zod.string().uuid().optional().describe('Optional participant branch check; occurrence-wide actions must omit this filter')
+}))
+
+export const transitionSyntheticParticipantResponseSnapshotRevisionMin = 0;
+
+
+
+export const TransitionSyntheticParticipantResponse = zod.object({
+  "eventId": zod.string().uuid(),
+  "replayed": zod.boolean(),
+  "snapshotIds": zod.array(zod.string().uuid()),
+  "snapshot": zod.object({
+  "snapshotId": zod.string().uuid(),
+  "revision": zod.number().int().min(transitionSyntheticParticipantResponseSnapshotRevisionMin),
+  "operationalStatus": zod.enum(['simulation-only']),
+  "releaseFingerprint": zod.string(),
+  "inputFingerprint": zod.string(),
+  "unresolvedBlockingFailures": zod.array(zod.unknown()),
+  "warnings": zod.array(zod.unknown()),
+  "missingInputData": zod.array(zod.unknown()),
+  "unavailableExternalObservations": zod.array(zod.unknown())
+}),
+  "before": zod.array(zod.unknown()),
+  "after": zod.array(zod.unknown()),
+  "suppression": zod.array(zod.object({
+  "allowed": zod.literal(false),
+  "reasonCode": zod.string(),
+  "explanation": zod.string(),
+  "participantId": zod.string(),
+  "occurrenceId": zod.string(),
+  "communicationId": zod.string().nullable().describe('Null when no configured canonical communication identity exists; never a fabricated identifier'),
+  "evaluatedAt": zod.coerce.date(),
+  "sourceReferences": zod.array(zod.string()),
+  "releaseFingerprint": zod.string(),
+  "operationalStatus": zod.enum(['simulation-only'])
+})),
+  "label": zod.string()
+})
+
+
 export const GetActivityModelCatalogResponse = zod.object({
   "channels": zod.array(zod.object({
   "id": zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),

@@ -46,14 +46,14 @@ export function simulationFingerprint(value: unknown): string {
   return createHash("sha256").update(canonical(value)).digest("hex");
 }
 /** Snapshot writes/revisions are outputs, not new domain facts on the next retry. */
-export function sourceInputFingerprint(sources: OccurrenceSources, calculationAt: string): string {
+export function sourceInputFingerprint(sources: OccurrenceSources, calculationAt: string, participantId?: string): string {
   // Canvas position and its general row audit counters are not evaluation facts.
   // Relevant activity content remains fully hashed. The separate read token below
   // still detects any concurrent version change during this request.
   const { x: _x, y: _y, row_version: _version, updated_at: _updated, ...activityFacts } = sources.activity;
   return simulationFingerprint({ ...sources, activity: activityFacts, binding: sources.binding && {
     standard_id: sources.binding.standard_id, standard_version: sources.binding.standard_version,
-  }, calculationAt });
+  }, calculationAt, ...(participantId ? { participantId } : {}) });
 }
 
 function assertExactInventory(label: string, ids: readonly string[]): void {
@@ -218,11 +218,17 @@ export async function simulateWebinarOccurrence(raw: WebinarSimulationInput): Pr
   const input = commandSchema.parse(raw);
   input.calculationAt = new Date(input.calculationAt).toISOString();
   const repository = new WebinarPersistence();
-  return repository.withEvaluationTransaction(input, async (client, transaction) => {
+  return repository.withEvaluationTransaction(input, (client, transaction) => simulateWebinarInTransaction(input, client, transaction));
+}
+
+/** Reuses the sole orchestrator inside the lifecycle source/projection transaction. */
+export async function simulateWebinarInTransaction(input: WebinarSimulationInput,
+  client: WebinarTransactionClient, transaction: WebinarPersistence, participantId?: string): Promise<WebinarSimulationResult> {
+  return (async () => {
     const sources = await loadOccurrenceSources(client, input.campaignId, input.sessionId);
     assertOccurrenceEligibility(sources);
     const sourceReadToken = simulationFingerprint(sources);
-    const inputFingerprint = sourceInputFingerprint(sources, input.calculationAt);
+    const inputFingerprint = sourceInputFingerprint(sources, input.calculationAt, participantId);
     const release = await captureWebinarRelease(Date.parse(input.calculationAt));
     // Idempotency retries are resolved before stale-revision checks, but never across source/release changes.
     const existing = await client.query(`SELECT * FROM webinar_persistence_records
@@ -245,7 +251,7 @@ export async function simulateWebinarOccurrence(raw: WebinarSimulationInput): Pr
         diagnostics: { invokedRuleIds: [], evaluatorErrors: [], sourceRecordCount: saved.sourceReferences.length, replayed: true } });
     }
     if (sources.binding!.revision !== input.expectedRevision) throw new PersistenceConflict("Occurrence revision changed; reload before simulation");
-    const assembly = assembleEvaluationInput(occurrenceAssemblySource(sources, input.calculationAt));
+    const assembly = assembleEvaluationInput(occurrenceAssemblySource(sources, input.calculationAt, participantId));
     // The loader's source-relative default is intentionally not valid after bundling.
     // Use the same server-known workspace root as release capture.
     const catalog = await loadWebinarStandardCatalog({ repositoryRoot: resolveWebinarRepositoryRoot() });
@@ -276,7 +282,7 @@ export async function simulateWebinarOccurrence(raw: WebinarSimulationInput): Pr
         resultFingerprint: simulationFingerprint(snapshot), evidenceIds: sources.records.filter(r => r.kind === "evidence").map(r => r.id),
         exceptionIds: sources.records.filter(r => r.kind === "exception-disposition").map(r => r.id), simulation: snapshot } });
     return immutable({ ...snapshot, snapshotId: row.id, revision: row.revision, diagnostics: evaluated.diagnostics });
-  });
+  })();
 }
 
 /**

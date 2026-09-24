@@ -6,6 +6,8 @@ import { createHash } from "node:crypto";
 import { simulateWebinarOccurrence } from "../lib/webinar-evaluation-orchestration";
 import { PersistenceConflict } from "../lib/webinar-persistence";
 import { STANDARD_ID, STANDARD_VERSION } from "../lib/webinar-standard-catalog/types";
+import { createSyntheticParticipant, getSyntheticLifecycleContext, inspectParticipantSuppression,
+  listParticipantSimulation, listSyntheticFixtures, transitionParticipantLifecycle } from "../lib/webinar-participant-lifecycle";
 
 const router = Router();
 const uuid = z.string().uuid();
@@ -187,6 +189,163 @@ router.post("/development/simulations", async (req, res, next) => {
     next(error);
   }
 });
+// The simulator only accepts closed fixture keys and source observations. Its actor comes
+// from the isolated server environment, never from an unverified browser identity.
+const participantScope = z.object({
+  campaignId: uuid, activityId: uuid, sessionId: uuid,
+}).strict();
+const participantPage = participantScope.extend({
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+  offset: z.coerce.number().int().nonnegative().default(0),
+  audienceBranchId: uuid.optional(),
+}).strict();
+const fixturePage = participantPage.extend({ after: z.string().regex(/^fixture-[0-9]{1,8}$/).optional() }).strict();
+const populationPage = participantPage.extend({ after: uuid.optional() }).strict();
+const participantFixture = participantScope.extend({
+  fixtureKey: z.string().regex(/^fixture-[0-9]{1,8}$/),
+  audienceBranchId: uuid, audienceClass: z.enum(["customer", "internal", "test"]),
+  expectedRevision: z.number().int().nonnegative(), idempotencyKey: uuid,
+  calculationAt: z.string().datetime({ offset: true }),
+}).strict();
+const participantTransition = participantScope.extend({
+  action: z.enum(["register", "waitlist", "promote", "cancel-registration", "cancel-occurrence",
+    "complete-occurrence", "reschedule", "record-attendance", "reconcile-attendance"]),
+  personId: uuid.optional(), sourceReference: uuid, expectedRevision: z.number().int().nonnegative(),
+  idempotencyKey: uuid, calculationAt: z.string().datetime({ offset: true }),
+  attendance: z.enum(["attended", "absent"]).optional(),
+  sessionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  startTime: z.string().regex(/^\d{2}:\d{2}(?::\d{2})?$/).optional(),
+  timezone: z.string().min(1).max(80).optional(), actualEndAt: z.string().datetime({ offset: true }).optional(),
+  audienceBranchId: uuid.optional(),
+}).strict();
+const participantSuppression = participantScope.extend({
+  personId: uuid, kind: z.enum(["recruitment_1", "recruitment_2", "recruitment_3", "final_recruitment",
+    "registration_confirmation", "calendar_information", "reminder_24_hour", "reminder_1_hour",
+    "event_change_notice", "event_cancellation_notice", "attended_follow_up", "absent_follow_up",
+    "attendance_reconciliation", "neutral_follow_up", "waitlist_confirmation", "waitlist_promotion",
+    "waitlist_closure", "participant_cancellation_confirmation", "qa_test_send"]),
+  calculationAt: z.string().datetime({ offset: true }),
+  audienceBranchId: uuid.optional(),
+}).strict();
+const participantHistory = participantPage.extend({ personId: uuid }).strict();
+
+async function participantBoundary(campaignId: string, activityId: string, sessionId: string) {
+  const scope = await pool.query(`SELECT e.creator_id AS "actorId" FROM development_planning_environment e
+    JOIN webinar_sessions s ON s.campaign_id=$1 AND s.activity_id=$2 AND s.id=$3
+    JOIN activities a ON a.id=s.activity_id AND a.campaign_id=s.campaign_id AND a.activity_type_id='webinar'
+    JOIN development_record_registry cr ON cr.entity_type='campaign' AND cr.entity_id=s.campaign_id
+    JOIN development_record_registry ar ON ar.entity_type='activity' AND ar.entity_id=s.activity_id
+    WHERE e.id=true AND NOT EXISTS(SELECT 1 FROM legacy_campaigns l WHERE l.campaign_id=s.campaign_id)
+      AND NOT EXISTS(SELECT 1 FROM legacy_activities l WHERE l.activity_id=s.activity_id)`,
+  [campaignId, activityId, sessionId]);
+  return scope.rows[0]?.actorId as string | undefined;
+}
+const simulatorLabel = "Synthetic participant simulator — no customer data";
+function participantError(error: unknown, res: import("express").Response, next: import("express").NextFunction) {
+  if (error instanceof PersistenceConflict) {
+    res.status(409).json({ error: error.message, code: error.code }); return;
+  }
+  next(error);
+}
+router.get("/development/participants/context", async (req, res, next) => {
+  const parsed = participantScope.safeParse(req.query);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid synthetic occurrence scope" }); return; }
+  try {
+    const { campaignId, activityId, sessionId } = parsed.data;
+    if (!await participantBoundary(campaignId, activityId, sessionId)) { res.status(404).json({ error: "Eligible synthetic occurrence not found" }); return; }
+    const context = await getSyntheticLifecycleContext({ campaignId, sessionId });
+    const branches = await pool.query(`SELECT id FROM audiences WHERE campaign_id=$1 ORDER BY id`, [campaignId]);
+    res.json({ ...context, audienceBranchIds: branches.rows.map(row => row.id as string), label: simulatorLabel, ...attribution });
+  } catch (error) { participantError(error, res, next); }
+});
+router.get("/development/participants/fixtures", async (req, res, next) => {
+  const parsed = fixturePage.safeParse(req.query);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid synthetic fixture page" }); return; }
+  try {
+    const { campaignId, activityId, sessionId, ...page } = parsed.data;
+    if (!await participantBoundary(campaignId, activityId, sessionId)) { res.status(404).json({ error: "Eligible synthetic occurrence not found" }); return; }
+    res.json({ ...await listSyntheticFixtures({ campaignId, sessionId, ...page }), label: simulatorLabel, ...attribution });
+  } catch (error) { participantError(error, res, next); }
+});
+router.get("/development/participants/population", async (req, res, next) => {
+  const parsed = populationPage.safeParse(req.query);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid synthetic population page" }); return; }
+  try {
+    const { campaignId, activityId, sessionId, ...page } = parsed.data;
+    if (!await participantBoundary(campaignId, activityId, sessionId)) { res.status(404).json({ error: "Eligible synthetic occurrence not found" }); return; }
+    res.json({ ...await listParticipantSimulation({ campaignId, sessionId, ...page }), label: simulatorLabel, ...attribution });
+  } catch (error) { participantError(error, res, next); }
+});
+router.get("/development/participants/suppression", async (req, res, next) => {
+  const parsed = participantSuppression.safeParse(req.query);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid synthetic suppression inspection" }); return; }
+  try {
+    const { activityId, ...input } = parsed.data;
+    if (!await participantBoundary(input.campaignId, activityId, input.sessionId)) { res.status(404).json({ error: "Eligible synthetic occurrence not found" }); return; }
+    res.json({ ...await inspectParticipantSuppression(input), label: simulatorLabel, ...attribution });
+  } catch (error) { participantError(error, res, next); }
+});
+router.get("/development/participants/history", async (req, res, next) => {
+  const parsed = participantHistory.safeParse(req.query);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid synthetic source history page" }); return; }
+  try {
+    const { campaignId, activityId, sessionId, personId, limit, offset, audienceBranchId } = parsed.data;
+    if (!await participantBoundary(campaignId, activityId, sessionId)) { res.status(404).json({ error: "Eligible synthetic occurrence not found" }); return; }
+    const fixture = await pool.query(`SELECT 1 FROM webinar_synthetic_fixtures f
+      JOIN webinar_people p ON p.id=f.person_id AND p.campaign_id=f.campaign_id
+      WHERE f.person_id=$1 AND f.campaign_id=$2 AND ($3::uuid IS NULL OR p.audience_branch_id=$3)
+        AND p.is_synthetic=true AND p.name=('Synthetic participant ' || f.fixture_key)`,
+      [personId, campaignId, audienceBranchId ?? null]);
+    if (!fixture.rowCount) { res.status(404).json({ error: "Synthetic fixture not found" }); return; }
+    const client = await pool.connect();
+    let total = 0;
+    let rows: Record<string, unknown>[] = [];
+    try {
+      await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+      const count = await client.query(`SELECT count(*)::int AS total FROM webinar_lifecycle_events WHERE campaign_id=$1 AND session_id=$2
+        AND (person_id=$3 OR (person_id IS NULL AND action IN ('cancel-occurrence','complete-occurrence','reschedule')))`,
+      [campaignId, sessionId, personId]);
+      const events = await client.query(`SELECT e.id,e.action,e.source_reference AS "sourceReference",e.observed_at AS "observedAt",
+        e.payload,COALESCE((SELECT jsonb_agg(jsonb_build_object('communicationId',o.communication_id,
+          'disposition',o.disposition,'reason',o.reason,'dueAt',o.due_at) ORDER BY o.id)
+          FROM webinar_lifecycle_obligations o WHERE o.source_event_id=e.id AND o.person_id=$3),'[]'::jsonb)
+          AS obligations,
+        COALESCE((SELECT jsonb_agg(s.snapshot_id ORDER BY s.snapshot_id)
+          FROM webinar_lifecycle_snapshots s WHERE s.event_id=e.id),'[]'::jsonb) AS "snapshotIds"
+        FROM webinar_lifecycle_events e WHERE e.campaign_id=$1 AND e.session_id=$2
+          AND (e.person_id=$3 OR (e.person_id IS NULL AND e.action IN ('cancel-occurrence','complete-occurrence','reschedule')))
+        ORDER BY e.observed_at,e.id LIMIT $4 OFFSET $5`,
+      [campaignId, sessionId, personId, limit, offset]);
+      total = count.rows[0].total as number;
+      rows = events.rows as Record<string, unknown>[];
+      await client.query("COMMIT");
+    } catch (error) { await client.query("ROLLBACK"); throw error; }
+    finally { client.release(); }
+    res.json({ total, limit, offset, events: rows,
+      operationalStatus: "simulation-only", label: simulatorLabel, ...attribution });
+  } catch (error) { participantError(error, res, next); }
+});
+router.post("/development/participants/fixtures", async (req, res, next) => {
+  const parsed = participantFixture.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid synthetic fixture command", issues: parsed.error.issues }); return; }
+  try {
+    const { activityId, ...input } = parsed.data;
+    const actorId = await participantBoundary(input.campaignId, activityId, input.sessionId);
+    if (!actorId) { res.status(404).json({ error: "Eligible synthetic occurrence not found" }); return; }
+    res.status(201).json({ ...await createSyntheticParticipant({ ...input, actorId }), label: simulatorLabel, ...attribution });
+  } catch (error) { participantError(error, res, next); }
+});
+router.post("/development/participants/transitions", async (req, res, next) => {
+  const parsed = participantTransition.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid synthetic lifecycle command", issues: parsed.error.issues }); return; }
+  try {
+    const { activityId, ...input } = parsed.data;
+    const actorId = await participantBoundary(input.campaignId, activityId, input.sessionId);
+    if (!actorId) { res.status(404).json({ error: "Eligible synthetic occurrence not found" }); return; }
+    res.json({ ...await transitionParticipantLifecycle({ ...input, actorId }), label: simulatorLabel, ...attribution });
+  } catch (error) { participantError(error, res, next); }
+});
+
 router.use((error: unknown, _req: import("express").Request, res: import("express").Response, _next: import("express").NextFunction) => {
   if ((error as { status?: number }).status === 400) { res.status(400).json({ error: (error as Error).message }); return; }
   const code = (error as { code?: string }).code;

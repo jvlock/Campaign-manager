@@ -184,6 +184,13 @@ export function assembleEvaluationInput(source: AssemblySource): AssemblyResult 
     unavailableInputs: unavailableInputs.sort((a, b) => a.field.localeCompare(b.field)),
     mappingErrors: mappingErrors.map(error => ({ ...error, sourceReference: error.sourceReference ?? sourceReferences.find(ref => ref.sourceType === "webinar-session")! }))
       .sort((a, b) => `${a.field}:${a.code}:${a.message}`.localeCompare(`${b.field}:${b.code}:${b.message}`)),
-    classifications: INPUT_CLASSIFICATIONS,
+    classifications: source.participant ? INPUT_CLASSIFICATIONS.map(entry =>
+      entry.field === "participantStatus"
+        ? { ...entry, classification: "directly-persisted" as const }
+        : entry.field === "attendance" ? { ...entry,
+          classification: source.participant?.attendanceState && source.participant.attendanceState !== "unknown"
+            ? "directly-persisted" as const : "missing-incomplete" as const }
+          : entry)
+      : INPUT_CLASSIFICATIONS,
   });
 }

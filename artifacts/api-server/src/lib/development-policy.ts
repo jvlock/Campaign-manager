@@ -22,6 +22,8 @@ const rules: [string, RegExp][] = [
   ["GET", /^\/development\/(?:groups|calendar|ownership\/(?:campaigns|activities)\/[^/]+)$/],
   ["GET", /^\/development\/simulations\/context$/],
   ["POST", /^\/development\/(?:groups|simulations)$/],
+  ["GET", /^\/development\/participants\/(?:context|fixtures|population|suppression|history)$/],
+  ["POST", /^\/development\/participants\/(?:fixtures|transitions)$/],
   ["PUT", /^\/development\/ownership\/(?:campaigns|activities)\/[^/]+$/],
 ];
 export function allowsDevelopmentPlanning(method: string, path: string): boolean {

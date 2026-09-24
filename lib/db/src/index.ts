@@ -68,7 +68,10 @@ export async function assertPlanningDatabaseIsolation(): Promise<void> {
       SELECT 1 FROM development_record_registry r WHERE r.entity_type='campaign' AND r.entity_id=c.id))
     OR EXISTS (SELECT 1 FROM activities a WHERE NOT EXISTS (
       SELECT 1 FROM development_record_registry r WHERE r.entity_type='activity' AND r.entity_id=a.id))
-    OR EXISTS (SELECT 1 FROM webinar_people)
+    OR EXISTS (SELECT 1 FROM webinar_people p WHERE p.is_synthetic IS DISTINCT FROM true
+      OR NOT EXISTS (SELECT 1 FROM webinar_synthetic_fixtures f
+        WHERE f.person_id=p.id AND f.campaign_id=p.campaign_id AND f.provenance='synthetic-participant-simulator'
+          AND p.name=('Synthetic participant ' || f.fixture_key)))
     AS contaminated`);
   if (contamination.rows[0].contaminated) {
     throw new Error("Open planning refuses database containing unregistered campaign or activity records or any participant/customer records");

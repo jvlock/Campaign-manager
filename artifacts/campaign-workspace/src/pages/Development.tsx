@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ProvisionalBadge } from '@/components/governance/ProvisionalNotice';
+import { SyntheticParticipantSimulator } from '@/components/map/SyntheticParticipantSimulator';
 
 interface Group { id: string; name: string; kind: string; parentId: string | null; accountableOwnerId: string | null }
 interface Groups { groups: Group[]; profiles: { id: string; name: string }[] }
@@ -202,6 +203,8 @@ export default function Development() {
           </CardContent>
         </Card>
       </div>
+      {isWebinar && campaignId && activityId && occurrenceId && <SyntheticParticipantSimulator
+        key={`${campaignId}:${activityId}:${occurrenceId}`} campaignId={campaignId} activityId={activityId} sessionId={occurrenceId} />}
       <Card>
         <CardHeader><CardTitle>Group and consolidated calendar</CardTitle></CardHeader>
         <CardContent className="space-y-4">

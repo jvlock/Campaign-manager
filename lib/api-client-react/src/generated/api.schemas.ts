@@ -5,6 +5,331 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+export interface SyntheticScope {
+  campaignId: string;
+  activityId: string;
+  sessionId: string;
+}
+
+export type SyntheticParticipantContextEventStatus = typeof SyntheticParticipantContextEventStatus[keyof typeof SyntheticParticipantContextEventStatus];
+
+
+export const SyntheticParticipantContextEventStatus = {
+  draft: 'draft',
+  open_for_registration: 'open_for_registration',
+  scheduled: 'scheduled',
+  in_progress: 'in_progress',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export type SyntheticParticipantContextOperationalStatus = typeof SyntheticParticipantContextOperationalStatus[keyof typeof SyntheticParticipantContextOperationalStatus];
+
+
+export const SyntheticParticipantContextOperationalStatus = {
+  'simulation-only': 'simulation-only',
+} as const;
+
+export type SyntheticParticipantContext = SyntheticScope & {
+  /** @minimum 0 */
+  revision: number;
+  eventStatus: SyntheticParticipantContextEventStatus;
+  sessionDate: string;
+  startTime: string;
+  timezone: string;
+  participantCount?: number;
+  audienceBranchIds: string[];
+  operationalStatus: SyntheticParticipantContextOperationalStatus;
+  label: string;
+};
+
+export type SyntheticFixtureInputAudienceClass = typeof SyntheticFixtureInputAudienceClass[keyof typeof SyntheticFixtureInputAudienceClass];
+
+
+export const SyntheticFixtureInputAudienceClass = {
+  customer: 'customer',
+  internal: 'internal',
+  test: 'test',
+} as const;
+
+export type SyntheticFixtureInput = SyntheticScope & {
+  /** @pattern ^fixture-[0-9]{1,8}$ */
+  fixtureKey: string;
+  audienceBranchId: string;
+  audienceClass: SyntheticFixtureInputAudienceClass;
+  /** @minimum 0 */
+  expectedRevision: number;
+  idempotencyKey: string;
+  calculationAt: string;
+};
+
+export interface SyntheticFixtureCreated {
+  personId: string;
+  fixtureKey: string;
+  syntheticEmail: string;
+  replayed: boolean;
+  label: string;
+}
+
+export type SyntheticFixturePageOperationalStatus = typeof SyntheticFixturePageOperationalStatus[keyof typeof SyntheticFixturePageOperationalStatus];
+
+
+export const SyntheticFixturePageOperationalStatus = {
+  'simulation-only': 'simulation-only',
+} as const;
+
+export type SyntheticFixturePageFixturesItemAudienceClass = typeof SyntheticFixturePageFixturesItemAudienceClass[keyof typeof SyntheticFixturePageFixturesItemAudienceClass];
+
+
+export const SyntheticFixturePageFixturesItemAudienceClass = {
+  customer: 'customer',
+  internal: 'internal',
+  test: 'test',
+} as const;
+
+export type SyntheticFixturePageFixturesItemRegistrationStatus = typeof SyntheticFixturePageFixturesItemRegistrationStatus[keyof typeof SyntheticFixturePageFixturesItemRegistrationStatus];
+
+
+export const SyntheticFixturePageFixturesItemRegistrationStatus = {
+  not_registered: 'not_registered',
+  registered: 'registered',
+  waitlisted: 'waitlisted',
+  cancelled: 'cancelled',
+} as const;
+
+export type SyntheticFixturePageFixturesItemAttendanceStatus = typeof SyntheticFixturePageFixturesItemAttendanceStatus[keyof typeof SyntheticFixturePageFixturesItemAttendanceStatus];
+
+
+export const SyntheticFixturePageFixturesItemAttendanceStatus = {
+  unknown: 'unknown',
+  attended: 'attended',
+  absent: 'absent',
+} as const;
+
+export type SyntheticFixturePageFixturesItem = {
+  personId: string;
+  fixtureKey: string;
+  audienceClass: SyntheticFixturePageFixturesItemAudienceClass;
+  syntheticEmail: string;
+  registrationStatus: SyntheticFixturePageFixturesItemRegistrationStatus;
+  attendanceStatus: SyntheticFixturePageFixturesItemAttendanceStatus;
+};
+
+export interface SyntheticFixturePage {
+  total: number;
+  limit: number;
+  offset: number;
+  returned: number;
+  /** @nullable */
+  nextOffset: number | null;
+  /**
+     * Fixture-key cursor for the next page; null when complete
+     * @nullable
+     */
+  nextCursor: string | null;
+  operationalStatus: SyntheticFixturePageOperationalStatus;
+  label: string;
+  fixtures: SyntheticFixturePageFixturesItem[];
+}
+
+export interface SyntheticObligation {
+  communicationId: string;
+  kind: string;
+  disposition: string;
+  /** @nullable */
+  dueAtEpochMs?: number | null;
+  reason: string;
+  /** @nullable */
+  variant?: string | null;
+  [key: string]: unknown;
+ }
+
+export type SyntheticPopulationPageOperationalStatus = typeof SyntheticPopulationPageOperationalStatus[keyof typeof SyntheticPopulationPageOperationalStatus];
+
+
+export const SyntheticPopulationPageOperationalStatus = {
+  'simulation-only': 'simulation-only',
+} as const;
+
+export type SyntheticPopulationPageParticipantsItem = {
+  participantId: string;
+  state: string;
+  recruitmentEligible?: boolean;
+  suppressions: string[];
+  obligations: SyntheticObligation[];
+  [key: string]: unknown;
+ };
+
+export interface SyntheticPopulationPage {
+  total: number;
+  limit: number;
+  offset: number;
+  returned: number;
+  /** @nullable */
+  nextOffset: number | null;
+  /**
+     * Stable participant ID cursor for the next page; null when complete
+     * @nullable
+     */
+  nextCursor: string | null;
+  operationalStatus: SyntheticPopulationPageOperationalStatus;
+  label: string;
+  participants: SyntheticPopulationPageParticipantsItem[];
+}
+
+export type SyntheticCommunicationKind = typeof SyntheticCommunicationKind[keyof typeof SyntheticCommunicationKind];
+
+
+export const SyntheticCommunicationKind = {
+  recruitment_1: 'recruitment_1',
+  recruitment_2: 'recruitment_2',
+  recruitment_3: 'recruitment_3',
+  final_recruitment: 'final_recruitment',
+  registration_confirmation: 'registration_confirmation',
+  calendar_information: 'calendar_information',
+  reminder_24_hour: 'reminder_24_hour',
+  reminder_1_hour: 'reminder_1_hour',
+  event_change_notice: 'event_change_notice',
+  event_cancellation_notice: 'event_cancellation_notice',
+  attended_follow_up: 'attended_follow_up',
+  absent_follow_up: 'absent_follow_up',
+  attendance_reconciliation: 'attendance_reconciliation',
+  neutral_follow_up: 'neutral_follow_up',
+  waitlist_confirmation: 'waitlist_confirmation',
+  waitlist_promotion: 'waitlist_promotion',
+  waitlist_closure: 'waitlist_closure',
+  participant_cancellation_confirmation: 'participant_cancellation_confirmation',
+  qa_test_send: 'qa_test_send',
+} as const;
+
+export type SyntheticSuppressionDecisionOperationalStatus = typeof SyntheticSuppressionDecisionOperationalStatus[keyof typeof SyntheticSuppressionDecisionOperationalStatus];
+
+
+export const SyntheticSuppressionDecisionOperationalStatus = {
+  'simulation-only': 'simulation-only',
+} as const;
+
+export interface SyntheticSuppressionDecision {
+  allowed: false;
+  reasonCode: string;
+  explanation: string;
+  participantId: string;
+  occurrenceId: string;
+  /**
+     * Null when no configured canonical communication identity exists; never a fabricated identifier
+     * @nullable
+     */
+  communicationId: string | null;
+  evaluatedAt: string;
+  sourceReferences: string[];
+  releaseFingerprint: string;
+  operationalStatus: SyntheticSuppressionDecisionOperationalStatus;
+}
+
+export type SyntheticTransitionInputAction = typeof SyntheticTransitionInputAction[keyof typeof SyntheticTransitionInputAction];
+
+
+export const SyntheticTransitionInputAction = {
+  register: 'register',
+  waitlist: 'waitlist',
+  promote: 'promote',
+  'cancel-registration': 'cancel-registration',
+  'cancel-occurrence': 'cancel-occurrence',
+  'complete-occurrence': 'complete-occurrence',
+  reschedule: 'reschedule',
+  'record-attendance': 'record-attendance',
+  'reconcile-attendance': 'reconcile-attendance',
+} as const;
+
+export type SyntheticTransitionInputAttendance = typeof SyntheticTransitionInputAttendance[keyof typeof SyntheticTransitionInputAttendance];
+
+
+export const SyntheticTransitionInputAttendance = {
+  attended: 'attended',
+  absent: 'absent',
+} as const;
+
+export type SyntheticTransitionInput = SyntheticScope & {
+  action: SyntheticTransitionInputAction;
+  personId?: string;
+  sourceReference: string;
+  /** @minimum 0 */
+  expectedRevision: number;
+  idempotencyKey: string;
+  calculationAt: string;
+  attendance?: SyntheticTransitionInputAttendance;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  sessionDate?: string;
+  /** @pattern ^\d{2}:\d{2}(:\d{2})?$ */
+  startTime?: string;
+  timezone?: string;
+  actualEndAt?: string;
+  /** Optional participant branch check; occurrence-wide actions must omit this filter */
+  audienceBranchId?: string;
+};
+
+export type SyntheticTransitionResultSnapshotOperationalStatus = typeof SyntheticTransitionResultSnapshotOperationalStatus[keyof typeof SyntheticTransitionResultSnapshotOperationalStatus];
+
+
+export const SyntheticTransitionResultSnapshotOperationalStatus = {
+  'simulation-only': 'simulation-only',
+} as const;
+
+export type SyntheticTransitionResultSnapshot = {
+  snapshotId: string;
+  /** @minimum 0 */
+  revision: number;
+  operationalStatus: SyntheticTransitionResultSnapshotOperationalStatus;
+  releaseFingerprint: string;
+  inputFingerprint: string;
+  unresolvedBlockingFailures: unknown[];
+  warnings: unknown[];
+  missingInputData: unknown[];
+  unavailableExternalObservations: unknown[];
+  [key: string]: unknown;
+ };
+
+export interface SyntheticTransitionResult {
+  eventId: string;
+  replayed: boolean;
+  snapshotIds: string[];
+  snapshot: SyntheticTransitionResultSnapshot;
+  before: unknown[];
+  after: unknown[];
+  suppression: SyntheticSuppressionDecision[];
+  label: string;
+}
+
+export type SyntheticHistoryPageOperationalStatus = typeof SyntheticHistoryPageOperationalStatus[keyof typeof SyntheticHistoryPageOperationalStatus];
+
+
+export const SyntheticHistoryPageOperationalStatus = {
+  'simulation-only': 'simulation-only',
+} as const;
+
+export type SyntheticHistoryPageEventsItemPayload = { [key: string]: unknown };
+
+export type SyntheticHistoryPageEventsItemObligationsItem = { [key: string]: unknown };
+
+export type SyntheticHistoryPageEventsItem = {
+  id: string;
+  action: string;
+  sourceReference: string;
+  observedAt: string;
+  payload: SyntheticHistoryPageEventsItemPayload;
+  obligations: SyntheticHistoryPageEventsItemObligationsItem[];
+  snapshotIds: string[];
+};
+
+export interface SyntheticHistoryPage {
+  total: number;
+  limit: number;
+  offset: number;
+  operationalStatus: SyntheticHistoryPageOperationalStatus;
+  label: string;
+  events: SyntheticHistoryPageEventsItem[];
+}
+
 export type DevelopmentGroupInputKind = typeof DevelopmentGroupInputKind[keyof typeof DevelopmentGroupInputKind];
 
 
@@ -2045,6 +2370,25 @@ export type ConflictResponse = Error;
  */
 export type NotFoundResponse = Error;
 
+export type SyntheticCampaignIdParameter = string;
+
+export type SyntheticActivityIdParameter = string;
+
+export type SyntheticSessionIdParameter = string;
+
+export type SyntheticLimitParameter = number;
+
+export type SyntheticOffsetParameter = number;
+
+export type SyntheticFixtureAfterParameter = string;
+
+export type SyntheticPersonAfterParameter = string;
+
+/**
+ * Optional development branch filter, not an identity or group authorization assertion
+ */
+export type SyntheticAudienceBranchIdParameter = string;
+
 export type PageLimitParameter = number;
 
 export type PageOffsetParameter = number;
@@ -2143,6 +2487,88 @@ export type GetDevelopmentSimulationContext200 = {
   operationalStatus: GetDevelopmentSimulationContext200OperationalStatus;
   unverified: boolean;
   authoritative: boolean;
+};
+
+export type GetSyntheticParticipantContextParams = {
+campaignId: SyntheticCampaignIdParameter;
+activityId: SyntheticActivityIdParameter;
+sessionId: SyntheticSessionIdParameter;
+};
+
+export type ListSyntheticParticipantFixturesParams = {
+campaignId: SyntheticCampaignIdParameter;
+activityId: SyntheticActivityIdParameter;
+sessionId: SyntheticSessionIdParameter;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: SyntheticLimitParameter;
+/**
+ * @minimum 0
+ */
+offset?: SyntheticOffsetParameter;
+/**
+ * @pattern ^fixture-[0-9]{1,8}$
+ */
+after?: SyntheticFixtureAfterParameter;
+/**
+ * Optional development branch filter, not an identity or group authorization assertion
+ */
+audienceBranchId?: SyntheticAudienceBranchIdParameter;
+};
+
+export type ListSyntheticParticipantPopulationParams = {
+campaignId: SyntheticCampaignIdParameter;
+activityId: SyntheticActivityIdParameter;
+sessionId: SyntheticSessionIdParameter;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: SyntheticLimitParameter;
+/**
+ * @minimum 0
+ */
+offset?: SyntheticOffsetParameter;
+after?: SyntheticPersonAfterParameter;
+/**
+ * Optional development branch filter, not an identity or group authorization assertion
+ */
+audienceBranchId?: SyntheticAudienceBranchIdParameter;
+};
+
+export type InspectSyntheticParticipantSuppressionParams = {
+campaignId: SyntheticCampaignIdParameter;
+activityId: SyntheticActivityIdParameter;
+sessionId: SyntheticSessionIdParameter;
+/**
+ * Optional development branch filter, not an identity or group authorization assertion
+ */
+audienceBranchId?: SyntheticAudienceBranchIdParameter;
+personId: string;
+kind: SyntheticCommunicationKind;
+calculationAt: string;
+};
+
+export type GetSyntheticParticipantHistoryParams = {
+campaignId: SyntheticCampaignIdParameter;
+activityId: SyntheticActivityIdParameter;
+sessionId: SyntheticSessionIdParameter;
+personId: string;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: SyntheticLimitParameter;
+/**
+ * @minimum 0
+ */
+offset?: SyntheticOffsetParameter;
+/**
+ * Optional development branch filter, not an identity or group authorization assertion
+ */
+audienceBranchId?: SyntheticAudienceBranchIdParameter;
 };
 
 export type ListOrganizationCampaignsParams = {

@@ -82,6 +82,9 @@ test("loader projection wires actual application records into pure assembly", ()
     occurrence: { id: "occurrence", campaign_id: "campaign", activity_id: "activity", session_date: "2030-06-01", start_time: "12:00", timezone: "UTC", duration_minutes: 60, platform: "", name: "Webinar", template_version: "default_5" },
     binding: { standard_id: "WEB-STANDARD-001", standard_version: "1.0-pilot-rc1", revision: 1 },
     records: [{ kind: "plan", payload: { eventStatus: "scheduled" } }],
+    participants: [], registrations: [], attendances: [], lifecycleEvents: [],
+    lifecycleObligations: [], syntheticExecutions: [],
+    participantTotal: 0, participantRemaining: 0,
   } as unknown as OccurrenceSources;
   const mapped = occurrenceAssemblySource(sources, input.calculationInstant as string);
   assert.equal(mapped.persisted?.details, p.details);

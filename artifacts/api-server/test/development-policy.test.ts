@@ -27,3 +27,17 @@ test("operational, authority, customer and unknown routes stay closed", () => {
     ["GET", "/development/simulations/other"],
   ]) assert.equal(allowsDevelopmentPlanning(method, path), false, path);
 });
+
+test("synthetic participant simulator exposes only scoped read and source-fact commands", () => {
+  for (const path of ["context", "fixtures", "population", "history", "suppression"])
+    assert.equal(allowsDevelopmentPlanning("GET", `/development/participants/${path}`), true);
+  for (const path of ["fixtures", "transitions"])
+    assert.equal(allowsDevelopmentPlanning("POST", `/development/participants/${path}`), true);
+  for (const [method, path] of [
+    ["POST", "/development/participants/population"], ["PATCH", "/development/participants/fixtures"],
+    ["DELETE", "/development/participants/fixtures"], ["POST", "/development/participants/import"],
+    ["POST", "/development/participants/send"], ["POST", "/development/participants/handoff"],
+    ["PUT", "/development/participants/transitions"], ["GET", "/development/participants/transitions"],
+    ["GET", "/development/participants/fixtures/arbitrary"], ["POST", "/development/participants/history"],
+  ]) assert.equal(allowsDevelopmentPlanning(method, path), false, `${method} ${path}`);
+});

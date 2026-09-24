@@ -67,6 +67,8 @@ import type {
   GetDevelopmentSimulationContextParams,
   GetDevelopmentStatus200,
   GetPortfolioParams,
+  GetSyntheticParticipantContextParams,
+  GetSyntheticParticipantHistoryParams,
   Governance,
   GovernanceActorReason,
   GovernanceApproval,
@@ -77,6 +79,7 @@ import type {
   GovernanceCommentInput,
   GovernanceCommentUpdate,
   HealthStatus,
+  InspectSyntheticParticipantSuppressionParams,
   LandingPageDeliverable,
   LandingPageInput,
   LandingPageUpdate,
@@ -86,6 +89,8 @@ import type {
   ListGovernanceCommentsParams,
   ListGovernanceTermsParams,
   ListOrganizationCampaignsParams,
+  ListSyntheticParticipantFixturesParams,
+  ListSyntheticParticipantPopulationParams,
   MapData,
   MapInput,
   NotFoundResponse,
@@ -103,7 +108,16 @@ import type {
   ScheduledInstance,
   ScheduledInstanceAdjustment,
   ScopedOperationUnavailableResponse,
+  SyntheticFixtureCreated,
+  SyntheticFixtureInput,
+  SyntheticFixturePage,
+  SyntheticHistoryPage,
+  SyntheticParticipantContext,
   SyntheticPersonInput,
+  SyntheticPopulationPage,
+  SyntheticSuppressionDecision,
+  SyntheticTransitionInput,
+  SyntheticTransitionResult,
   TaskDefault,
   TaskDefaultsUpdate,
   TaxonomyImportBatchResponse,
@@ -793,6 +807,566 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getSimulateDevelopmentWorkflowMutationOptions(options));
+    }
+
+export const getGetSyntheticParticipantContextUrl = (params: GetSyntheticParticipantContextParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/development/participants/context?${stringifiedParams}` : `/api/development/participants/context`
+}
+
+/**
+ * Open-development only; exact-standard synthetic occurrence, no customer data.
+ */
+export const getSyntheticParticipantContext = async (params: GetSyntheticParticipantContextParams, options?: Parameters<typeof customFetch>[1]): Promise<SyntheticParticipantContext> => {
+
+  return customFetch<SyntheticParticipantContext>(getGetSyntheticParticipantContextUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSyntheticParticipantContextQueryKey = (params?: GetSyntheticParticipantContextParams,) => {
+    return [
+    `/api/development/participants/context`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSyntheticParticipantContextQueryOptions = <TData = Awaited<ReturnType<typeof getSyntheticParticipantContext>>, TError = ErrorType<void>>(params: GetSyntheticParticipantContextParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSyntheticParticipantContext>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSyntheticParticipantContextQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSyntheticParticipantContext>>> = ({ signal }) => getSyntheticParticipantContext(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSyntheticParticipantContext>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSyntheticParticipantContextQueryResult = NonNullable<Awaited<ReturnType<typeof getSyntheticParticipantContext>>>
+export type GetSyntheticParticipantContextQueryError = ErrorType<void>
+
+
+
+export function useGetSyntheticParticipantContext<TData = Awaited<ReturnType<typeof getSyntheticParticipantContext>>, TError = ErrorType<void>>(
+ params: GetSyntheticParticipantContextParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSyntheticParticipantContext>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSyntheticParticipantContextQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListSyntheticParticipantFixturesUrl = (params: ListSyntheticParticipantFixturesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/development/participants/fixtures?${stringifiedParams}` : `/api/development/participants/fixtures`
+}
+
+export const listSyntheticParticipantFixtures = async (params: ListSyntheticParticipantFixturesParams, options?: Parameters<typeof customFetch>[1]): Promise<SyntheticFixturePage> => {
+
+  return customFetch<SyntheticFixturePage>(getListSyntheticParticipantFixturesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSyntheticParticipantFixturesQueryKey = (params?: ListSyntheticParticipantFixturesParams,) => {
+    return [
+    `/api/development/participants/fixtures`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSyntheticParticipantFixturesQueryOptions = <TData = Awaited<ReturnType<typeof listSyntheticParticipantFixtures>>, TError = ErrorType<unknown>>(params: ListSyntheticParticipantFixturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSyntheticParticipantFixtures>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSyntheticParticipantFixturesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSyntheticParticipantFixtures>>> = ({ signal }) => listSyntheticParticipantFixtures(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSyntheticParticipantFixtures>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSyntheticParticipantFixturesQueryResult = NonNullable<Awaited<ReturnType<typeof listSyntheticParticipantFixtures>>>
+export type ListSyntheticParticipantFixturesQueryError = ErrorType<unknown>
+
+
+
+export function useListSyntheticParticipantFixtures<TData = Awaited<ReturnType<typeof listSyntheticParticipantFixtures>>, TError = ErrorType<unknown>>(
+ params: ListSyntheticParticipantFixturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSyntheticParticipantFixtures>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSyntheticParticipantFixturesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateSyntheticParticipantFixtureUrl = () => {
+
+
+
+
+  return `/api/development/participants/fixtures`
+}
+
+export const createSyntheticParticipantFixture = async (syntheticFixtureInput: SyntheticFixtureInput, options?: Parameters<typeof customFetch>[1]): Promise<SyntheticFixtureCreated> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SyntheticFixtureCreated>(getCreateSyntheticParticipantFixtureUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(syntheticFixtureInput)
+  }
+);}
+
+
+
+
+
+export const getCreateSyntheticParticipantFixtureMutationKey = () => ['createSyntheticParticipantFixture'] as const;
+
+export const getCreateSyntheticParticipantFixtureMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSyntheticParticipantFixture>>, TError,CreateSyntheticParticipantFixtureMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSyntheticParticipantFixture>>, TError,CreateSyntheticParticipantFixtureMutationVariables, TContext> => {
+
+const mutationKey = getCreateSyntheticParticipantFixtureMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSyntheticParticipantFixture>>, CreateSyntheticParticipantFixtureMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSyntheticParticipantFixture(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSyntheticParticipantFixtureMutationResult = NonNullable<Awaited<ReturnType<typeof createSyntheticParticipantFixture>>>
+    export type CreateSyntheticParticipantFixtureMutationBody = BodyType<SyntheticFixtureInput>
+    export type CreateSyntheticParticipantFixtureMutationError = ErrorType<void>
+    export type CreateSyntheticParticipantFixtureMutationVariables = {data: BodyType<SyntheticFixtureInput>}
+
+    export const useCreateSyntheticParticipantFixture = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSyntheticParticipantFixture>>, TError,CreateSyntheticParticipantFixtureMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSyntheticParticipantFixture>>,
+        TError,
+        CreateSyntheticParticipantFixtureMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateSyntheticParticipantFixtureMutationOptions(options));
+    }
+
+export const getListSyntheticParticipantPopulationUrl = (params: ListSyntheticParticipantPopulationParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/development/participants/population?${stringifiedParams}` : `/api/development/participants/population`
+}
+
+export const listSyntheticParticipantPopulation = async (params: ListSyntheticParticipantPopulationParams, options?: Parameters<typeof customFetch>[1]): Promise<SyntheticPopulationPage> => {
+
+  return customFetch<SyntheticPopulationPage>(getListSyntheticParticipantPopulationUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSyntheticParticipantPopulationQueryKey = (params?: ListSyntheticParticipantPopulationParams,) => {
+    return [
+    `/api/development/participants/population`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSyntheticParticipantPopulationQueryOptions = <TData = Awaited<ReturnType<typeof listSyntheticParticipantPopulation>>, TError = ErrorType<unknown>>(params: ListSyntheticParticipantPopulationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSyntheticParticipantPopulation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSyntheticParticipantPopulationQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSyntheticParticipantPopulation>>> = ({ signal }) => listSyntheticParticipantPopulation(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSyntheticParticipantPopulation>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSyntheticParticipantPopulationQueryResult = NonNullable<Awaited<ReturnType<typeof listSyntheticParticipantPopulation>>>
+export type ListSyntheticParticipantPopulationQueryError = ErrorType<unknown>
+
+
+
+export function useListSyntheticParticipantPopulation<TData = Awaited<ReturnType<typeof listSyntheticParticipantPopulation>>, TError = ErrorType<unknown>>(
+ params: ListSyntheticParticipantPopulationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSyntheticParticipantPopulation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSyntheticParticipantPopulationQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getInspectSyntheticParticipantSuppressionUrl = (params: InspectSyntheticParticipantSuppressionParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/development/participants/suppression?${stringifiedParams}` : `/api/development/participants/suppression`
+}
+
+export const inspectSyntheticParticipantSuppression = async (params: InspectSyntheticParticipantSuppressionParams, options?: Parameters<typeof customFetch>[1]): Promise<SyntheticSuppressionDecision> => {
+
+  return customFetch<SyntheticSuppressionDecision>(getInspectSyntheticParticipantSuppressionUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getInspectSyntheticParticipantSuppressionQueryKey = (params?: InspectSyntheticParticipantSuppressionParams,) => {
+    return [
+    `/api/development/participants/suppression`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getInspectSyntheticParticipantSuppressionQueryOptions = <TData = Awaited<ReturnType<typeof inspectSyntheticParticipantSuppression>>, TError = ErrorType<unknown>>(params: InspectSyntheticParticipantSuppressionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof inspectSyntheticParticipantSuppression>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getInspectSyntheticParticipantSuppressionQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof inspectSyntheticParticipantSuppression>>> = ({ signal }) => inspectSyntheticParticipantSuppression(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof inspectSyntheticParticipantSuppression>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type InspectSyntheticParticipantSuppressionQueryResult = NonNullable<Awaited<ReturnType<typeof inspectSyntheticParticipantSuppression>>>
+export type InspectSyntheticParticipantSuppressionQueryError = ErrorType<unknown>
+
+
+
+export function useInspectSyntheticParticipantSuppression<TData = Awaited<ReturnType<typeof inspectSyntheticParticipantSuppression>>, TError = ErrorType<unknown>>(
+ params: InspectSyntheticParticipantSuppressionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof inspectSyntheticParticipantSuppression>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getInspectSyntheticParticipantSuppressionQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSyntheticParticipantHistoryUrl = (params: GetSyntheticParticipantHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/development/participants/history?${stringifiedParams}` : `/api/development/participants/history`
+}
+
+/**
+ * Immutable synthetic source events, obligation changes and snapshot references; occurrence and fixture scoped.
+ */
+export const getSyntheticParticipantHistory = async (params: GetSyntheticParticipantHistoryParams, options?: Parameters<typeof customFetch>[1]): Promise<SyntheticHistoryPage> => {
+
+  return customFetch<SyntheticHistoryPage>(getGetSyntheticParticipantHistoryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSyntheticParticipantHistoryQueryKey = (params?: GetSyntheticParticipantHistoryParams,) => {
+    return [
+    `/api/development/participants/history`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSyntheticParticipantHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getSyntheticParticipantHistory>>, TError = ErrorType<void>>(params: GetSyntheticParticipantHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSyntheticParticipantHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSyntheticParticipantHistoryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSyntheticParticipantHistory>>> = ({ signal }) => getSyntheticParticipantHistory(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSyntheticParticipantHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSyntheticParticipantHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getSyntheticParticipantHistory>>>
+export type GetSyntheticParticipantHistoryQueryError = ErrorType<void>
+
+
+
+export function useGetSyntheticParticipantHistory<TData = Awaited<ReturnType<typeof getSyntheticParticipantHistory>>, TError = ErrorType<void>>(
+ params: GetSyntheticParticipantHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSyntheticParticipantHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSyntheticParticipantHistoryQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getTransitionSyntheticParticipantUrl = () => {
+
+
+
+
+  return `/api/development/participants/transitions`
+}
+
+export const transitionSyntheticParticipant = async (syntheticTransitionInput: SyntheticTransitionInput, options?: Parameters<typeof customFetch>[1]): Promise<SyntheticTransitionResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SyntheticTransitionResult>(getTransitionSyntheticParticipantUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(syntheticTransitionInput)
+  }
+);}
+
+
+
+
+
+export const getTransitionSyntheticParticipantMutationKey = () => ['transitionSyntheticParticipant'] as const;
+
+export const getTransitionSyntheticParticipantMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transitionSyntheticParticipant>>, TError,TransitionSyntheticParticipantMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof transitionSyntheticParticipant>>, TError,TransitionSyntheticParticipantMutationVariables, TContext> => {
+
+const mutationKey = getTransitionSyntheticParticipantMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof transitionSyntheticParticipant>>, TransitionSyntheticParticipantMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  transitionSyntheticParticipant(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TransitionSyntheticParticipantMutationResult = NonNullable<Awaited<ReturnType<typeof transitionSyntheticParticipant>>>
+    export type TransitionSyntheticParticipantMutationBody = BodyType<SyntheticTransitionInput>
+    export type TransitionSyntheticParticipantMutationError = ErrorType<void>
+    export type TransitionSyntheticParticipantMutationVariables = {data: BodyType<SyntheticTransitionInput>}
+
+    export const useTransitionSyntheticParticipant = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transitionSyntheticParticipant>>, TError,TransitionSyntheticParticipantMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof transitionSyntheticParticipant>>,
+        TError,
+        TransitionSyntheticParticipantMutationVariables,
+        TContext
+      > => {
+      return useMutation(getTransitionSyntheticParticipantMutationOptions(options));
     }
 
 export const getGetActivityModelCatalogUrl = () => {

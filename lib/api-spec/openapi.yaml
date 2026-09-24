@@ -160,6 +160,124 @@ paths:
           description: Selected campaign, activity or occurrence not found in scope
         "409":
           description: Ineligible occurrence or stale revision; drafts remain unchanged
+  /development/participants/context:
+    get:
+      operationId: getSyntheticParticipantContext
+      description: Open-development only; exact-standard synthetic occurrence, no customer data.
+      parameters:
+        - {$ref: "#/components/parameters/SyntheticCampaignId"}
+        - {$ref: "#/components/parameters/SyntheticActivityId"}
+        - {$ref: "#/components/parameters/SyntheticSessionId"}
+      responses:
+        "200":
+          description: Current source revision, occurrence state and available synthetic audience branches.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SyntheticParticipantContext"}
+        "404": {description: Occurrence outside synthetic scope}
+        "409": {description: Ineligible or legacy occurrence}
+  /development/participants/fixtures:
+    get:
+      operationId: listSyntheticParticipantFixtures
+      parameters:
+        - {$ref: "#/components/parameters/SyntheticCampaignId"}
+        - {$ref: "#/components/parameters/SyntheticActivityId"}
+        - {$ref: "#/components/parameters/SyntheticSessionId"}
+        - {$ref: "#/components/parameters/SyntheticLimit"}
+        - {$ref: "#/components/parameters/SyntheticOffset"}
+        - {$ref: "#/components/parameters/SyntheticFixtureAfter"}
+        - {$ref: "#/components/parameters/SyntheticAudienceBranchId"}
+      responses:
+        "200":
+          description: Paginated labelled synthetic fixtures (not customer records).
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SyntheticFixturePage"}
+    post:
+      operationId: createSyntheticParticipantFixture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/SyntheticFixtureInput"}
+      responses:
+        "201":
+          description: Deterministic closed-key fixture; actor is assigned by the server.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SyntheticFixtureCreated"}
+        "400": {description: Invalid or PII-bearing request}
+        "409": {description: Stale revision or invalid fixture configuration}
+  /development/participants/population:
+    get:
+      operationId: listSyntheticParticipantPopulation
+      parameters:
+        - {$ref: "#/components/parameters/SyntheticCampaignId"}
+        - {$ref: "#/components/parameters/SyntheticActivityId"}
+        - {$ref: "#/components/parameters/SyntheticSessionId"}
+        - {$ref: "#/components/parameters/SyntheticLimit"}
+        - {$ref: "#/components/parameters/SyntheticOffset"}
+        - {$ref: "#/components/parameters/SyntheticPersonAfter"}
+        - {$ref: "#/components/parameters/SyntheticAudienceBranchId"}
+      responses:
+        "200":
+          description: Canonical participant plan with explicit total and page boundaries; no sending.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SyntheticPopulationPage"}
+  /development/participants/suppression:
+    get:
+      operationId: inspectSyntheticParticipantSuppression
+      parameters:
+        - {$ref: "#/components/parameters/SyntheticCampaignId"}
+        - {$ref: "#/components/parameters/SyntheticActivityId"}
+        - {$ref: "#/components/parameters/SyntheticSessionId"}
+        - {$ref: "#/components/parameters/SyntheticAudienceBranchId"}
+        - {name: personId, in: query, required: true, schema: {type: string, format: uuid}}
+        - {name: kind, in: query, required: true, schema: {$ref: "#/components/schemas/SyntheticCommunicationKind"}}
+        - {name: calculationAt, in: query, required: true, schema: {type: string, format: date-time}}
+      responses:
+        "200":
+          description: Fail-closed simulation-only suppression decision, never a handoff authorization.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SyntheticSuppressionDecision"}
+  /development/participants/history:
+    get:
+      operationId: getSyntheticParticipantHistory
+      description: Immutable synthetic source events, obligation changes and snapshot references; occurrence and fixture scoped.
+      parameters:
+        - {$ref: "#/components/parameters/SyntheticCampaignId"}
+        - {$ref: "#/components/parameters/SyntheticActivityId"}
+        - {$ref: "#/components/parameters/SyntheticSessionId"}
+        - {name: personId, in: query, required: true, schema: {type: string, format: uuid}}
+        - {$ref: "#/components/parameters/SyntheticLimit"}
+        - {$ref: "#/components/parameters/SyntheticOffset"}
+        - {$ref: "#/components/parameters/SyntheticAudienceBranchId"}
+      responses:
+        "200":
+          description: Paginated source history, not mutable participant administration.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SyntheticHistoryPage"}
+        "404": {description: Synthetic fixture outside requested campaign}
+  /development/participants/transitions:
+    post:
+      operationId: transitionSyntheticParticipant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/SyntheticTransitionInput"}
+      responses:
+        "200":
+          description: Audited transition and immutable simulation snapshot, including before/after obligations.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SyntheticTransitionResult"}
+        "400": {description: Invalid source event or unsupported action}
+        "404": {description: Occurrence outside synthetic scope}
+        "409": {description: Invalid transition or optimistic concurrency conflict; retain draft and retry tuple}
   /activity-model/catalog:
     get:
       operationId: getActivityModelCatalog
@@ -1419,6 +1537,14 @@ components:
       description: 'JSON object with total (authorized scoped records), returned (this response), hasMore and nextOffset (null at end). Stable ID ordered live pages; restart on population changes. For composite objects each top-level collection receives the same limit/offset independently, totals/returned sum the collections. Generated client consumes all pages, rejects partial failures, and deduplicates by ID.'
       schema: {type: string}
   parameters:
+    SyntheticCampaignId: {name: campaignId, in: query, required: true, schema: {type: string, format: uuid}}
+    SyntheticActivityId: {name: activityId, in: query, required: true, schema: {type: string, format: uuid}}
+    SyntheticSessionId: {name: sessionId, in: query, required: true, schema: {type: string, format: uuid}}
+    SyntheticLimit: {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 25}}
+    SyntheticOffset: {name: offset, in: query, schema: {type: integer, minimum: 0, default: 0}}
+    SyntheticFixtureAfter: {name: after, in: query, schema: {type: string, pattern: "^fixture-[0-9]{1,8}$"}}
+    SyntheticPersonAfter: {name: after, in: query, schema: {type: string, format: uuid}}
+    SyntheticAudienceBranchId: {name: audienceBranchId, in: query, schema: {type: string, format: uuid}, description: "Optional development branch filter, not an identity or group authorization assertion"}
     PageLimit:
       name: limit
       in: query
@@ -1530,6 +1656,190 @@ components:
         application/json:
           schema: {$ref: "#/components/schemas/Error"}
   schemas:
+    SyntheticScope:
+      type: object
+      required: [campaignId, activityId, sessionId]
+      properties:
+        campaignId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        sessionId: {type: string, format: uuid}
+    SyntheticParticipantContext:
+      allOf:
+        - {$ref: "#/components/schemas/SyntheticScope"}
+        - type: object
+          required: [revision, eventStatus, sessionDate, startTime, timezone, activityId, audienceBranchIds, operationalStatus, label]
+          properties:
+            revision: {type: integer, minimum: 0}
+            eventStatus: {type: string, enum: [draft, open_for_registration, scheduled, in_progress, completed, cancelled]}
+            sessionDate: {type: string}
+            startTime: {type: string}
+            timezone: {type: string}
+            participantCount: {type: integer}
+            audienceBranchIds: {type: array, items: {type: string, format: uuid}}
+            operationalStatus: {type: string, enum: [simulation-only]}
+            label: {type: string}
+    SyntheticFixtureInput:
+      allOf:
+        - {$ref: "#/components/schemas/SyntheticScope"}
+        - type: object
+          required: [fixtureKey, audienceBranchId, audienceClass, expectedRevision, idempotencyKey, calculationAt]
+          properties:
+            fixtureKey: {type: string, pattern: "^fixture-[0-9]{1,8}$"}
+            audienceBranchId: {type: string, format: uuid}
+            audienceClass: {type: string, enum: [customer, internal, test]}
+            expectedRevision: {type: integer, minimum: 0}
+            idempotencyKey: {type: string, format: uuid}
+            calculationAt: {type: string, format: date-time}
+    SyntheticFixtureCreated:
+      type: object
+      required: [personId, fixtureKey, syntheticEmail, replayed, label]
+      properties:
+        personId: {type: string, format: uuid}
+        fixtureKey: {type: string}
+        syntheticEmail: {type: string}
+        replayed: {type: boolean}
+        label: {type: string}
+    SyntheticFixturePage:
+      type: object
+      required: [total, limit, offset, returned, nextOffset, nextCursor, fixtures, operationalStatus, label]
+      properties:
+        total: {type: integer}
+        limit: {type: integer}
+        offset: {type: integer}
+        returned: {type: integer}
+        nextOffset: {type: [integer, "null"]}
+        nextCursor: {type: [string, "null"], description: Fixture-key cursor for the next page; null when complete}
+        operationalStatus: {type: string, enum: [simulation-only]}
+        label: {type: string}
+        fixtures:
+          type: array
+          items:
+            type: object
+            required: [personId, fixtureKey, audienceClass, syntheticEmail, registrationStatus, attendanceStatus]
+            properties:
+              personId: {type: string, format: uuid}
+              fixtureKey: {type: string}
+              audienceClass: {type: string, enum: [customer, internal, test]}
+              syntheticEmail: {type: string}
+              registrationStatus: {type: string, enum: [not_registered, registered, waitlisted, cancelled]}
+              attendanceStatus: {type: string, enum: [unknown, attended, absent]}
+    SyntheticObligation:
+      type: object
+      required: [communicationId, kind, disposition, reason]
+      additionalProperties: true
+      properties:
+        communicationId: {type: string}
+        kind: {type: string}
+        disposition: {type: string}
+        dueAtEpochMs: {type: [integer, "null"]}
+        reason: {type: string}
+        variant: {type: [string, "null"]}
+    SyntheticPopulationPage:
+      type: object
+      required: [total, limit, offset, returned, nextOffset, nextCursor, participants, operationalStatus, label]
+      properties:
+        total: {type: integer}
+        limit: {type: integer}
+        offset: {type: integer}
+        returned: {type: integer}
+        nextOffset: {type: [integer, "null"]}
+        nextCursor: {type: [string, "null"], description: Stable participant ID cursor for the next page; null when complete}
+        operationalStatus: {type: string, enum: [simulation-only]}
+        label: {type: string}
+        participants:
+          type: array
+          items:
+            type: object
+            required: [participantId, state, obligations, suppressions]
+            additionalProperties: true
+            properties:
+              participantId: {type: string}
+              state: {type: string}
+              recruitmentEligible: {type: boolean}
+              suppressions: {type: array, items: {type: string}}
+              obligations: {type: array, items: {$ref: "#/components/schemas/SyntheticObligation"}}
+    SyntheticCommunicationKind:
+      type: string
+      enum: [recruitment_1, recruitment_2, recruitment_3, final_recruitment, registration_confirmation, calendar_information, reminder_24_hour, reminder_1_hour, event_change_notice, event_cancellation_notice, attended_follow_up, absent_follow_up, attendance_reconciliation, neutral_follow_up, waitlist_confirmation, waitlist_promotion, waitlist_closure, participant_cancellation_confirmation, qa_test_send]
+    SyntheticSuppressionDecision:
+      type: object
+      required: [allowed, reasonCode, explanation, participantId, occurrenceId, communicationId, evaluatedAt, sourceReferences, releaseFingerprint, operationalStatus]
+      properties:
+        allowed: {type: boolean, enum: [false]}
+        reasonCode: {type: string}
+        explanation: {type: string}
+        participantId: {type: string}
+        occurrenceId: {type: string}
+        communicationId: {type: [string, "null"], description: Null when no configured canonical communication identity exists; never a fabricated identifier}
+        evaluatedAt: {type: string, format: date-time}
+        sourceReferences: {type: array, items: {type: string}}
+        releaseFingerprint: {type: string}
+        operationalStatus: {type: string, enum: [simulation-only]}
+    SyntheticTransitionInput:
+      allOf:
+        - {$ref: "#/components/schemas/SyntheticScope"}
+        - type: object
+          required: [action, sourceReference, expectedRevision, idempotencyKey, calculationAt]
+          properties:
+            action: {type: string, enum: [register, waitlist, promote, cancel-registration, cancel-occurrence, complete-occurrence, reschedule, record-attendance, reconcile-attendance]}
+            personId: {type: string, format: uuid}
+            sourceReference: {type: string, format: uuid}
+            expectedRevision: {type: integer, minimum: 0}
+            idempotencyKey: {type: string, format: uuid}
+            calculationAt: {type: string, format: date-time}
+            attendance: {type: string, enum: [attended, absent]}
+            sessionDate: {type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$"}
+            startTime: {type: string, pattern: "^\\d{2}:\\d{2}(:\\d{2})?$"}
+            timezone: {type: string}
+            actualEndAt: {type: string, format: date-time}
+            audienceBranchId: {type: string, format: uuid, description: Optional participant branch check; occurrence-wide actions must omit this filter}
+    SyntheticTransitionResult:
+      type: object
+      required: [eventId, replayed, snapshotIds, snapshot, before, after, suppression, label]
+      properties:
+        eventId: {type: string, format: uuid}
+        replayed: {type: boolean}
+        snapshotIds: {type: array, items: {type: string, format: uuid}}
+        snapshot:
+          type: object
+          required: [snapshotId, revision, operationalStatus, releaseFingerprint, inputFingerprint, unresolvedBlockingFailures, warnings, missingInputData, unavailableExternalObservations]
+          additionalProperties: true
+          properties:
+            snapshotId: {type: string, format: uuid}
+            revision: {type: integer, minimum: 0}
+            operationalStatus: {type: string, enum: [simulation-only]}
+            releaseFingerprint: {type: string}
+            inputFingerprint: {type: string}
+            unresolvedBlockingFailures: {type: array, items: {}}
+            warnings: {type: array, items: {}}
+            missingInputData: {type: array, items: {}}
+            unavailableExternalObservations: {type: array, items: {}}
+        before: {type: array, items: {}}
+        after: {type: array, items: {}}
+        suppression: {type: array, items: {$ref: "#/components/schemas/SyntheticSuppressionDecision"}}
+        label: {type: string}
+    SyntheticHistoryPage:
+      type: object
+      required: [total, limit, offset, events, operationalStatus, label]
+      properties:
+        total: {type: integer}
+        limit: {type: integer}
+        offset: {type: integer}
+        operationalStatus: {type: string, enum: [simulation-only]}
+        label: {type: string}
+        events:
+          type: array
+          items:
+            type: object
+            required: [id, action, sourceReference, observedAt, payload, obligations, snapshotIds]
+            properties:
+              id: {type: string, format: uuid}
+              action: {type: string}
+              sourceReference: {type: string, format: uuid}
+              observedAt: {type: string, format: date-time}
+              payload: {type: object, additionalProperties: true}
+              obligations: {type: array, items: {type: object, additionalProperties: true}}
+              snapshotIds: {type: array, items: {type: string, format: uuid}}
     DevelopmentGroupInput:
       type: object
       additionalProperties: false

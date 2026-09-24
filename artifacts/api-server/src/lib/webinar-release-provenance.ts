@@ -40,7 +40,7 @@ export async function captureWebinarRelease(calculatedAtEpochMs: number) {
     }
   }
   // The trusted capture boundary itself affects effective release identity.
-  for (const filename of ["webinar-release-provenance.ts", "webinar-persistence.ts", "webinar-simulation-snapshot.ts", "webinar-evaluation-orchestration.ts", "webinar-evaluation-sources.ts"]) {
+  for (const filename of ["webinar-release-provenance.ts", "webinar-persistence.ts", "webinar-simulation-snapshot.ts", "webinar-evaluation-orchestration.ts", "webinar-evaluation-sources.ts", "webinar-participant-lifecycle.ts"]) {
     const path = join(lib, filename);
     evaluatorImplementation[relative(root, path)] = await readFile(path, "utf8");
   }
