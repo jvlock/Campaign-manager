@@ -1,0 +1,402 @@
+This is the correct implementation of your “open initially, lock down later” decision. It opens planning and configuration without weakening production controls or pretending that development actions are operational approvals.
+
+I would accept this as a completed bounded increment, not as completion of Phase 2B-1. The next step is to reconcile and finish the remaining Phase 2B-1 persistence foundation before beginning domain adapters or broader webinar integration.
+
+Use this prompt:
+
+---
+
+# Phase 2B-1 Completion — Persistence, Audit and Concurrency Foundation
+
+Complete the remaining authorized Phase 2B-1 persistence foundation while preserving open development planning.
+
+Do not begin Phase 2B-2 domain adapters, Foundation integration, customer-data integration, external sending, publishing, production deployment, or production authentication.
+
+## 1. Starting state
+
+Expected branch:
+
+`feature/webinar-standard-engine`
+
+Expected starting commit:
+
+`b47b181b8491f34126cc636e6ed27df9ea570564`
+
+Accepted evidence:
+
+* `docs/verification/phase-2b-0-integration-assessment.md`
+* `docs/verification/phase-2b-0a-acceptance-and-owner-decisions.md`
+* `docs/verification/phase-2b-1-open-development-continuation.md`
+* `docs/open-development-planning.md`
+
+Before editing, confirm:
+
+* branch, HEAD, direct parent and working-tree state;
+* all commits since the accepted Phase 2B-0 baseline;
+* migration history through `0023`;
+* 106/106 evaluator coverage;
+* current open-development configuration;
+* synthetic database identity and contamination safeguards;
+* restricted-mode behavior;
+* exact dependency pin;
+* canonical document hashes.
+
+Do not stage or commit instruction uploads or unrelated files.
+
+If HEAD has moved, inspect every intervening commit. Stop for any unexplained substantive change.
+
+## 2. Determine the exact remaining Phase 2B-1 scope
+
+Compare the current repository against the persistence recommendations and first implementation increment defined in:
+
+`docs/verification/phase-2b-0-integration-assessment.md`
+
+Produce a requirements matrix classifying every Phase 2B-1 item as:
+
+* complete and verified;
+* partially implemented;
+* missing;
+* deferred by an accepted owner decision;
+* assigned to a later increment;
+* blocked by an external dependency.
+
+At minimum assess:
+
+* reuse of existing campaign, activity and webinar records;
+* webinar occurrence persistence;
+* standard identifier and exact version;
+* release fingerprints;
+* planning-state persistence;
+* evidence persistence;
+* exception persistence;
+* readiness and completion snapshots;
+* audit history;
+* retention classification;
+* request-local diagnostics;
+* whole-population result handling;
+* concurrency controls;
+* idempotency;
+* ownership and collaboration;
+* open-development actor attribution;
+* restricted-mode authorization;
+* legacy-session isolation.
+
+Do not declare Phase 2B-1 complete merely because open planning works.
+
+If the assessment assigns any of these items explicitly to a later phase, preserve that boundary.
+
+## 3. Preserve open-development mode
+
+Open development planning remains authorized only when all of the following are true:
+
+* the mode is explicitly configured as `open-development`;
+* the database is separately identified as synthetic-only;
+* the environment is nonproduction;
+* contamination checks pass;
+* no customer or participant data is present;
+* live sending, publishing, exports and operational approvals are disabled;
+* development attribution cannot establish operational readiness.
+
+Open-development mode may permit:
+
+* campaign and webinar-plan creation;
+* planning ownership changes;
+* activities and communication drafts;
+* content references;
+* schedule planning;
+* development teams and groups;
+* planning calendars;
+* planning evaluations;
+* clearly labelled simulations.
+
+It must not permit:
+
+* real approvals;
+* operational exceptions;
+* customer or participant data;
+* provider handoff;
+* live send or publish actions;
+* production exports;
+* operational readiness;
+* production deployment.
+
+Missing, invalid or ambiguous configuration must fail closed.
+
+Do not weaken restricted mode.
+
+## 4. Complete the persistence foundation
+
+Implement only Phase 2B-1 persistence items confirmed as missing or partial.
+
+Reuse the existing campaign, optional journey, activity, communication and deliverable hierarchy:
+
+```text
+Campaign
+  → optional Journey
+    → Activity
+      → Communication/Touch
+        → Deliverable
+```
+
+A webinar remains an Activity. Do not create a parallel webinar hierarchy or represent a webinar as a Journey.
+
+Where required by the accepted assessment, support persistence for:
+
+* webinar occurrence identity;
+* exact standard identifier and version;
+* calculation instant;
+* planning state;
+* source references;
+* evidence metadata;
+* exception request and disposition;
+* readiness-stage snapshots;
+* completion snapshots;
+* release fingerprints;
+* audit events;
+* retention classification and expiration metadata.
+
+Requirements:
+
+* Source facts remain distinguishable from plans.
+* Plans remain distinguishable from execution evidence.
+* Evidence does not become an exception.
+* Evaluation output does not become source data.
+* A readiness snapshot does not prove execution.
+* Evaluator coverage does not imply operational readiness.
+* Historical records retain the standard and release version used to calculate them.
+* Existing authoritative data must be reused rather than duplicated.
+
+Do not persist request-local diagnostic state.
+
+## 5. Stronger release fingerprints
+
+Implement the Phase 2B-0 release-fingerprint requirement if it remains within Phase 2B-1.
+
+A fingerprint must identify the effective combination of:
+
+* webinar standard identifier;
+* exact standard version;
+* canonical-document hashes;
+* evaluator-registry fingerprint;
+* evaluator coverage;
+* application release or commit;
+* relevant dependency versions;
+* effective taxonomy or Foundation version when available;
+* calculation instant.
+
+Requirements:
+
+* Fingerprints are deterministic for equivalent inputs.
+* Fingerprints cannot silently change after a snapshot is recorded.
+* Historical evaluations remain attributable to the release that produced them.
+* A missing governed dependency remains explicitly missing; do not fabricate a Foundation version.
+* Development fingerprints must be clearly marked nonoperational.
+
+## 6. Request-local diagnostics
+
+Correct any completion or readiness diagnostics that rely on shared mutable process state.
+
+Requirements:
+
+* Diagnostics are scoped to a single request or evaluation invocation.
+* Concurrent evaluations cannot read or overwrite one another’s diagnostics.
+* Diagnostics are returned explicitly or through request-scoped context.
+* Temporary diagnostics are not persisted as authoritative evidence.
+* Logs must not expose customer data, participant data, secrets or full content payloads.
+* Deterministic evaluation output must not depend on request execution order.
+
+Add concurrency regression tests.
+
+## 7. Whole-population result handling
+
+Correct any path that silently returns only the first page, a sample, or a truncated population.
+
+Requirements:
+
+* Whole-population operations either return the complete authorized result or an explicit paginated contract.
+* Pagination must have stable ordering and deterministic continuation.
+* The response must disclose total count, returned count and continuation state.
+* Authorization and development-data restrictions apply before aggregation.
+* Group-filtered and consolidated calendars must not leak private or unauthorized records.
+* Duplicates must be resolved using stable identifiers, not display text.
+* Partial results must never be represented as complete.
+
+Do not load unbounded populations into memory when a paginated or streamed contract is required.
+
+## 8. Concurrency and idempotency
+
+Add protections appropriate to the existing architecture:
+
+* optimistic concurrency or equivalent version checks for competing edits;
+* deterministic idempotency keys for repeatable mutations;
+* duplicate prevention for snapshots, evidence and audit events;
+* transaction boundaries for state and corresponding audit records;
+* immutable history for material decisions;
+* explicit conflict responses;
+* safe retries without duplicate records.
+
+Do not introduce distributed infrastructure unless the existing design requires it.
+
+## 9. Retention implementation
+
+Implement configurable retention classifications consistent with the accepted owner decision:
+
+| Category                                    |                             Baseline |
+| ------------------------------------------- | -----------------------------------: |
+| Exceptions, approvals and denials           |                              7 years |
+| Standard, evaluator and release provenance  |                              7 years |
+| Operational and suppression audit records   |                              7 years |
+| Material readiness and completion snapshots |                              7 years |
+| Recomputable diagnostics                    |                            24 months |
+| Request-local temporary diagnostics         |                       Do not persist |
+| Participant PII                             | Governed by the authoritative source |
+
+Requirements:
+
+* Retention is configurable.
+* Legal hold can suspend deletion.
+* Participant PII is not duplicated unnecessarily.
+* Durable identifiers and source references are preferred.
+* This increment may add retention metadata and policy logic but must not run destructive production deletion.
+* Any cleanup implementation must be tested only against disposable synthetic data.
+
+## 10. Database changes
+
+If a database change is genuinely required:
+
+* create one additive versioned migration after `0023`;
+* do not edit migrations `0001–0023`;
+* do not use `db push`;
+* include foreign keys, uniqueness constraints, indexes and check constraints;
+* use a nullable transition where legacy records lack new fields;
+* avoid backfilling fabricated values;
+* preserve legacy sessions unchanged;
+* test both fresh creation and upgrade from the complete existing migration chain.
+
+If no schema change is required, state that explicitly.
+
+Do not apply the migration to a shared or production database.
+
+## 11. Legacy sessions
+
+Preserve the accepted legacy policy:
+
+* active legacy sessions remain unchanged through completion;
+* no automatic migration;
+* historical communications remain auditable;
+* the new standard applies only according to the authorized cutover;
+* missing legacy data must remain visibly unknown rather than inferred;
+* legacy records must not become operationally blocked by new required fields unless separately authorized.
+
+## 12. Tests
+
+Add focused tests for:
+
+* open-development mode with a clean synthetic database;
+* rejection in production-like environments;
+* database-contamination rejection;
+* restricted-mode preservation;
+* persistence and reload of every newly supported record;
+* deterministic release fingerprints;
+* changed fingerprint when a relevant version changes;
+* request-local diagnostics under concurrent evaluation;
+* whole-population completeness;
+* deterministic pagination;
+* stable calendar deduplication;
+* optimistic concurrency conflicts;
+* idempotent retries;
+* duplicate snapshot prevention;
+* audit and state transactionality;
+* retention classification;
+* legal-hold behavior;
+* participant-PII nonduplication;
+* legacy-session isolation;
+* failure when required configuration is absent;
+* development results remaining nonoperational.
+
+Do not weaken existing validation to make incomplete webinar content pass.
+
+## 13. Verification
+
+Run fresh:
+
+1. Focused Phase 2B-1 tests.
+2. Concurrency and idempotency tests.
+3. Open-development and restricted-mode tests.
+4. Rule-ID drift check.
+5. Non-incremental type checks.
+6. Complete catalog and 106-evaluator suite.
+7. Exception, readiness, scheduling, audience and completion suites.
+8. Complete API suite.
+9. Frontend regression suite.
+10. Fresh disposable-database migration test.
+11. Upgrade test from migrations `0001–0023`.
+12. Database shutdown and cleanup verification.
+13. All five canonical hash checks.
+14. Exact dependency-pin check.
+15. Browser verification of the development URL.
+
+Browser verification must cover:
+
+* create, save and reload;
+* concurrent-edit conflict behavior;
+* full and filtered calendars;
+* persistence of planning state;
+* visible open-development identification;
+* simulation labelling;
+* blocked operational actions;
+* no exposure of customer or participant data.
+
+Report runner units accurately and separately. Do not combine files, top-level records, nested subtests and leaf tests into one misleading total.
+
+## 14. Evidence
+
+Create:
+
+`docs/verification/phase-2b-1-completion.md`
+
+Include:
+
+* starting and ending commits;
+* complete changed-file inventory;
+* Phase 2B-1 requirements matrix;
+* implemented and deferred items;
+* schema and migration evidence;
+* persistence boundaries;
+* fingerprint contract;
+* concurrency and idempotency design;
+* retention design;
+* open-development safeguards;
+* restricted-mode verification;
+* legacy compatibility;
+* test results;
+* browser evidence;
+* remaining blockers;
+* explicit Phase 2B-1 completion determination.
+
+Update `docs/open-development-planning.md` only if actual configuration or operating procedures changed.
+
+Do not modify canonical webinar standards.
+
+## 15. Completion rule
+
+Phase 2B-1 may be classified complete only if:
+
+* every item assigned to Phase 2B-1 is implemented or explicitly deferred by an accepted decision;
+* all verification passes;
+* open-development safeguards remain intact;
+* restricted mode remains intact;
+* legacy sessions remain unchanged;
+* no live operation was introduced.
+
+If a required Phase 2B-1 item depends on trusted authentication, Foundation connectivity or customer data, record it as a later-phase dependency only when the Phase 2B-0 assessment supports that boundary. Otherwise, report Phase 2B-1 as incomplete.
+
+Suggested commit title:
+
+`Complete webinar persistence foundation`
+
+Do not rewrite history. Stop after the completion report. Do not begin Phase 2B-2.
+
+---
+
+The main risk now is scope drift: because the development environment is usable, Replit may treat usability as proof that the integration foundation is complete. This prompt forces it to close persistence, concurrency, provenance and audit requirements before moving forward.
