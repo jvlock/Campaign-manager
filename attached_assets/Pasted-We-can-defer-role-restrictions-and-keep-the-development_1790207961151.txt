@@ -1,0 +1,115 @@
+We can defer role restrictions and keep the development planning experience open while we build it. I made those restrictions a dependency too early.
+
+Keep the group and ownership database structure now, but activate role enforcement later. The distinction is between opening planning access and enabling real sending, publishing, or access to customer data.
+
+Use this prompt instead of the previous trusted-identity implementation prompt:
+
+⸻
+
+Phase 2B-1 continuation — Open development planning mode
+
+Objective
+
+Restore a usable development application before trusted authentication and organizational roles are established.
+
+The owner has changed the sequencing: development planning should be open across groups now; restricted access will be activated later.
+
+Preserve the organizational foundation already built. Do not remove its schema, ownership relationships, role definitions, or authorization implementation.
+
+1. Confirm the baseline
+
+Read the current implementation evidence and accepted decisions.
+
+Reported foundation commit:
+
+47c0f45951ef8bedcbdc7c99aa25a39885a9f355
+
+Verify the current branch, HEAD, subsequent changes, and working-tree state. Preserve unrelated work and any compatible changes already completed.
+
+Record this owner decision as superseding the requirement for trusted authentication before access to the isolated development planning experience. It does not supersede operational approval or live-execution requirements.
+
+2. Implement an explicit development mode
+
+Provide two server-controlled modes:
+
+* Open development: planning access without established user roles.
+* Restricted: trusted authentication and scoped authorization required.
+
+Open development must be explicitly enabled, visibly identified, and limited to an isolated development environment and database containing synthetic or approved non-sensitive planning data.
+
+Do not activate it against shared operational or production data. If the current environment cannot be confirmed as isolated, prepare a separate development instance.
+
+Do not infer mode from a browser parameter or client-supplied role. Missing or invalid configuration must not silently enable open access.
+
+3. Restore open planning workflows
+
+In open development mode, users can work across development groups without membership or role assignment:
+
+* Create and edit campaign and webinar plans.
+* Create development teams and groups.
+* Assign and change planning ownership.
+* Manage activities, communications, content references, and schedules.
+* View group and consolidated calendars.
+* Run evaluations and inspect findings.
+* Preview workflows and simulated approvals.
+
+Remove “Protected access is unavailable” as a blanket blocker for these planning workflows.
+
+Retain ordinary validation, referential integrity, and protection against accidental destructive changes. Do not grant infrastructure, secret-management, or unrestricted database access through the application.
+
+4. Preserve the future access model
+
+Continue recording owning groups and stable record IDs. Maintain the distinction between creator, accountable owner, and owning group.
+
+Keep restricted-mode authorization tests and implementation intact. Open development must use an explicit policy path, not scattered bypasses or a fabricated administrator identity.
+
+Development session labels may help distinguish edits, but must be marked unverified and must not constitute authenticated audit evidence.
+
+5. Keep operational actions separate
+
+Open planning access must not enable:
+
+* Live sending or publishing.
+* Production integrations or customer-data exports.
+* Real exception approvals using unverified identities.
+* Bypassing non-overridable webinar controls.
+* Treating simulated Foundation output as authoritative.
+
+Simulated approvals and integration responses must be clearly marked and cannot establish operational readiness.
+
+Preserve existing legacy data. Do not expose it through open mode merely to restore the interface.
+
+6. Make later restriction straightforward
+
+Document and test the transition to restricted mode:
+
+1. Configure trusted authentication.
+2. Provision verified administrators, memberships, and scoped roles.
+3. Review group ownership and collaboration grants.
+4. Separate development records from operational records.
+5. Invalidate development sessions.
+6. Enable restricted mode and verify access boundaries.
+
+Development approvals and unverified attribution must not become operational evidence after switching modes. Any promoted plans require normal validation, governed provenance, and approval.
+
+7. Verify and report
+
+Test:
+
+* Planning works without configured authentication in open development.
+* Development groups and calendar rollups remain usable.
+* Open mode cannot run against prohibited environments or data.
+* Live actions remain blocked.
+* Switching to restricted mode restores authentication and scoped access requirements.
+* Development sessions and simulated evidence cannot bypass restricted controls.
+* Existing webinar behavior, canonical standards, and migrations remain intact.
+
+Run the applicable repository verification gates and inspect the restored planning experience in the browser.
+
+Update the decision record, configuration instructions, implementation evidence, and remaining Phase 2B-1 plan. Commit only relevant changes.
+
+Report the exact development URL, active mode, restored workflows, verification results, and remaining limitations. Do not claim the full Phase 2B-1 or live operational readiness is complete.
+
+⸻
+
+This lets us build and review the experience now while retaining the structure needed to lock it down later.
