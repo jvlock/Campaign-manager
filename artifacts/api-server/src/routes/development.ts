@@ -8,6 +8,7 @@ import { PersistenceConflict } from "../lib/webinar-persistence";
 import { STANDARD_ID, STANDARD_VERSION } from "../lib/webinar-standard-catalog/types";
 import { createSyntheticParticipant, getSyntheticLifecycleContext, inspectParticipantSuppression,
   listParticipantSimulation, listSyntheticFixtures, transitionParticipantLifecycle } from "../lib/webinar-participant-lifecycle";
+import foundationDevelopmentRouter from "./development-foundation";
 
 const router = Router();
 const uuid = z.string().uuid();
@@ -346,6 +347,7 @@ router.post("/development/participants/transitions", async (req, res, next) => {
   } catch (error) { participantError(error, res, next); }
 });
 
+router.use(foundationDevelopmentRouter);
 router.use((error: unknown, _req: import("express").Request, res: import("express").Response, _next: import("express").NextFunction) => {
   if ((error as { status?: number }).status === 400) { res.status(400).json({ error: (error as Error).message }); return; }
   const code = (error as { code?: string }).code;

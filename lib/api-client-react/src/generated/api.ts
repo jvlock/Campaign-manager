@@ -54,6 +54,9 @@ import type {
   Cta,
   CtaInput,
   CtaUpdate,
+  DevelopmentFoundationInspection,
+  DevelopmentFoundationRefresh,
+  DevelopmentFoundationRefreshResult,
   DevelopmentGroupInput,
   DevelopmentOwnershipInput,
   DevelopmentSimulationInput,
@@ -79,6 +82,7 @@ import type {
   GovernanceCommentInput,
   GovernanceCommentUpdate,
   HealthStatus,
+  InspectDevelopmentFoundationObservationsParams,
   InspectSyntheticParticipantSuppressionParams,
   LandingPageDeliverable,
   LandingPageInput,
@@ -642,6 +646,172 @@ export function useGetDevelopmentCalendar<TData = Awaited<ReturnType<typeof getD
 
 
 
+
+export const getInspectDevelopmentFoundationObservationsUrl = (params: InspectDevelopmentFoundationObservationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/development/foundation/observations?${stringifiedParams}` : `/api/development/foundation/observations`
+}
+
+/**
+ * Read-only synthetic occurrence inspection. No provider call, no operational authority.
+ */
+export const inspectDevelopmentFoundationObservations = async (params: InspectDevelopmentFoundationObservationsParams, options?: Parameters<typeof customFetch>[1]): Promise<DevelopmentFoundationInspection> => {
+
+  return customFetch<DevelopmentFoundationInspection>(getInspectDevelopmentFoundationObservationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getInspectDevelopmentFoundationObservationsQueryKey = (params?: InspectDevelopmentFoundationObservationsParams,) => {
+    return [
+    `/api/development/foundation/observations`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getInspectDevelopmentFoundationObservationsQueryOptions = <TData = Awaited<ReturnType<typeof inspectDevelopmentFoundationObservations>>, TError = ErrorType<void>>(params: InspectDevelopmentFoundationObservationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof inspectDevelopmentFoundationObservations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getInspectDevelopmentFoundationObservationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof inspectDevelopmentFoundationObservations>>> = ({ signal }) => inspectDevelopmentFoundationObservations(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof inspectDevelopmentFoundationObservations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type InspectDevelopmentFoundationObservationsQueryResult = NonNullable<Awaited<ReturnType<typeof inspectDevelopmentFoundationObservations>>>
+export type InspectDevelopmentFoundationObservationsQueryError = ErrorType<void>
+
+
+
+export function useInspectDevelopmentFoundationObservations<TData = Awaited<ReturnType<typeof inspectDevelopmentFoundationObservations>>, TError = ErrorType<void>>(
+ params: InspectDevelopmentFoundationObservationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof inspectDevelopmentFoundationObservations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getInspectDevelopmentFoundationObservationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRefreshDevelopmentFoundationObservationsUrl = () => {
+
+
+
+
+  return `/api/development/foundation/observations/refresh`
+}
+
+/**
+ * Server-only synthetic contract refresh; disabled without explicitly registered server fixture. Never accepts governed output.
+ */
+export const refreshDevelopmentFoundationObservations = async (developmentFoundationRefresh: DevelopmentFoundationRefresh, options?: Parameters<typeof customFetch>[1]): Promise<DevelopmentFoundationRefreshResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DevelopmentFoundationRefreshResult>(getRefreshDevelopmentFoundationObservationsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(developmentFoundationRefresh)
+  }
+);}
+
+
+
+
+
+export const getRefreshDevelopmentFoundationObservationsMutationKey = () => ['refreshDevelopmentFoundationObservations'] as const;
+
+export const getRefreshDevelopmentFoundationObservationsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshDevelopmentFoundationObservations>>, TError,RefreshDevelopmentFoundationObservationsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refreshDevelopmentFoundationObservations>>, TError,RefreshDevelopmentFoundationObservationsMutationVariables, TContext> => {
+
+const mutationKey = getRefreshDevelopmentFoundationObservationsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refreshDevelopmentFoundationObservations>>, RefreshDevelopmentFoundationObservationsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  refreshDevelopmentFoundationObservations(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefreshDevelopmentFoundationObservationsMutationResult = NonNullable<Awaited<ReturnType<typeof refreshDevelopmentFoundationObservations>>>
+    export type RefreshDevelopmentFoundationObservationsMutationBody = BodyType<DevelopmentFoundationRefresh>
+    export type RefreshDevelopmentFoundationObservationsMutationError = ErrorType<void>
+    export type RefreshDevelopmentFoundationObservationsMutationVariables = {data: BodyType<DevelopmentFoundationRefresh>}
+
+    export const useRefreshDevelopmentFoundationObservations = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshDevelopmentFoundationObservations>>, TError,RefreshDevelopmentFoundationObservationsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refreshDevelopmentFoundationObservations>>,
+        TError,
+        RefreshDevelopmentFoundationObservationsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRefreshDevelopmentFoundationObservationsMutationOptions(options));
+    }
 
 export const getGetDevelopmentSimulationContextUrl = (params: GetDevelopmentSimulationContextParams,) => {
   const normalizedParams = new URLSearchParams();

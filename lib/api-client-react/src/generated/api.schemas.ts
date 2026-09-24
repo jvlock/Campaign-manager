@@ -5,6 +5,155 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+export type DevelopmentFoundationInspectionContractLabel = typeof DevelopmentFoundationInspectionContractLabel[keyof typeof DevelopmentFoundationInspectionContractLabel];
+
+
+export const DevelopmentFoundationInspectionContractLabel = {
+  'synthetic-contract-only': 'synthetic-contract-only',
+} as const;
+
+export type DevelopmentFoundationInspectionOperationalStatus = typeof DevelopmentFoundationInspectionOperationalStatus[keyof typeof DevelopmentFoundationInspectionOperationalStatus];
+
+
+export const DevelopmentFoundationInspectionOperationalStatus = {
+  'simulation-only': 'simulation-only',
+} as const;
+
+export type DevelopmentFoundationObservationType = typeof DevelopmentFoundationObservationType[keyof typeof DevelopmentFoundationObservationType];
+
+
+export const DevelopmentFoundationObservationType = {
+  taxonomy: 'taxonomy',
+  internal_title: 'internal_title',
+  campaign_code: 'campaign_code',
+  utm: 'utm',
+  objective_membership: 'objective_membership',
+  campaign_exclusion: 'campaign_exclusion',
+} as const;
+
+export type DevelopmentFoundationObservationStatus = typeof DevelopmentFoundationObservationStatus[keyof typeof DevelopmentFoundationObservationStatus];
+
+
+export const DevelopmentFoundationObservationStatus = {
+  available: 'available',
+  unavailable: 'unavailable',
+  stale: 'stale',
+  expired: 'expired',
+  deprecated: 'deprecated',
+} as const;
+
+export type DevelopmentFoundationObservationSource = typeof DevelopmentFoundationObservationSource[keyof typeof DevelopmentFoundationObservationSource];
+
+
+export const DevelopmentFoundationObservationSource = {
+  'synthetic-provider': 'synthetic-provider',
+  'immutable-history': 'immutable-history',
+  none: 'none',
+} as const;
+
+export type DevelopmentFoundationObservationOutput = { [key: string]: unknown } | null;
+
+export type DevelopmentFoundationObservationProvenance = { [key: string]: unknown } | null;
+
+export interface DevelopmentFoundationObservation {
+  type: DevelopmentFoundationObservationType;
+  requestReference: string;
+  inputFingerprint: string;
+  status: DevelopmentFoundationObservationStatus;
+  error: string | null;
+  source: DevelopmentFoundationObservationSource;
+  output: DevelopmentFoundationObservationOutput;
+  serviceId: string | null;
+  serviceVersion: string | null;
+  taxonomyVersion: string | null;
+  provenance: DevelopmentFoundationObservationProvenance;
+  receivedAt: string | null;
+  respondedAt: string | null;
+  expiresAt: string | null;
+  simulationOnly: boolean;
+  retryCount: number;
+  affectedRules: string[];
+}
+
+export interface DevelopmentFoundationInspection {
+  contractLabel: DevelopmentFoundationInspectionContractLabel;
+  evaluatorImplemented: boolean;
+  observationAvailable: boolean;
+  connectorConfigured: boolean;
+  connectorReachable: boolean;
+  liveProductionConnection: boolean;
+  revision: number;
+  operationalStatus: DevelopmentFoundationInspectionOperationalStatus;
+  unverified: boolean;
+  authoritative: boolean;
+  observations: DevelopmentFoundationObservation[];
+}
+
+export type DevelopmentSimulationResultOperationalStatus = typeof DevelopmentSimulationResultOperationalStatus[keyof typeof DevelopmentSimulationResultOperationalStatus];
+
+
+export const DevelopmentSimulationResultOperationalStatus = {
+  'simulation-only': 'simulation-only',
+} as const;
+
+export type DevelopmentSimulationResultStandard = {
+  id: string;
+  version: string;
+};
+
+export type DevelopmentSimulationResultEvaluatorCoverage = { [key: string]: unknown };
+
+export type DevelopmentSimulationResultCompletionResult = { [key: string]: unknown };
+
+export type DevelopmentSimulationResultDiagnostics = { [key: string]: unknown };
+
+export interface DevelopmentSimulationResult {
+  simulation: boolean;
+  unverified: boolean;
+  authoritative: boolean;
+  operationalReadiness: boolean;
+  operationalStatus?: DevelopmentSimulationResultOperationalStatus;
+  message?: string;
+  activityId?: string;
+  occurrenceId?: string;
+  standard?: DevelopmentSimulationResultStandard;
+  calculationAt?: string;
+  releaseFingerprint?: string;
+  inputFingerprint?: string;
+  snapshotId?: string;
+  revision?: number;
+  sourceReferences?: unknown[];
+  applicableRules?: string[];
+  passedRules?: string[];
+  unresolvedBlockingFailures?: unknown[];
+  blockersResolvedByExceptions?: unknown[];
+  nonblockingFailures?: unknown[];
+  warnings?: unknown[];
+  missingInputData?: unknown[];
+  unavailableExternalObservations?: unknown[];
+  mappingErrors?: unknown[];
+  evaluatorCoverage?: DevelopmentSimulationResultEvaluatorCoverage;
+  readinessStages?: unknown[];
+  completionResult?: DevelopmentSimulationResultCompletionResult;
+  diagnostics?: DevelopmentSimulationResultDiagnostics;
+  [key: string]: unknown;
+ }
+
+export interface DevelopmentFoundationRefreshResult {
+  inspection: DevelopmentFoundationInspection;
+  simulation: DevelopmentSimulationResult;
+}
+
+export interface DevelopmentFoundationRefresh {
+  campaignId: string;
+  activityId: string;
+  occurrenceId: string;
+  calculationAt: string;
+  idempotencyKey: string;
+  /** @minimum 0 */
+  expectedRevision: number;
+}
+
 export interface SyntheticScope {
   campaignId: string;
   activityId: string;
@@ -378,56 +527,6 @@ export interface DevelopmentSimulationInput {
   /** @maxLength 120 */
   label?: string;
 }
-
-export type DevelopmentSimulationResultOperationalStatus = typeof DevelopmentSimulationResultOperationalStatus[keyof typeof DevelopmentSimulationResultOperationalStatus];
-
-
-export const DevelopmentSimulationResultOperationalStatus = {
-  'simulation-only': 'simulation-only',
-} as const;
-
-export type DevelopmentSimulationResultStandard = {
-  id: string;
-  version: string;
-};
-
-export type DevelopmentSimulationResultEvaluatorCoverage = { [key: string]: unknown };
-
-export type DevelopmentSimulationResultCompletionResult = { [key: string]: unknown };
-
-export type DevelopmentSimulationResultDiagnostics = { [key: string]: unknown };
-
-export interface DevelopmentSimulationResult {
-  simulation: boolean;
-  unverified: boolean;
-  authoritative: boolean;
-  operationalReadiness: boolean;
-  operationalStatus?: DevelopmentSimulationResultOperationalStatus;
-  message?: string;
-  activityId?: string;
-  occurrenceId?: string;
-  standard?: DevelopmentSimulationResultStandard;
-  calculationAt?: string;
-  releaseFingerprint?: string;
-  inputFingerprint?: string;
-  snapshotId?: string;
-  revision?: number;
-  sourceReferences?: unknown[];
-  applicableRules?: string[];
-  passedRules?: string[];
-  unresolvedBlockingFailures?: unknown[];
-  blockersResolvedByExceptions?: unknown[];
-  nonblockingFailures?: unknown[];
-  warnings?: unknown[];
-  missingInputData?: unknown[];
-  unavailableExternalObservations?: unknown[];
-  mappingErrors?: unknown[];
-  evaluatorCoverage?: DevelopmentSimulationResultEvaluatorCoverage;
-  readinessStages?: unknown[];
-  completionResult?: DevelopmentSimulationResultCompletionResult;
-  diagnostics?: DevelopmentSimulationResultDiagnostics;
-  [key: string]: unknown;
- }
 
 export type OrganizationAccessErrorError = {
   code: string;
@@ -2460,6 +2559,12 @@ export type GetDevelopmentCalendar200 = {
   nextCursor: string | null;
   unverified?: boolean;
   authoritative?: boolean;
+};
+
+export type InspectDevelopmentFoundationObservationsParams = {
+campaignId: string;
+activityId: string;
+occurrenceId: string;
 };
 
 export type GetDevelopmentSimulationContextParams = {

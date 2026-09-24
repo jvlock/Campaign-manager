@@ -14,6 +14,8 @@ import { fixture as governedFixture, now as governedFixtureTime } from "./evalua
 import { loadOccurrenceSources, occurrenceAssemblySource } from "../src/lib/webinar-evaluation-sources";
 import { persistencePayload, PersistenceConflict, WebinarPersistence } from "../src/lib/webinar-persistence";
 import { captureWebinarRelease } from "../src/lib/webinar-release-provenance";
+import { SyntheticContractAdapter, knownSyntheticFixtureProvider } from "../src/lib/webinar-foundation";
+import { inspectFoundationObservations } from "../src/lib/webinar-foundation-service";
 
 const calculationAt = "2026-01-01T00:00:00.000Z";
 let actorId: string;
@@ -85,6 +87,157 @@ test("all 106 evaluators, canonical readiness/completion, provenance and source 
   assert.deepEqual({ ...after, binding: before.binding }, before, "domain records and source references were not changed");
   assert.equal(sourceInputFingerprint(after, calculationAt), result.inputFingerprint);
   assert.equal(persistencePayload.safeParse({ ...saved.payload, simulation: { ...saved.payload.simulation, diagnostics: {} } }).success, false);
+});
+
+test("synthetic provider persists immutable scoped receipts before evaluation; concurrent retry replays snapshot", async () => {
+  const scope = await occurrence();
+  const provider = new SyntheticContractAdapter("synthetic-v1", "taxonomy-v1", request => {
+    const output = request.type === "taxonomy" ? { type: "taxonomy", classifications: [{ id: "webinar", label: "Webinar" }] }
+      : request.type === "internal_title" ? { type: "internal_title", title: "Governed fixture title", components: { activity: "Webinar" } }
+      : request.type === "campaign_code" ? { type: "campaign_code", code: `SIM${scope.sessionId.replaceAll("-", "")}`, reservation: "simulated" }
+      : null;
+    return { status: output ? "success" : "unavailable", type: request.type, environment: "synthetic",
+      scope: request.scope, serviceId: "fixture", serviceVersion: "synthetic-v1", taxonomyVersion: "taxonomy-v1",
+      requestReference: request.requestReference, inputFingerprint: request.inputFingerprint,
+      respondedAt: "2025-12-30T00:00:00Z", validFrom: "2025-12-29T00:00:00Z",
+      expiresAt: "2027-01-01T00:00:00Z", deprecated: false,
+      provenance: { adapter: "synthetic-contract", reference: "fixture-1" },
+      warnings: [], errors: output ? [] : [{ code: "input_unavailable" }], output };
+  });
+  const input = exactCommand(scope);
+  const [first, replay] = await Promise.all([simulateWebinarOccurrence(input, provider), simulateWebinarOccurrence(input, provider)]);
+  assert.equal(first.snapshotId, replay.snapshotId);
+  assert.equal(first.results.length, 106);
+  assert.equal(first.diagnostics.foundation?.connectorReachable, true);
+  assert.equal(first.diagnostics.foundation?.liveProductionConnection, false);
+  assert.equal(first.diagnostics.foundation?.observations.filter(o => o.status === "available").length, 3);
+  assert.ok(first.sourceReferences.some(r => r.sourceType === "foundation:internal_title"));
+  const records = (await pool.query(`SELECT id,revision,payload FROM webinar_persistence_records
+    WHERE session_id=$1 ORDER BY revision`, [scope.sessionId])).rows;
+  assert.equal(records.filter(r => r.kind === "source" || r.payload.kind === "source").length, 3);
+  assert.equal(records.at(-1)?.revision, first.revision);
+  assert.equal(records.at(-1)?.payload.simulation.results.length, 106);
+  assert.equal(records.at(-1)?.payload.simulation.diagnostics, undefined);
+  const receipts = records.filter(r => r.payload.governedReceipt);
+  assert.ok(receipts.every(r => r.payload.governedReceipt.simulationOnly === true));
+  await assert.rejects(pool.query("UPDATE webinar_persistence_records SET payload='{}' WHERE id=$1", [receipts[0].id]));
+});
+
+test("global code lock serializes two occurrences and never recycles a synthetic code", async () => {
+  const firstScope = await occurrence(), secondScope = await occurrence();
+  const provider = new SyntheticContractAdapter("synthetic-v1", "taxonomy-v1", request => ({
+    status: request.type === "campaign_code" ? "success" : "unavailable",
+    type: request.type, environment: "synthetic", scope: request.scope, serviceId: "fixture",
+    serviceVersion: "synthetic-v1", taxonomyVersion: "taxonomy-v1",
+    requestReference: request.requestReference, inputFingerprint: request.inputFingerprint,
+    respondedAt: "2025-12-30T00:00:00Z", validFrom: "2025-12-29T00:00:00Z",
+    expiresAt: "2027-01-01T00:00:00Z", deprecated: false,
+    provenance: { adapter: "synthetic-contract", reference: "fixture-1" },
+    warnings: [], errors: request.type === "campaign_code" ? [] : [{ code: "input_unavailable" }],
+    output: request.type === "campaign_code" ? { type: "campaign_code", code: "SIMUNIQUE", reservation: "simulated" } : null,
+  }));
+  const [first, second] = await Promise.all([
+    simulateWebinarOccurrence(exactCommand(firstScope), provider),
+    simulateWebinarOccurrence(exactCommand(secondScope), provider),
+  ]);
+  assert.equal([first, second].filter(s => s.diagnostics.foundation?.observations.some(o =>
+    o.type === "campaign_code" && o.status === "available")).length, 1);
+  assert.equal([first, second].filter(s => s.diagnostics.foundation?.observations.some(o =>
+    o.type === "campaign_code" && o.error === "conflict")).length, 1);
+  const used = await pool.query(`SELECT count(*)::int AS count FROM webinar_persistence_records
+    WHERE kind='source' AND payload #>> '{governedReceipt,response,output,code}'='SIMUNIQUE'`);
+  assert.equal(used.rows[0].count, 1);
+});
+
+test("accepted governed receipt enters snapshot fingerprint and remains immutable in history", async () => {
+  const scope = await occurrence();
+  const provider = new SyntheticContractAdapter("synthetic-v1", "taxonomy-v1", request => ({
+    status: request.type === "taxonomy" ? "success" : "unavailable", type: request.type,
+    environment: "synthetic", scope: request.scope, serviceId: "fixture", serviceVersion: "synthetic-v1",
+    taxonomyVersion: "taxonomy-v1", requestReference: request.requestReference,
+    inputFingerprint: request.inputFingerprint, respondedAt: "2025-12-30T00:00:00Z",
+    validFrom: "2025-12-29T00:00:00Z", expiresAt: "2027-01-01T00:00:00Z", deprecated: false,
+    provenance: { adapter: "synthetic-contract", reference: "fixture-1" }, warnings: [],
+    errors: request.type === "taxonomy" ? [] : [{ code: "input_unavailable" }],
+    output: request.type === "taxonomy" ? { type: "taxonomy",
+      classifications: [{ id: "webinar", label: "Webinar" }] } : null,
+  }));
+  const before = await pool.connect();
+  const original = await loadOccurrenceSources(before, scope.campaignId, scope.sessionId);
+  before.release();
+  const originalFingerprint = sourceInputFingerprint(original, calculationAt);
+  const result = await simulateWebinarOccurrence(exactCommand(scope), provider);
+  const after = await pool.connect();
+  const current = await loadOccurrenceSources(after, scope.campaignId, scope.sessionId);
+  after.release();
+  assert.notEqual(result.inputFingerprint, originalFingerprint);
+  assert.equal(result.inputFingerprint, sourceInputFingerprint(current, calculationAt));
+  assert.equal((await pool.query("SELECT payload->'simulation'->>'inputFingerprint' AS fingerprint FROM webinar_persistence_records WHERE id=$1",
+    [result.snapshotId])).rows[0].fingerprint, result.inputFingerprint);
+});
+
+test("wall-clock-later synthetic receipt survives persisted inspection and fixed-instant refresh retry", async () => {
+  const scope = await occurrence();
+  const fixedAsOf = new Date(Date.now() - 2000).toISOString();
+  const input = exactCommand(scope, { calculationAt: fixedAsOf });
+  const provider = knownSyntheticFixtureProvider();
+  const first = await simulateWebinarOccurrence(input, provider, true);
+  const initial = first.diagnostics.foundation?.observations.find(o => o.type === "taxonomy");
+  assert.equal(initial?.status, "available");
+  assert.ok(Date.parse(initial.response!.respondedAt) > Date.parse(fixedAsOf));
+  const client = await pool.connect();
+  const saved = await loadOccurrenceSources(client, scope.campaignId, scope.sessionId);
+  client.release();
+  const inspection = inspectFoundationObservations(saved, new Date(fixedAsOf), provider, first.releaseFingerprint);
+  const taxonomy = inspection.observations.find(o => o.type === "taxonomy");
+  assert.equal(taxonomy?.status, "available");
+  assert.equal(taxonomy?.error, null);
+  assert.equal(taxonomy?.source, "immutable-history");
+  assert.ok(saved.records.some(r => {
+    const receipt = r.payload.governedReceipt as { receivedAt?: string } | undefined;
+    return receipt?.receivedAt && Date.parse(receipt.receivedAt) > Date.parse(fixedAsOf);
+  }));
+  const latest = await pool.query(`SELECT calculation_at FROM webinar_persistence_records
+    WHERE campaign_id=$1 AND session_id=$2 AND kind='readiness' ORDER BY revision DESC LIMIT 1`,
+  [scope.campaignId, scope.sessionId]);
+  assert.equal(new Date(latest.rows[0].calculation_at).toISOString(), fixedAsOf);
+  assert.equal((await captureWebinarRelease(new Date(latest.rows[0].calculation_at).getTime())).digest, first.releaseFingerprint);
+  assert.notEqual((await captureWebinarRelease(Date.now())).digest, first.releaseFingerprint);
+  const retry = await simulateWebinarOccurrence({
+    ...input, idempotencyKey: randomUUID(), expectedRevision: first.revision,
+  }, provider, true);
+  assert.equal(retry.snapshotId, first.snapshotId);
+  assert.equal(retry.releaseFingerprint, first.releaseFingerprint);
+  assert.equal(retry.diagnostics.replayed, true);
+  const persisted = await pool.query(`SELECT count(*)::int AS count FROM webinar_persistence_records
+    WHERE session_id=$1 AND kind='source' AND payload->>'sourceType'='foundation'`, [scope.sessionId]);
+  assert.equal(persisted.rows[0].count, 1);
+});
+
+test("objective and exclusion receipts persist but cannot pass without complete canonical setup/population", async () => {
+  const scope = await occurrence();
+  await pool.query(`UPDATE activities SET activity_answers='{"objectiveId":"objective_1","audienceId":"audience_1"}'::jsonb
+    WHERE id=$1`, [scope.activityId]);
+  const provider = new SyntheticContractAdapter("synthetic-v1", "taxonomy-v1", request => {
+    const output = request.type === "objective_membership" ? { type: "objective_membership", objectiveId: "objective_1", decision: true }
+      : request.type === "campaign_exclusion" ? { type: "campaign_exclusion", audienceId: "audience_1", decision: false } : null;
+    return { status: output ? "success" : "unavailable", type: request.type, environment: "synthetic",
+      scope: request.scope, serviceId: "fixture", serviceVersion: "synthetic-v1", taxonomyVersion: "taxonomy-v1",
+      requestReference: request.requestReference, inputFingerprint: request.inputFingerprint,
+      respondedAt: "2025-12-30T00:00:00Z", validFrom: "2025-12-29T00:00:00Z",
+      expiresAt: "2027-01-01T00:00:00Z", deprecated: false,
+      provenance: { adapter: "synthetic-contract", reference: "fixture-1" },
+      warnings: [], errors: output ? [] : [{ code: "input_unavailable" }], output };
+  });
+  const result = await simulateWebinarOccurrence(exactCommand(scope), provider);
+  assert.equal(result.diagnostics.foundation?.observations.filter(o => o.status === "available").length, 2);
+  assert.ok(result.unavailableExternalObservations.some(g => g.field === "governed.objective_membership"));
+  assert.ok(result.unavailableExternalObservations.some(g => g.field === "governed.campaign_exclusion"));
+  for (const id of ["WEB-SETUP-003", "WEB-REC-010"]) assert.notEqual(result.results.find(r => r.ruleId === id)?.status, "pass");
+  const persisted = await pool.query(`SELECT count(*)::int AS count FROM webinar_persistence_records
+    WHERE session_id=$1 AND kind='source' AND payload->>'sourceType'='foundation'`, [scope.sessionId]);
+  assert.equal(persisted.rows[0].count, 2);
+  assert.equal(result.completionResult.complete, false);
 });
 
 test("same occurrence concurrent idempotent retry and equivalent input reuse one immutable snapshot", async () => {

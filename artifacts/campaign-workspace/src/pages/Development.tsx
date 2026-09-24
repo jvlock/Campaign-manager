@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQueryClient } from '@tanstack/react-query';
-import { useGetCampaign, useListCampaigns, useListWebinars, useGetDevelopmentSimulationContext, useGetDevelopmentGroups, useGetDevelopmentOwnership, useGetDevelopmentCalendar, useCreateDevelopmentGroup, useUpdateDevelopmentOwnership, useSimulateDevelopmentWorkflow } from '@workspace/api-client-react';
+import { useGetCampaign, useListCampaigns, useListWebinars, useGetDevelopmentSimulationContext, useGetDevelopmentGroups, useGetDevelopmentOwnership, useGetDevelopmentCalendar, useCreateDevelopmentGroup, useUpdateDevelopmentOwnership, useSimulateDevelopmentWorkflow, useInspectDevelopmentFoundationObservations, useRefreshDevelopmentFoundationObservations, type DevelopmentFoundationObservation } from '@workspace/api-client-react';
 import { Link, useSearch } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,78 @@ function planningError(error: unknown) {
     if (data?.error?.message) return data.error.message;
   }
   return error instanceof Error ? error.message : 'Unable to complete this planning request.';
+}
+
+function GovernedObservations({ campaignId, activityId, occurrenceId, planningTitle }: {
+  campaignId: string; activityId: string; occurrenceId: string; planningTitle: string;
+}) {
+  const [tuple, setTuple] = useState<{ campaignId: string; activityId: string; occurrenceId: string; calculationAt: string; idempotencyKey: string; expectedRevision: number } | null>(null);
+  const scope = { campaignId, activityId, occurrenceId };
+  const inspection = useInspectDevelopmentFoundationObservations(scope);
+  const refresh = useRefreshDevelopmentFoundationObservations();
+  const current = refresh.data?.inspection ?? inspection.data;
+  const request = (input: NonNullable<typeof tuple>) => refresh.mutate({ data: input }, { onSuccess: () => { void inspection.refetch(); } });
+  const begin = () => {
+    if (!inspection.data?.connectorConfigured) return;
+    const next = { ...scope, calculationAt: new Date().toISOString(), idempotencyKey: crypto.randomUUID(),
+      expectedRevision: inspection.data.revision };
+    setTuple(next);
+    refresh.reset();
+    request(next);
+  };
+  const output = (item: DevelopmentFoundationObservation) => {
+    if (item.status !== 'available' || !item.output) return 'No valid governed output available.';
+    return <pre className="whitespace-pre-wrap break-all rounded bg-muted/40 p-2 text-xs">{JSON.stringify(item.output, null, 2)}</pre>;
+  };
+  const governedTitle = current?.observations.find(item => item.type === 'internal_title' && item.status === 'available')?.output?.title;
+  return <Card>
+    <CardHeader><CardTitle>Governed observations · synthetic contract only</CardTitle></CardHeader>
+    <CardContent className="space-y-4 text-sm">
+      <p className="text-muted-foreground">Inspection is read-only; Foundation is not live or production-connected. Governed results are never entered or generated in this browser. All results remain simulation-only.</p>
+      {inspection.isPending && <p>Loading scoped observation history…</p>}
+      {inspection.error && <p role="alert" className="text-destructive">{planningError(inspection.error)}</p>}
+      {current && <>
+        <p>Contract: {current.contractLabel} · Evaluator implemented: {current.evaluatorImplemented ? 'yes' : 'no'} · Valid observation available: {current.observationAvailable ? 'yes' : 'no'} · Synthetic fixture configured on server: {current.connectorConfigured ? 'yes' : 'no'} · Provider validated during this request: {current.connectorReachable ? 'yes' : 'no'} · Live production connection: no</p>
+        <p className="text-muted-foreground">Available persisted observations may be reused without a new provider call. The source on each observation distinguishes a synthetic-provider response from immutable history.</p>
+        {!current.connectorConfigured && <p role="status" className="text-amber-700">No approved synthetic contract fixture is configured. Observation refresh is unavailable; planning drafts can continue but governed readiness remains unavailable.</p>}
+        {current.connectorConfigured && <p className="text-muted-foreground">The opt-in server fixture recognizes webinar taxonomy only. Naming, codes, UTM, objective membership and exclusions remain unavailable unless individually validated; none is inferred from taxonomy.</p>}
+        <div className="rounded border p-3 space-y-1">
+          <strong>Planning title (not governed):</strong> {planningTitle || 'None'}
+          <p><strong>Governed internal title:</strong> {typeof governedTitle === 'string' ? governedTitle : 'Unavailable'}</p>
+          {typeof governedTitle === 'string' && governedTitle !== planningTitle && <p>Planning and governed titles differ; the planning draft has not been overwritten.</p>}
+        </div>
+        <Button variant="outline" disabled={!inspection.data?.connectorConfigured || refresh.isPending} onClick={begin}>Request new synthetic observation (refresh revision)</Button>
+        {tuple && <div className="space-y-2"><p className="break-all text-xs">Fixed request · {tuple.calculationAt} · revision {tuple.expectedRevision} · key {tuple.idempotencyKey}</p>
+          <Button variant="outline" disabled={refresh.isPending || !inspection.data?.connectorConfigured} onClick={() => request(tuple)}>Retry same request</Button>
+        </div>}
+        {refresh.error && <p role="alert" className="text-destructive">{planningError(refresh.error)} Draft planning has been retained. Reload revision before a new request if the occurrence changed.</p>}
+        {refresh.data?.simulation && <div role="status" className="rounded border border-amber-300 bg-amber-50 p-3 space-y-2 text-amber-950">
+          <strong>Full development simulation snapshot · nonoperational</strong>
+          <p>Snapshot: {refresh.data.simulation.snapshotId ?? 'unavailable'} · Revision: {refresh.data.simulation.revision ?? 'unavailable'} · Calculation: {refresh.data.simulation.calculationAt ?? 'unavailable'}</p>
+          <p className="break-all">Release fingerprint: {refresh.data.simulation.releaseFingerprint ?? 'unavailable'} · Input fingerprint: {refresh.data.simulation.inputFingerprint ?? 'unavailable'}</p>
+          <FindingList title="Unresolved blockers" items={refresh.data.simulation.unresolvedBlockingFailures} />
+          <FindingList title="Missing inputs" items={refresh.data.simulation.missingInputData} />
+          <FindingList title="Unavailable external observations" items={refresh.data.simulation.unavailableExternalObservations} />
+          <details><summary>Full immutable simulation result</summary><pre className="overflow-auto whitespace-pre-wrap break-all text-xs">{JSON.stringify(refresh.data.simulation, null, 2)}</pre></details>
+          <p>Objective membership and campaign exclusion require their own scoped governed evidence; unknown remains unavailable. No operational readiness or delivery is authorized.</p>
+        </div>}
+        <ul className="space-y-3">{current.observations.map((item, index) => <li key={`${item.type}:${item.inputFingerprint}:${index}`} className="rounded border p-3 space-y-2">
+          <strong>{item.type.replaceAll('_', ' ')} · {item.status}</strong>
+          <p>Source: {item.source === 'synthetic-provider' ? 'configured synthetic contract fixture' : item.source === 'immutable-history' ? 'immutable observation history (reused, not authoritative cache)' : 'none'} · Simulation-only: {item.simulationOnly ? 'yes' : 'no'}</p>
+          <div>{output(item)}</div>
+          {item.type === 'utm' && <p>Governed UTM output is read-only. No parameters or URL can be manually edited here.</p>}
+          <dl className="text-xs break-all text-muted-foreground space-y-1">
+            <div>Service: {item.serviceId ?? 'unavailable'} · version: {item.serviceVersion ?? 'unavailable'} · taxonomy/ruleset: {item.taxonomyVersion ?? 'unavailable'}</div>
+            <div>Request reference: {item.requestReference} · Input fingerprint: {item.inputFingerprint}</div>
+            <div>Received: {item.receivedAt ?? 'unavailable'} · Provider response: {item.respondedAt ?? 'unavailable'} · Expires: {item.expiresAt ?? 'not supplied'}</div>
+            <div>Provenance: {item.provenance ? JSON.stringify(item.provenance) : 'unavailable'} · Retry count: {item.retryCount}</div>
+            <div>Affected readiness rules: {item.affectedRules.join(', ') || 'none mapped'}</div>
+            {item.error && <div className="text-destructive">Reason: {item.error}</div>}
+          </dl>
+        </li>)}</ul>
+      </>}
+    </CardContent>
+  </Card>;
 }
 
 export default function Development() {
@@ -204,7 +276,10 @@ export default function Development() {
         </Card>
       </div>
       {isWebinar && campaignId && activityId && occurrenceId && <SyntheticParticipantSimulator
-        key={`${campaignId}:${activityId}:${occurrenceId}`} campaignId={campaignId} activityId={activityId} sessionId={occurrenceId} />}
+        key={`participant:${campaignId}:${activityId}:${occurrenceId}`} campaignId={campaignId} activityId={activityId} sessionId={occurrenceId} />}
+      {isWebinar && campaignId && activityId && occurrenceId && <GovernedObservations
+        key={`foundation:${campaignId}:${activityId}:${occurrenceId}`} campaignId={campaignId} activityId={activityId}
+        occurrenceId={occurrenceId} planningTitle={selectedActivity?.name ?? ''} />}
       <Card>
         <CardHeader><CardTitle>Group and consolidated calendar</CardTitle></CardHeader>
         <CardContent className="space-y-4">

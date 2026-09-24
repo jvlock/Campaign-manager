@@ -3,6 +3,7 @@ import { z } from "zod";
 import { pool, assertPlanningDatabaseIsolation, planningAccessMode } from "@workspace/db";
 import { captureWebinarRelease } from "./webinar-release-provenance";
 import { simulationSnapshotSchema } from "./webinar-simulation-snapshot";
+import { foundationRequestSchema, foundationResponseSchema } from "./webinar-foundation";
 
 const hash = z.string().regex(/^[a-f0-9]{64}$/);
 // Opaque identifiers only: no URLs, free-form commentary, email, content or participant copies.
@@ -15,6 +16,9 @@ const reference = z.object({
   kind: z.literal("source"), sourceSystem: token, sourceType: z.enum(["occurrence", "content", "foundation", "delivery", "measurement"]),
   sourceId: uuid, sourceVersion: token, sourceHash: hash,
   observedAt: z.string().datetime(), status: z.enum(["available", "missing", "expired"]),
+  governedReceipt: z.object({ request: foundationRequestSchema, response: foundationResponseSchema,
+    releaseFingerprint: hash, supersedesId: uuid.nullable(), receivedAt: z.string().datetime(),
+    retryCount: z.number().int().min(0).max(2), simulationOnly: z.literal(true) }).strict().optional(),
 }).strict();
 export const persistencePayload = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("plan"), state: z.enum(["draft", "planned", "superseded"]), planFingerprint: hash,

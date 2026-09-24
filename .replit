@@ -27,3 +27,4 @@ channel = "stable-25_05"
 [userenv.development]
 NODE_ENV = "development"
 PLANNING_ACCESS_MODE = "open-development"
+GOVERNANCE_SYNTHETIC_CONTRACT = "enabled"

@@ -95,6 +95,132 @@ export const GetDevelopmentCalendarResponse = zod.object({
 
 
 /**
+ * Read-only synthetic occurrence inspection. No provider call, no operational authority.
+ */
+export const InspectDevelopmentFoundationObservationsQueryParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "activityId": zod.coerce.string().uuid(),
+  "occurrenceId": zod.coerce.string().uuid()
+})
+
+export const InspectDevelopmentFoundationObservationsResponse = zod.object({
+  "contractLabel": zod.enum(['synthetic-contract-only']),
+  "evaluatorImplemented": zod.boolean(),
+  "observationAvailable": zod.boolean(),
+  "connectorConfigured": zod.boolean(),
+  "connectorReachable": zod.boolean(),
+  "liveProductionConnection": zod.boolean(),
+  "revision": zod.number().int(),
+  "operationalStatus": zod.enum(['simulation-only']),
+  "unverified": zod.boolean(),
+  "authoritative": zod.boolean(),
+  "observations": zod.array(zod.object({
+  "type": zod.enum(['taxonomy', 'internal_title', 'campaign_code', 'utm', 'objective_membership', 'campaign_exclusion']),
+  "requestReference": zod.string(),
+  "inputFingerprint": zod.string(),
+  "status": zod.enum(['available', 'unavailable', 'stale', 'expired', 'deprecated']),
+  "error": zod.string().nullable(),
+  "source": zod.enum(['synthetic-provider', 'immutable-history', 'none']),
+  "output": zod.record(zod.string(), zod.unknown()).nullable(),
+  "serviceId": zod.string().nullable(),
+  "serviceVersion": zod.string().nullable(),
+  "taxonomyVersion": zod.string().nullable(),
+  "provenance": zod.record(zod.string(), zod.unknown()).nullable(),
+  "receivedAt": zod.coerce.date().nullable(),
+  "respondedAt": zod.coerce.date().nullable(),
+  "expiresAt": zod.coerce.date().nullable(),
+  "simulationOnly": zod.boolean(),
+  "retryCount": zod.number().int(),
+  "affectedRules": zod.array(zod.string())
+}))
+})
+
+
+/**
+ * Server-only synthetic contract refresh; disabled without explicitly registered server fixture. Never accepts governed output.
+ */
+export const refreshDevelopmentFoundationObservationsBodyExpectedRevisionMin = 0;
+
+
+
+export const RefreshDevelopmentFoundationObservationsBody = zod.object({
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "occurrenceId": zod.string().uuid(),
+  "calculationAt": zod.coerce.date(),
+  "idempotencyKey": zod.string().uuid(),
+  "expectedRevision": zod.number().int().min(refreshDevelopmentFoundationObservationsBodyExpectedRevisionMin)
+})
+
+export const RefreshDevelopmentFoundationObservationsResponse = zod.object({
+  "inspection": zod.object({
+  "contractLabel": zod.enum(['synthetic-contract-only']),
+  "evaluatorImplemented": zod.boolean(),
+  "observationAvailable": zod.boolean(),
+  "connectorConfigured": zod.boolean(),
+  "connectorReachable": zod.boolean(),
+  "liveProductionConnection": zod.boolean(),
+  "revision": zod.number().int(),
+  "operationalStatus": zod.enum(['simulation-only']),
+  "unverified": zod.boolean(),
+  "authoritative": zod.boolean(),
+  "observations": zod.array(zod.object({
+  "type": zod.enum(['taxonomy', 'internal_title', 'campaign_code', 'utm', 'objective_membership', 'campaign_exclusion']),
+  "requestReference": zod.string(),
+  "inputFingerprint": zod.string(),
+  "status": zod.enum(['available', 'unavailable', 'stale', 'expired', 'deprecated']),
+  "error": zod.string().nullable(),
+  "source": zod.enum(['synthetic-provider', 'immutable-history', 'none']),
+  "output": zod.record(zod.string(), zod.unknown()).nullable(),
+  "serviceId": zod.string().nullable(),
+  "serviceVersion": zod.string().nullable(),
+  "taxonomyVersion": zod.string().nullable(),
+  "provenance": zod.record(zod.string(), zod.unknown()).nullable(),
+  "receivedAt": zod.coerce.date().nullable(),
+  "respondedAt": zod.coerce.date().nullable(),
+  "expiresAt": zod.coerce.date().nullable(),
+  "simulationOnly": zod.boolean(),
+  "retryCount": zod.number().int(),
+  "affectedRules": zod.array(zod.string())
+}))
+}),
+  "simulation": zod.object({
+  "simulation": zod.boolean(),
+  "unverified": zod.boolean(),
+  "authoritative": zod.boolean(),
+  "operationalReadiness": zod.boolean(),
+  "operationalStatus": zod.enum(['simulation-only']).optional(),
+  "message": zod.string().optional(),
+  "activityId": zod.string().uuid().optional(),
+  "occurrenceId": zod.string().uuid().optional(),
+  "standard": zod.object({
+  "id": zod.string(),
+  "version": zod.string()
+}).optional(),
+  "calculationAt": zod.coerce.date().optional(),
+  "releaseFingerprint": zod.string().optional(),
+  "inputFingerprint": zod.string().optional(),
+  "snapshotId": zod.string().uuid().optional(),
+  "revision": zod.number().int().optional(),
+  "sourceReferences": zod.array(zod.unknown()).optional(),
+  "applicableRules": zod.array(zod.string()).optional(),
+  "passedRules": zod.array(zod.string()).optional(),
+  "unresolvedBlockingFailures": zod.array(zod.unknown()).optional(),
+  "blockersResolvedByExceptions": zod.array(zod.unknown()).optional(),
+  "nonblockingFailures": zod.array(zod.unknown()).optional(),
+  "warnings": zod.array(zod.unknown()).optional(),
+  "missingInputData": zod.array(zod.unknown()).optional(),
+  "unavailableExternalObservations": zod.array(zod.unknown()).optional(),
+  "mappingErrors": zod.array(zod.unknown()).optional(),
+  "evaluatorCoverage": zod.record(zod.string(), zod.unknown()).optional(),
+  "readinessStages": zod.array(zod.unknown()).optional(),
+  "completionResult": zod.record(zod.string(), zod.unknown()).optional(),
+  "diagnostics": zod.record(zod.string(), zod.unknown()).optional()
+})
+})
+
+
+/**
  * Read-only scoped preflight for explicitly opted-in synthetic occurrences; does not evaluate, mutate or infer eligibility from template version.
  */
 export const GetDevelopmentSimulationContextQueryParams = zod.object({

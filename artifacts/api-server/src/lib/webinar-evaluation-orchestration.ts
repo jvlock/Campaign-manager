@@ -15,12 +15,15 @@ import { captureWebinarRelease, resolveWebinarRepositoryRoot } from "./webinar-r
 import { WebinarPersistence, PersistenceConflict, type WebinarTransactionClient } from "./webinar-persistence";
 import { simulationFindingSchema, simulationSnapshotSchema, type SimulationSnapshot } from "./webinar-simulation-snapshot";
 import { assertOccurrenceEligibility, loadOccurrenceSources, lockEvaluationSources, occurrenceAssemblySource, type OccurrenceSources } from "./webinar-evaluation-sources";
+import { resolveFoundationObservations, type FoundationInspection } from "./webinar-foundation-service";
+import type { FoundationResponse, GovernanceFoundationProvider } from "./webinar-foundation";
 
 export interface SimulationDiagnostics {
   readonly invokedRuleIds: readonly RuleId[];
   readonly evaluatorErrors: readonly { ruleId: RuleId; code: string }[];
   readonly sourceRecordCount: number;
   readonly replayed: boolean;
+  readonly foundation?: FoundationInspection;
 }
 /** A broken implementation cannot be persisted as a successful missing-input simulation. */
 export class EvaluationImplementationError extends Error {
@@ -51,9 +54,38 @@ export function sourceInputFingerprint(sources: OccurrenceSources, calculationAt
   // Relevant activity content remains fully hashed. The separate read token below
   // still detects any concurrent version change during this request.
   const { x: _x, y: _y, row_version: _version, updated_at: _updated, ...activityFacts } = sources.activity;
-  return simulationFingerprint({ ...sources, activity: activityFacts, binding: sources.binding && {
+  const governed = sources.records.filter(r => r.kind === "source" && r.payload.sourceType === "foundation")
+    .map(r => ({ request: r.payload.governedReceipt && (r.payload.governedReceipt as { request: unknown }).request,
+      response: r.payload.governedReceipt && (r.payload.governedReceipt as { response: unknown }).response,
+      releaseFingerprint: r.payload.governedReceipt && (r.payload.governedReceipt as { releaseFingerprint: unknown }).releaseFingerprint }));
+  return simulationFingerprint({ ...sources, governed,
+    records: sources.records.filter(r => !(r.kind === "source" && r.payload.sourceType === "foundation")),
+    activity: activityFacts, binding: sources.binding && {
     standard_id: sources.binding.standard_id, standard_version: sources.binding.standard_version,
   }, calculationAt, ...(participantId ? { participantId } : {}) });
+}
+
+/** Only validated, persisted synthetic receipts are eligible for these legacy evidence slots.
+ * Objective/exclusion require a separate complete canonical population/provenance scope. */
+export function applyFoundationReceipts(assembly: AssemblyResult, receipts: readonly { response: FoundationResponse }[]): AssemblyResult {
+  if (!assembly.context) return assembly;
+  const find = (type: FoundationResponse["type"]) => receipts.find(r => r.response.type === type)?.response.output;
+  const title = find("internal_title"), code = find("campaign_code"), taxonomy = find("taxonomy");
+  const evidence = (value: string) => ({ value, source: "foundation" as const, verified: true });
+  const governance = { internalName: title?.type === "internal_title" ? evidence(title.title) : null,
+    campaignCode: code?.type === "campaign_code" ? evidence(code.code) : null,
+    taxonomyValues: taxonomy?.type === "taxonomy" ? taxonomy.classifications.map(c => evidence(c.id)) : null };
+  const communications = assembly.context.communications.map(c => {
+    const utm = receipts.find(r => r.response.type === "utm" && r.response.scope.communicationId === c.communicationId)?.response.output;
+    return utm?.type === "utm" ? { ...c, utm: evidence(utm.url) } : c;
+  });
+  const canonicalGaps = receipts.filter(r => ["objective_membership", "campaign_exclusion"].includes(r.response.type))
+    .map(r => ({ field: `governed.${r.response.type}`, reason: r.response.type === "objective_membership"
+      ? "Synthetic objective decision cannot establish WEB-SETUP-003 without a complete current setup snapshot and exact evidence binding"
+      : "Aggregate exclusion cannot establish WEB-REC-010 without complete person-level population, audience plan and operational recipient ledger",
+      sourceReference: null }));
+  return immutable({ ...assembly, context: { ...assembly.context, governance, communications },
+    unavailableInputs: [...assembly.unavailableInputs.filter(g => g.field !== "governance" || !title && !code && !taxonomy), ...canonicalGaps] });
 }
 
 function assertExactInventory(label: string, ids: readonly string[]): void {
@@ -214,22 +246,32 @@ function sourceReferences(sources: OccurrenceSources): SourceReference[] {
 }
 
 /** Internal development boundary; no evaluators or domain rules live in routes. */
-export async function simulateWebinarOccurrence(raw: WebinarSimulationInput): Promise<WebinarSimulationResult> {
+export async function simulateWebinarOccurrence(raw: WebinarSimulationInput,
+  provider?: GovernanceFoundationProvider | null, fresh = false): Promise<WebinarSimulationResult> {
   const input = commandSchema.parse(raw);
   input.calculationAt = new Date(input.calculationAt).toISOString();
   const repository = new WebinarPersistence();
-  return repository.withEvaluationTransaction(input, (client, transaction) => simulateWebinarInTransaction(input, client, transaction));
+  return repository.withEvaluationTransaction(input, (client, transaction) => simulateWebinarInTransaction(input, client, transaction, undefined, provider, fresh));
 }
 
 /** Reuses the sole orchestrator inside the lifecycle source/projection transaction. */
 export async function simulateWebinarInTransaction(input: WebinarSimulationInput,
-  client: WebinarTransactionClient, transaction: WebinarPersistence, participantId?: string): Promise<WebinarSimulationResult> {
+  client: WebinarTransactionClient, transaction: WebinarPersistence, participantId?: string,
+  provider?: GovernanceFoundationProvider | null, fresh = false): Promise<WebinarSimulationResult> {
   return (async () => {
     const sources = await loadOccurrenceSources(client, input.campaignId, input.sessionId);
     assertOccurrenceEligibility(sources);
     const sourceReadToken = simulationFingerprint(sources);
-    const inputFingerprint = sourceInputFingerprint(sources, input.calculationAt, participantId);
     const release = await captureWebinarRelease(Date.parse(input.calculationAt));
+    const governed = await resolveFoundationObservations({ sources, client, transaction, actorId: input.actorId,
+      calculationAt: input.calculationAt, releaseFingerprint: release.digest, provider, fresh });
+    const resolvedSources = await loadOccurrenceSources(client, input.campaignId, input.sessionId);
+    const withoutOwnWrites = { ...resolvedSources, binding: sources.binding,
+      records: resolvedSources.records.filter(r => !governed.persistedIds.includes(r.id)) };
+    if (simulationFingerprint(withoutOwnWrites) !== sourceReadToken)
+      throw new PersistenceConflict("Source records changed during governed resolution; reload before simulation");
+    const resolvedReadToken = simulationFingerprint(resolvedSources);
+    const inputFingerprint = sourceInputFingerprint(resolvedSources, input.calculationAt, participantId);
     // Idempotency retries are resolved before stale-revision checks, but never across source/release changes.
     const existing = await client.query(`SELECT * FROM webinar_persistence_records
       WHERE session_id=$1 AND campaign_id=$2 AND kind='readiness'
@@ -240,18 +282,18 @@ export async function simulateWebinarInTransaction(input: WebinarSimulationInput
       const saved = simulationSnapshotSchema.parse(row.payload.simulation);
       if (saved.inputFingerprint !== inputFingerprint || saved.releaseFingerprint !== release.digest
         || saved.calculationAt !== input.calculationAt || row.actor_id !== input.actorId
-        || row.idempotency_key === input.idempotencyKey && row.revision !== input.expectedRevision + 2) {
+        || row.idempotency_key === input.idempotencyKey && row.revision < input.expectedRevision + 2) {
         throw new PersistenceConflict("Simulation retry has changed source, calculation, attribution or release");
       }
       await lockEvaluationSources(client);
-      if (simulationFingerprint(await loadOccurrenceSources(client, input.campaignId, input.sessionId)) !== sourceReadToken) {
+      if (simulationFingerprint(await loadOccurrenceSources(client, input.campaignId, input.sessionId)) !== resolvedReadToken) {
         throw new PersistenceConflict("Source records changed during simulation retry");
       }
       return immutable({ ...saved, snapshotId: row.id, revision: row.revision,
         diagnostics: { invokedRuleIds: [], evaluatorErrors: [], sourceRecordCount: saved.sourceReferences.length, replayed: true } });
     }
     if (sources.binding!.revision !== input.expectedRevision) throw new PersistenceConflict("Occurrence revision changed; reload before simulation");
-    const assembly = assembleEvaluationInput(occurrenceAssemblySource(sources, input.calculationAt, participantId));
+    const assembly = assembleEvaluationInput(occurrenceAssemblySource(resolvedSources, input.calculationAt, participantId));
     // The loader's source-relative default is intentionally not valid after bundling.
     // Use the same server-known workspace root as release capture.
     const catalog = await loadWebinarStandardCatalog({ repositoryRoot: resolveWebinarRepositoryRoot() });
@@ -264,24 +306,37 @@ export async function simulateWebinarInTransaction(input: WebinarSimulationInput
     });
     const exceptionClaims = incompleteExceptions.filter(e => typeof e.ruleId === "string" && e.decision === "approved")
       .map(e => ({ ruleId: e.ruleId as string, exceptionId: e.exceptionId }));
-    const evaluated = evaluateCanonicalAssembly({ assembly, catalog, activityId: sources.activity.id,
+    const assembled = applyFoundationReceipts(assembly, governed.receipts);
+    const mapped: AssemblyResult = immutable({ ...assembled,
+      unavailableInputs: [...assembled.unavailableInputs, ...governed.inspection.observations
+        .filter(o => o.status !== "available").map(o => ({
+          field: `foundation.${o.type}.${o.inputFingerprint}`,
+          reason: `Synthetic-contract-only governed ${o.type} unavailable: ${o.error ?? o.status}; no local substitute`,
+          sourceReference: null,
+        }))] });
+    const evaluated = evaluateCanonicalAssembly({ assembly: mapped, catalog, activityId: sources.activity.id,
       occurrenceId: input.sessionId, calculationAt: input.calculationAt, releaseFingerprint: release.digest,
-      inputFingerprint, sourceReferences: sourceReferences(sources), exceptions: incompleteExceptions, exceptionClaims });
+      inputFingerprint, sourceReferences: [...sourceReferences(resolvedSources), ...governed.receipts.map(r => ({
+        sourceType: `foundation:${r.request.type}`, sourceId: r.request.requestReference,
+        sourceHash: simulationFingerprint(r.response), sourceVersion: `${r.response.serviceVersion}:${r.response.taxonomyVersion}`,
+      }))], exceptions: incompleteExceptions, exceptionClaims });
     await lockEvaluationSources(client);
     const finalSources = await loadOccurrenceSources(client, input.campaignId, input.sessionId);
-    if (simulationFingerprint(finalSources) !== sourceReadToken) {
+    if (simulationFingerprint(finalSources) !== resolvedReadToken) {
       throw new PersistenceConflict("Source records changed during evaluation; reload before simulation");
     }
     const command = { ...input, standard: { id: STANDARD_ID, version: STANDARD_VERSION }, inputFingerprint, operational: false as const };
-    const releaseRecord = await transaction.append({ ...command, idempotencyKey: `${input.idempotencyKey}:release`, payload: { kind: "release" } });
+    const releaseRecord = await transaction.append({ ...command, expectedRevision: governed.revision,
+      idempotencyKey: `${input.idempotencyKey}:release`, payload: { kind: "release" } });
     if (releaseRecord.payload.digest !== release.digest) throw new PersistenceConflict("Application release changed during evaluation");
     const snapshot = evaluated.snapshot;
-    const row = await transaction.append({ ...command, expectedRevision: input.expectedRevision + 1,
+    const row = await transaction.append({ ...command, expectedRevision: governed.revision + 1,
       releaseId: releaseRecord.id, payload: { kind: "readiness", stage: "completion",
         result: snapshot.readinessStages.some(s => s.status === "blocked") ? "not-ready" : "unknown",
         resultFingerprint: simulationFingerprint(snapshot), evidenceIds: sources.records.filter(r => r.kind === "evidence").map(r => r.id),
         exceptionIds: sources.records.filter(r => r.kind === "exception-disposition").map(r => r.id), simulation: snapshot } });
-    return immutable({ ...snapshot, snapshotId: row.id, revision: row.revision, diagnostics: evaluated.diagnostics });
+    return immutable({ ...snapshot, snapshotId: row.id, revision: row.revision,
+      diagnostics: { ...evaluated.diagnostics, foundation: governed.inspection } });
   })();
 }
 

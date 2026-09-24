@@ -9,3 +9,4 @@
 - [Verification and commit policy](verification-commit-policy.md) — commits can be provisional; only passing every required gate establishes phase completion.
 - [Webinar readiness rationale](webinar-readiness-rationale.md) — historical recruitment defects must not create an implicit all-stage dependency chain.
 - [Open development boundary](development-planning-boundary.md) — synthetic planning may precede identity setup; this never permits shared legacy exposure or operational authority.
+- [Foundation receipt clocks](foundation-receipt-clocks.md) — fixed evaluation as-of, original transport receipt and current reuse time are distinct; replay must preserve original provenance and check current expiry.

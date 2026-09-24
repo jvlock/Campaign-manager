@@ -108,6 +108,41 @@ paths:
                   nextCursor: {type: [string, "null"]}
                   unverified: {type: boolean}
                   authoritative: {type: boolean}
+  /development/foundation/observations:
+    get:
+      operationId: inspectDevelopmentFoundationObservations
+      description: Read-only synthetic occurrence inspection. No provider call, no operational authority.
+      parameters:
+        - {name: campaignId, in: query, required: true, schema: {type: string, format: uuid}}
+        - {name: activityId, in: query, required: true, schema: {type: string, format: uuid}}
+        - {name: occurrenceId, in: query, required: true, schema: {type: string, format: uuid}}
+      responses:
+        "200":
+          description: Governed observation inspection; connector reachability is not asserted by this read.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/DevelopmentFoundationInspection"}
+        "400": {description: Invalid scope}
+        "404": {description: Scope not found}
+        "409": {description: Not an eligible synthetic occurrence}
+  /development/foundation/observations/refresh:
+    post:
+      operationId: refreshDevelopmentFoundationObservations
+      description: Server-only synthetic contract refresh; disabled without explicitly registered server fixture. Never accepts governed output.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/DevelopmentFoundationRefresh"}
+      responses:
+        "200":
+          description: Full immutable simulation snapshot and synthetic inspection, not production Foundation connectivity
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/DevelopmentFoundationRefreshResult"}
+        "400": {description: Invalid fixed request tuple}
+        "404": {description: Scope not found}
+        "409": {description: "Provider absent, ineligible scope or revision conflict"}
   /development/simulations/context:
     get:
       operationId: getDevelopmentSimulationContext
@@ -1656,6 +1691,61 @@ components:
         application/json:
           schema: {$ref: "#/components/schemas/Error"}
   schemas:
+    DevelopmentFoundationRefreshResult:
+      type: object
+      required: [inspection, simulation]
+      properties:
+        inspection: {$ref: "#/components/schemas/DevelopmentFoundationInspection"}
+        simulation: {$ref: "#/components/schemas/DevelopmentSimulationResult"}
+    DevelopmentFoundationRefresh:
+      type: object
+      additionalProperties: false
+      required: [campaignId, activityId, occurrenceId, calculationAt, idempotencyKey, expectedRevision]
+      properties:
+        campaignId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        occurrenceId: {type: string, format: uuid}
+        calculationAt: {type: string, format: date-time}
+        idempotencyKey: {type: string, format: uuid}
+        expectedRevision: {type: integer, minimum: 0}
+    DevelopmentFoundationInspection:
+      type: object
+      required: [contractLabel, evaluatorImplemented, observationAvailable, connectorConfigured, connectorReachable, liveProductionConnection, observations, revision, operationalStatus, unverified, authoritative]
+      properties:
+        contractLabel: {type: string, enum: [synthetic-contract-only]}
+        evaluatorImplemented: {type: boolean}
+        observationAvailable: {type: boolean}
+        connectorConfigured: {type: boolean}
+        connectorReachable: {type: boolean}
+        liveProductionConnection: {type: boolean}
+        revision: {type: integer}
+        operationalStatus: {type: string, enum: [simulation-only]}
+        unverified: {type: boolean}
+        authoritative: {type: boolean}
+        observations:
+          type: array
+          items: {$ref: "#/components/schemas/DevelopmentFoundationObservation"}
+    DevelopmentFoundationObservation:
+      type: object
+      required: [type, requestReference, inputFingerprint, status, error, source, output, serviceId, serviceVersion, taxonomyVersion, provenance, receivedAt, respondedAt, expiresAt, simulationOnly, retryCount, affectedRules]
+      properties:
+        type: {type: string, enum: [taxonomy, internal_title, campaign_code, utm, objective_membership, campaign_exclusion]}
+        requestReference: {type: string}
+        inputFingerprint: {type: string}
+        status: {type: string, enum: [available, unavailable, stale, expired, deprecated]}
+        error: {type: string, nullable: true}
+        source: {type: string, enum: [synthetic-provider, immutable-history, none]}
+        output: {type: object, nullable: true, additionalProperties: true}
+        serviceId: {type: string, nullable: true}
+        serviceVersion: {type: string, nullable: true}
+        taxonomyVersion: {type: string, nullable: true}
+        provenance: {type: object, nullable: true, additionalProperties: true}
+        receivedAt: {type: string, format: date-time, nullable: true}
+        respondedAt: {type: string, format: date-time, nullable: true}
+        expiresAt: {type: string, format: date-time, nullable: true}
+        simulationOnly: {type: boolean}
+        retryCount: {type: integer}
+        affectedRules: {type: array, items: {type: string}}
     SyntheticScope:
       type: object
       required: [campaignId, activityId, sessionId]
