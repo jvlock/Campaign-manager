@@ -1,0 +1,861 @@
+Phase 2B-4 can be accepted as a synthetic Foundation integration, not a production Foundation connection. The distinction is important: the architecture, validation, provenance, persistence, and orchestration exist, but only taxonomy has a simulated provider result. Naming, codes, UTMs, objectives, exclusions, and external connectivity remain unavailable.
+
+The next increment should expose the integrated capabilities through stable application APIs without adding UI or pretending unavailable capabilities are operational.
+
+⸻
+
+Phase 2B-5 — Webinar Integration API Contracts
+
+Implement the bounded API-contract layer for the integrated WEB-STANDARD-001 webinar engine.
+
+This phase must expose existing Phase 2B capabilities through stable, validated, auditable application APIs. It must reuse the current data model, services, orchestration, and Foundation-observation integration.
+
+Do not create a parallel webinar model or duplicate domain logic inside route handlers.
+
+Do not add customer-data processing, external sending, publishing, deployment, or a live Governance Foundation connection.
+
+1. Expected starting state
+
+Expected branch:
+
+feature/webinar-standard-engine
+
+Expected HEAD:
+
+a4d642e3238bc00d074376b459a8c48f21b17581
+
+Expected title:
+
+Integrate governed Foundation observations
+
+Expected evidence:
+
+docs/verification/phase-2b-4-foundation-observation-integration.md
+
+Before editing, report:
+
+* Current branch and HEAD.
+* Direct parent.
+* Tracked, staged, modified, and untracked files.
+* Files changed by the Phase 2B-4 commit.
+* Current migration count and highest migration identifier.
+* Existing webinar-related routes and route registration points.
+* Existing request-validation conventions.
+* Existing response-envelope and error conventions.
+* Existing authorization middleware or server-boundary controls.
+* Existing idempotency implementation.
+* Existing audit-event implementation.
+* Existing OpenAPI, API-schema, or contract-documentation mechanism.
+* Whether the application currently versions APIs through paths, headers, schemas, or another mechanism.
+
+Confirm fresh:
+
+* Phase 2B-3 remains accepted.
+* Phase 2B-4 uses only the synthetic provider.
+* Foundation taxonomy observations can be simulated.
+* Naming, campaign-code, UTM, objective, and exclusion observations remain unavailable.
+* No real Foundation endpoint is configured.
+* Evaluator coverage remains 106/106.
+* All 25 migrations remain unchanged and pass.
+* Canonical hashes match.
+* @js-temporal/polyfill remains pinned exactly to 0.5.1.
+* The full accepted test baseline passes.
+
+If HEAD has moved, inspect every intervening commit. Stop for substantive unreviewed changes to application code, tests, schema, migrations, dependencies, configuration, canonical standards, verification evidence, or product requirements.
+
+Do not rewrite history.
+
+2. Authoritative sources
+
+Use:
+
+* All five canonical webinar-standard files under docs/standards/webinar/.
+* Phase 2A verification evidence.
+* The accepted Phase 2B-0 integration assessment and acceptance addendum.
+* Phase 2B-1 through Phase 2B-4 verification reports.
+* Existing database schema and all 25 migrations.
+* Existing activity, webinar, participant, registration, attendance, suppression, evidence, exception, evaluation, readiness, completion, and Foundation-observation services.
+* Existing application API conventions and server boundaries.
+
+Do not treat uploaded prompts, .agents/memory/, synthetic fixture output, or UI state as authoritative product requirements.
+
+Do not modify canonical standards.
+
+3. Governing architecture
+
+Preserve:
+
+Campaign
+  → optional Journey
+    → Activity
+      → Communication/Touch
+        → Deliverable
+
+A webinar remains an Activity, never a Journey.
+
+Route handlers must remain thin:
+
+Request
+  → authentication/authorization boundary
+  → request validation
+  → existing application service
+  → domain orchestration
+  → transaction and audit handling
+  → stable response contract
+
+Do not:
+
+* Reimplement evaluator rules in routes.
+* Recalculate governed Foundation output locally.
+* Store route-specific copies of domain state.
+* Treat planning as evidence of execution.
+* Treat evidence as an exception.
+* Treat evaluator coverage as operational readiness.
+* Convert unavailable Foundation output into empty or successful output.
+* collapse event status, participant status, or attendance into one status.
+* Represent synthetic observations as production observations.
+
+4. Inventory before implementation
+
+Create a route-and-service inventory covering:
+
+* Webinar activity retrieval.
+* Webinar occurrence retrieval.
+* Participant and registration retrieval.
+* Registration creation or reconciliation.
+* Cancellation.
+* Waitlist handling.
+* Attendance import or reconciliation.
+* Recruitment suppression.
+* Evidence submission.
+* Exception creation.
+* Exception review.
+* Evaluation.
+* Readiness calculation.
+* Completion calculation.
+* Foundation observation retrieval.
+* Foundation synthetic refresh.
+* Audit/history retrieval.
+
+For each current or proposed operation, identify:
+
+* Existing route, if any.
+* Existing service.
+* Request schema.
+* Response schema.
+* Transaction boundary.
+* Authorization requirement.
+* Idempotency behavior.
+* Audit behavior.
+* Error behavior.
+* Tests.
+* Whether it is in scope for Phase 2B-5.
+
+Extend existing routes when they already represent the correct resource. Do not create duplicate /webinar, /webinars, /activity-webinar, and /standard-webinar APIs for the same concept.
+
+If existing API conventions materially conflict with this prompt, document the conflict and follow the established application convention unless doing so would violate a canonical requirement.
+
+5. Required API resources
+
+Expose the smallest coherent set of APIs needed by the later Setup, Recruitment, Follow-up, and Readiness screens.
+
+Use the repository’s existing path and versioning conventions. The illustrative paths below are resource requirements, not authorization to create conflicting duplicate paths.
+
+5.1 Webinar standard summary
+
+Provide a read contract equivalent to:
+
+GET /api/activities/:activityId/webinar-standard
+
+It must return a whole, internally consistent summary containing:
+
+* Activity identity.
+* Webinar occurrence identity.
+* Exact standard identifier and version.
+* Engine-release fingerprint.
+* Calculation instant.
+* Event status.
+* Aggregate participant counts.
+* Registration, cancellation, waitlist, and attendance summaries.
+* Communication-plan status.
+* Suppression status.
+* Evidence summary.
+* Foundation-observation availability summary.
+* Evaluation summary.
+* Readiness-stage results.
+* Completion status.
+* Missing data.
+* Missing evaluator coverage, if any.
+* Unresolved blockers.
+* Nonblocking findings.
+* Resolved blockers.
+* Staleness indicators.
+* Last evaluation reference.
+* Links or identifiers for detailed resources.
+
+The response must distinguish:
+
+* Not configured.
+* Configured but unavailable.
+* Available from synthetic simulation.
+* Available from a real provider.
+* Stale.
+* Failed.
+* Unsupported.
+
+Do not use null, an empty object, or HTTP success alone to conceal these distinctions.
+
+5.2 Evaluation
+
+Provide an operation equivalent to:
+
+POST /api/activities/:activityId/webinar-standard/evaluations
+
+Requirements:
+
+* Invoke the existing 106-rule orchestration.
+* Use request-local diagnostics.
+* Never mutate shared diagnostics.
+* Accept an explicit calculation instant only where existing test or diagnostic authorization permits it.
+* Default production behavior to a server-generated calculation instant.
+* Record the exact standard version and engine-release fingerprint.
+* Reference the source facts used.
+* Persist or retrieve results according to the accepted Phase 2B persistence policy.
+* Return every applicable rule result.
+* Report missing inputs and missing evaluator coverage explicitly.
+* Preserve deterministic ordering.
+* Never report operational readiness based solely on evaluator coverage.
+* Be concurrency-safe.
+* Include an idempotency strategy.
+
+A repeated equivalent request must not generate inconsistent duplicate authoritative snapshots.
+
+5.3 Readiness
+
+Provide a read or calculation contract equivalent to:
+
+GET /api/activities/:activityId/webinar-standard/readiness
+
+or, if calculation is intentionally explicit:
+
+POST /api/activities/:activityId/webinar-standard/readiness-evaluations
+
+Use whichever design matches the existing service boundaries.
+
+Return each authorized stage separately:
+
+* Ready to recruit.
+* Ready to run.
+* Ready to follow up.
+* Complete.
+
+For each stage return:
+
+* Status.
+* Calculation instant.
+* Applicable-rule count.
+* Passed rules.
+* Unresolved blocking failures.
+* Blocking failures resolved by exception.
+* Nonblocking failed rules.
+* Warnings.
+* Missing inputs.
+* Missing evaluator coverage.
+* Prerequisite failures.
+* Supporting evidence references.
+* Exception references.
+* Staleness state.
+
+Preserve the approved dependencies:
+
+* Ready to recruit has no stage prerequisite.
+* Ready to run does not depend on Ready to recruit.
+* Ready to follow up depends on Ready to run.
+* Complete uses its own rules and explicit obligations rather than a blanket linear chain.
+
+5.4 Completion
+
+Provide a contract equivalent to:
+
+GET /api/activities/:activityId/webinar-standard/completion
+
+or use an existing consolidated evaluation resource when that is the established pattern.
+
+Return:
+
+* Completion result.
+* Required obligations.
+* Satisfied obligations.
+* Unsatisfied obligations.
+* Missing inputs.
+* Operational observations.
+* Evidence references.
+* Measurement obligations.
+* Snapshot reference.
+* Standard and release fingerprints.
+* Calculation instant.
+* Staleness.
+
+Completion diagnostics must remain request-local.
+
+5.5 Evidence
+
+Provide contracts equivalent to:
+
+* GET /api/activities/:activityId/webinar-standard/evidence
+* POST /api/activities/:activityId/webinar-standard/evidence
+
+Evidence creation must:
+
+* Validate evidence type.
+* Validate source reference.
+* Validate activity and occurrence scope.
+* Validate content-version scope where applicable.
+* Record submission time.
+* Record actor identity and authentication status honestly.
+* Never represent an unverified actor as authenticated.
+* Never convert evidence into an exception.
+* Never automatically mark a rule passed merely because evidence was submitted.
+* Produce an audit record.
+* Support safe idempotent retry.
+
+Do not add file-upload infrastructure unless it already exists and is required by the accepted assessment. References to existing assets are sufficient for this phase.
+
+5.6 Exceptions
+
+Provide contracts equivalent to:
+
+* GET /api/activities/:activityId/webinar-standard/exceptions
+* POST /api/activities/:activityId/webinar-standard/exceptions
+* POST /api/activities/:activityId/webinar-standard/exceptions/:exceptionId/review
+
+Exception creation must validate:
+
+* Referenced rule.
+* Rule failure exists.
+* Rule is blocking.
+* Rule is exception-eligible.
+* Scope.
+* Rationale.
+* Required evidence.
+* Requested duration or expiration.
+* Actor identity state.
+
+Exception review must remain unavailable unless trusted authentication and the required reviewer authorization are actually present.
+
+During the open-access pilot:
+
+* Viewing exceptions may remain open within the application’s current access model.
+* Drafting or submitting an exception request may follow the accepted pilot policy.
+* Approving, denying, revoking, or operationally relying on an exception must fail closed without trusted reviewer identity.
+* A creator must never approve their own exception.
+* A supplied name, email, header, or client-provided role must not substitute for trusted identity.
+* WEB-EXC-001 cannot exempt itself.
+* Invalid, denied, expired, incomplete, or mismatched exceptions do not resolve blockers.
+
+If trusted authentication is unavailable, the review endpoint may exist as a stable contract but must return the repository’s standard authorization or capability-unavailable error without changing state.
+
+5.7 Foundation observations
+
+Provide read contracts for observations and a development-only synthetic refresh operation equivalent to:
+
+* GET /api/activities/:activityId/webinar-standard/foundation-observations
+* POST /api/activities/:activityId/webinar-standard/foundation-observations/refresh
+
+The read response must distinguish each governed output:
+
+* Taxonomy.
+* Standardized naming.
+* Campaign code.
+* UTM output.
+* Objective.
+* Exclusions.
+
+For each output return:
+
+* Supported or unsupported.
+* Configured or unconfigured.
+* Provider identity.
+* Synthetic or external.
+* Availability.
+* Validity.
+* Effective version.
+* Provenance.
+* Request reference.
+* Input fingerprint.
+* Receipt metadata.
+* Observation reference.
+* Created time.
+* Supersession state.
+* Error category where unavailable.
+
+Current required behavior:
+
+* Synthetic taxonomy may be available.
+* Naming remains unavailable.
+* Campaign code remains unavailable.
+* UTM output remains unavailable.
+* Objective remains unavailable.
+* Exclusions remain unavailable.
+* No real Foundation connectivity may be claimed.
+
+The refresh operation must:
+
+* Be development-only.
+* Be disabled outside explicitly allowed nonproduction environments.
+* Use existing bounded retry and concurrency protections.
+* Preserve immutable receipt and observation history.
+* Never overwrite an earlier observation.
+* Return the new attempt and observation references.
+* Never promote synthetic output to production-authoritative output.
+
+If the existing development inspection endpoint already provides this safely, extend it rather than duplicating it.
+
+5.8 Operational population results
+
+For any batch registration, attendance, suppression, evidence, or observation operation exposed in this phase, return whole-population results.
+
+The contract must account for every submitted record as one of:
+
+* Succeeded.
+* Already satisfied or idempotent replay.
+* Failed validation.
+* Not found.
+* Duplicate.
+* Suppressed.
+* Skipped with reason.
+* Conflict.
+* Unauthorized.
+* Provider unavailable.
+* Retry exhausted.
+* Unresolved.
+
+Requirements:
+
+* Totals reconcile.
+* Record-level results remain visible.
+* An HTTP success must not conceal record-level failure.
+* Partial success is explicit.
+* Retrying successful records is safe.
+* Infrastructure failure behavior is deterministic.
+* Result ordering is stable.
+
+Do not add a batch API solely to satisfy this requirement if no batch operation is otherwise needed in Phase 2B-5.
+
+6. Response contracts
+
+Use the application’s established response-envelope convention. If none exists, define one narrowly and consistently.
+
+Every successful domain response must include or reference:
+
+* Resource identity.
+* Applicable version.
+* Calculation or retrieval timestamp.
+* Data or result.
+* Provenance where applicable.
+* Staleness state where applicable.
+
+Every error must use stable machine-readable codes.
+
+At minimum distinguish:
+
+* VALIDATION_ERROR
+* NOT_FOUND
+* CONFLICT
+* IDEMPOTENCY_CONFLICT
+* UNAUTHENTICATED
+* UNAUTHORIZED
+* CAPABILITY_UNAVAILABLE
+* PROVIDER_NOT_CONFIGURED
+* PROVIDER_UNAVAILABLE
+* PROVIDER_RESPONSE_INVALID
+* UNSUPPORTED_GOVERNED_OUTPUT
+* STALE_INPUT
+* MISSING_REQUIRED_INPUT
+* EVALUATION_INCOMPLETE
+* INTERNAL_ERROR
+
+Do not expose stack traces, secrets, connection strings, raw provider credentials, or sensitive internal configuration.
+
+Use appropriate HTTP semantics, but do not rely on HTTP status alone. The structured error code must be stable.
+
+7. Request validation
+
+Validate all route parameters, query parameters, headers, and bodies on the server.
+
+Requirements:
+
+* Reject unknown fields where established application conventions support strict validation.
+* Reject invalid identifiers.
+* Reject invalid timestamps.
+* Reject invalid enum values.
+* Reject malformed idempotency keys.
+* Apply explicit payload-size limits.
+* Prevent prototype-pollution and unsafe object input.
+* Do not trust client-provided calculated fields.
+* Do not trust client-provided readiness or completion status.
+* Do not trust client-provided actor roles.
+* Do not accept client-generated provider provenance as authoritative.
+* Normalize only where the domain contract explicitly permits normalization.
+
+Reuse existing schemas when they already represent the domain correctly.
+
+Do not create route-only enums that can drift from canonical domain types.
+
+8. Idempotency and concurrency
+
+State-changing operations must have explicit idempotency behavior.
+
+At minimum assess:
+
+* Evidence submission.
+* Exception creation.
+* Evaluation creation.
+* Foundation synthetic refresh.
+* Any exposed reconciliation operation.
+
+Requirements:
+
+* Use the application’s existing idempotency mechanism.
+* Scope keys by operation and authoritative resource.
+* Store or derive a request fingerprint.
+* Same key plus same fingerprint returns the prior result.
+* Same key plus different fingerprint returns an idempotency conflict.
+* Concurrent identical requests must not create duplicate authoritative records.
+* Failed attempts must follow an explicit retry policy.
+* Immutable history must remain intact.
+* Do not use process-local memory as the sole concurrency control.
+
+Add race and replay tests.
+
+9. Release fingerprints
+
+Every persisted or returned evaluation snapshot must identify the engine release that produced it.
+
+Use the accepted Phase 2B release-fingerprint design, distinguishing:
+
+Engine release identity
+
+* Standard identifier.
+* Exact standard version.
+* Canonical-document hashes or a stable aggregate.
+* Evaluator-registry fingerprint.
+* Evaluator count.
+* Application build or commit identifier where available.
+* Temporal dependency version.
+
+Evaluation context
+
+* Calculation instant.
+* Input references.
+* Input fingerprint.
+* Effective Foundation or taxonomy version where applicable.
+* Observation references.
+
+Do not use calculation time as the release identity.
+
+If the runtime cannot obtain a trustworthy build or commit identifier, report that component as unavailable rather than fabricating one.
+
+10. Authorization boundary
+
+Preserve the accepted pilot approach: ordinary planning and viewing can remain broadly accessible while roles are being established, but sensitive actions remain blocked without trusted identity.
+
+Do not introduce a broad RBAC redesign in this phase.
+
+Classify every endpoint as:
+
+* Open under the current pilot access model.
+* Requires any trusted authenticated user.
+* Requires a future scoped role.
+* Development-only.
+* Unavailable until an external capability exists.
+
+At minimum, keep these operations restricted or unavailable without trusted authorization:
+
+* Exception approval or denial.
+* Readiness override attempts.
+* Ingestion of externally authoritative governed observations.
+* Privileged attendance reconciliation.
+* Operational execution.
+* Sending.
+* Publishing.
+* Deployment.
+* Governance-configuration changes.
+
+API responses must expose allowed actions or capabilities based on verified server-side state, not on a client-supplied role.
+
+If trusted authentication is not currently available, do not falsely report a user as authenticated and do not relax sensitive actions to complete the phase.
+
+11. Database and migration boundary
+
+Phase 2B-5 is expected to reuse the persistence established in prior Phase 2B increments.
+
+Before adding any migration:
+
+1. Prove that the API contract cannot be implemented correctly using the existing schema.
+2. Identify the missing persistence requirement.
+3. Confirm that it was authorized by the accepted Phase 2B assessment.
+4. Report the proposed migration and stop for review.
+
+Do not add a migration merely for:
+
+* Response formatting.
+* Derived display fields.
+* Route-specific state.
+* Duplicated evaluation results.
+* Client convenience.
+* Synthetic fixture configuration.
+
+Expected migration count after this phase remains 25.
+
+Do not use db push.
+
+12. API documentation
+
+Document the implemented contracts using the repository’s existing mechanism.
+
+Documentation must include:
+
+* Method and path.
+* Purpose.
+* Authorization classification.
+* Request parameters.
+* Request body.
+* Response body.
+* Stable errors.
+* Idempotency behavior.
+* Concurrency behavior.
+* Source-of-truth boundary.
+* Synthetic-versus-live behavior.
+* Example responses using non-sensitive synthetic data.
+* Unsupported capabilities.
+* Known pilot limitations.
+
+Do not document a live Foundation connector, sending capability, operational approval, or publishing capability as available.
+
+If an OpenAPI document exists, update and validate it. Otherwise, create a bounded API-contract document under the existing documentation structure rather than introducing an unapproved documentation framework.
+
+13. Required tests
+
+Add contract, service-integration, security, and regression tests.
+
+At minimum test:
+
+1. Webinar-standard summary for a valid activity.
+2. Unknown activity returns the stable not-found error.
+3. Non-webinar activity is handled explicitly.
+4. Malformed activity identifier is rejected.
+5. Evaluation invokes the existing orchestration once.
+6. Evaluation reports 106/106 registry coverage separately from readiness.
+7. Evaluation returns all applicable results in deterministic order.
+8. Missing source data is explicit.
+9. Missing evaluator coverage, if simulated, produces incomplete results.
+10. Concurrent evaluations do not share diagnostics.
+11. Idempotent evaluation replay returns the prior result.
+12. Same idempotency key with different input conflicts.
+13. Readiness stages retain their approved dependency behavior.
+14. Nonblocking failures remain visible without blocking readiness.
+15. Resolved blockers retain their original failed result.
+16. Completion diagnostics remain request-local.
+17. Evidence submission does not automatically pass a rule.
+18. Evidence does not become an exception.
+19. Evidence replay is idempotent.
+20. Exception creation rejects a nonblocking rule.
+21. Exception creation rejects an ineligible blocker.
+22. WEB-EXC-001 cannot exempt itself.
+23. Exception review fails closed without trusted reviewer identity.
+24. Client-provided identity or role cannot authorize review.
+25. Exception creator cannot approve their own exception.
+26. Synthetic taxonomy observation is clearly labeled synthetic.
+27. Unsupported naming output remains unavailable.
+28. Unsupported campaign-code output remains unavailable.
+29. Unsupported UTM output remains unavailable.
+30. Unsupported objective output remains unavailable.
+31. Unsupported exclusion output remains unavailable.
+32. Provider-not-configured differs from provider-unavailable.
+33. Invalid provider response differs from unsupported output.
+34. Observation history remains immutable.
+35. Synthetic refresh is unavailable in a production-mode test.
+36. Concurrent refresh requests preserve concurrency protection.
+37. Whole-population responses reconcile totals.
+38. Partial success remains explicit.
+39. Stable error responses do not expose stack traces.
+40. Unknown request fields are rejected where strict validation applies.
+41. Oversized requests are rejected.
+42. Invalid timestamps are rejected.
+43. Client-provided readiness status is ignored or rejected.
+44. Client-provided provenance cannot become authoritative.
+45. Release fingerprint is returned and persisted consistently.
+46. Unavailable build identity is reported honestly.
+47. Event status remains separate from participant status.
+48. Attendance remains per registrant.
+49. Planning output does not prove execution.
+50. Existing non-webinar APIs remain unchanged.
+51. All legacy webinar tests remain passing.
+52. Existing migrations remain unchanged and pass from a fresh database.
+53. Upgrade-preservation tests pass.
+54. API documentation matches the implemented routes and schemas.
+
+Use table-driven testing where appropriate.
+
+Do not weaken prior tests or change canonical fixtures to obtain a pass.
+
+14. Browser and development verification
+
+Use the application preview to verify only the existing development inspection experience affected by the API layer.
+
+Confirm:
+
+* The application still loads.
+* Existing webinar areas still load.
+* Development Foundation inspection still distinguishes synthetic, unavailable, unsupported, and unconfigured states.
+* Persisted receipt metadata remains visible where previously authorized.
+* Refresh behavior remains development-only.
+* No new customer-facing workflow is implied.
+* No UI regression was introduced.
+
+Do not build the four workflow screens in this phase.
+
+15. Verification gate
+
+Run fresh:
+
+1. Focused API-contract tests.
+2. Request-validation tests.
+3. Authorization-boundary tests.
+4. Idempotency and concurrency tests.
+5. Whole-population result tests.
+6. Foundation-observation tests.
+7. Registration, attendance, cancellation, and suppression tests.
+8. Evidence and exception tests.
+9. Full evaluator suite.
+10. Readiness and completion suites.
+11. Scheduling and audience suites.
+12. Catalog-integrity and structural-containment tests.
+13. Rule-ID drift check.
+14. Direct registry check confirming 106 canonical evaluator IDs.
+15. Nonincremental server typecheck.
+16. Nonincremental frontend typecheck.
+17. Complete API suite against a new disposable database.
+18. All 25 migrations in order.
+19. Upgrade-preservation tests.
+20. Database shutdown and cleanup verification.
+21. Frontend regression suite.
+22. All five canonical-document hash checks.
+23. Temporal 0.5.1 pin check.
+24. API-documentation or OpenAPI validation.
+25. Browser verification.
+
+Report separately:
+
+* Test files.
+* Top-level records.
+* Nested records.
+* Leaf tests.
+* Grouping records.
+* Failures.
+* Skips.
+* Cancellations.
+* TODOs.
+* Setup failures.
+* Teardown failures.
+* Type errors.
+* Migration failures.
+* Upgrade-preservation failures.
+* Cleanup failures.
+* Browser failures.
+
+Do not combine unlike runner units into one misleading total.
+
+An external Foundation smoke test is not required because no approved endpoint exists. Report it as not run for that reason, not as passed.
+
+16. Verification evidence
+
+Create:
+
+docs/verification/phase-2b-5-webinar-api-contracts.md
+
+Include:
+
+* Starting repository evidence.
+* Moving-baseline assessment.
+* Existing route inventory.
+* Implemented endpoints.
+* Service-to-route mapping.
+* Request and response schemas.
+* Authorization classification.
+* Idempotency behavior.
+* Concurrency behavior.
+* Whole-population behavior.
+* Release-fingerprint behavior.
+* Foundation capability matrix.
+* Stable error catalog.
+* Changed-file inventory.
+* Migration confirmation.
+* Test results.
+* Browser-verification evidence.
+* Known limitations.
+* Remaining blockers.
+* Explicit exclusions.
+
+Clearly state:
+
+* The Foundation integration remains synthetic.
+* Only synthetic taxonomy observations are available.
+* No customer-data processing was introduced.
+* No sending, publishing, production connection, or deployment occurred.
+* API availability does not mean operational readiness.
+
+17. Commit policy
+
+Commit only files required for the bounded API-contract implementation and its verification evidence.
+
+Exclude:
+
+* Current instruction uploads.
+* Unrelated attached_assets/ files.
+* Unrelated .agents/memory/ files.
+* Temporary browser artifacts.
+* Disposable-database files.
+* Secrets.
+* Provider credentials.
+* Generated local logs.
+
+Do not rewrite history.
+
+Suggested commit title:
+
+Expose webinar standard API contracts
+
+A platform-created commit is provisional until the complete verification gate passes.
+
+18. Completion report
+
+Report:
+
+* Accepted starting commit.
+* Ending commit.
+* Direct parent.
+* Every changed file.
+* Every implemented endpoint.
+* Reused services.
+* Authorization classification by endpoint.
+* Stable error codes.
+* Idempotency and concurrency behavior.
+* Whole-population handling.
+* Release-fingerprint behavior.
+* Foundation capability matrix.
+* Confirmation that synthetic taxonomy is not represented as live Foundation output.
+* Migration count and confirmation that migrations remain unchanged.
+* Complete verification counts by runner unit.
+* Database, upgrade, shutdown, and cleanup results.
+* Evaluator coverage.
+* Canonical hashes.
+* Temporal pin.
+* Browser-verification results.
+* External smoke-test status.
+* Known limitations and remaining blockers.
+* Confirmation that Phase 2B-6 did not begin.
+* Confirmation that no customer-data processing, sending, publishing, production Foundation connection, or deployment was introduced.
+
+Stop after the completion report. Do not begin the Setup or Recruitment UI.
