@@ -1,0 +1,535 @@
+The persistence foundation should now be classified as **Phase 2B-1 complete**. Domain adapters and Foundation connectivity were explicitly separate increments in the approved Phase 2B-0 plan; they should not be used to keep Phase 2B-1 indefinitely open.
+
+The next increment is Phase 2B-2: connect existing application records to the completed standards engine without adding public operational APIs or duplicating business logic.
+
+---
+
+# Phase 2B-2 — Domain Adapters and Evaluation Orchestration
+
+Connect the existing Campaign Manager domain and the completed webinar standards engine through internal domain adapters and deterministic evaluation orchestration.
+
+This increment may enable development-only simulations through the existing open-development interface. It must not enable operational readiness, real approvals, customer-data processing, external sending, publishing, Foundation connectivity, or production deployment.
+
+## 1. Starting state
+
+Expected branch:
+
+`feature/webinar-standard-engine`
+
+Expected starting commit:
+
+`ab2d91699e561217f04bb17a04694528b8bbc1f2`
+
+Authoritative implementation evidence:
+
+* `docs/verification/phase-2b-0-integration-assessment.md`
+* `docs/verification/phase-2b-0a-acceptance-and-owner-decisions.md`
+* `docs/verification/phase-2b-1-open-development-continuation.md`
+* `docs/verification/phase-2b-1-completion.md`
+* `docs/open-development-planning.md`
+* all five canonical webinar standards under `docs/standards/webinar/`
+
+Before editing, confirm:
+
+* branch, HEAD, direct parent and working-tree state;
+* ancestry from the expected starting commit;
+* migrations `0001–0024`;
+* 106/106 evaluator coverage;
+* canonical hashes;
+* exact Temporal `0.5.1` pin;
+* open-development safeguards;
+* restricted-mode behavior;
+* synthetic database identity;
+* no customer or participant data;
+* no live operational capability.
+
+If HEAD has moved, inspect every intervening commit. Stop for unexplained substantive changes.
+
+Do not stage or commit instruction uploads or unrelated assets.
+
+## 2. Phase classification
+
+Update the Phase 2B implementation record to reflect:
+
+* Phase 2B-0: integration assessment complete.
+* Phase 2B-0A: owner decisions and acceptance record complete.
+* Phase 2B-1: persistence, audit, retention and concurrency foundation complete.
+* Phase 2B-2: domain adapters and evaluation orchestration—current increment.
+* Foundation connectivity, APIs, operational authorization, remaining UI and external integrations remain later increments.
+
+Do not reopen Phase 2B-1 because later-phase integration remains incomplete.
+
+Do not edit historical evidence to change what was reported. Add a superseding clarification if necessary.
+
+## 3. Architectural objective
+
+Create one internal orchestration boundary that converts existing application records into the exact Phase 2A engine input contracts.
+
+The required direction is:
+
+```text
+Existing application records
+        ↓
+Domain adapters
+        ↓
+Canonical evaluation input
+        ↓
+106-rule standards engine
+        ↓
+Evaluation and readiness results
+        ↓
+Immutable development snapshot
+```
+
+Requirements:
+
+* Existing application records remain authoritative for application state.
+* Phase 2A domain types remain authoritative for engine input.
+* Adapters translate between the two.
+* Adapters must not create a second webinar model.
+* Evaluators must not query the database directly.
+* Routes and UI must not recreate evaluation logic.
+* Persistence services must not reinterpret rule semantics.
+* A webinar remains an Activity, never a Journey.
+
+## 4. Inventory the exact adapter boundary
+
+Before implementing, identify the current source for every required input, including:
+
+* campaign identity;
+* optional journey identity;
+* activity and webinar identity;
+* webinar occurrence;
+* standard identifier and exact version;
+* calculation instant;
+* event status;
+* participant status;
+* per-registrant attendance;
+* registration instant;
+* cancellation;
+* waitlist state;
+* recruitment touches;
+* reminder obligations;
+* follow-up variants;
+* scheduled instants;
+* communication and deliverable records;
+* assets and destinations;
+* operational observations;
+* QA evidence;
+* governed Foundation observations;
+* exceptions;
+* prior readiness results;
+* completion inputs;
+* measurement obligations.
+
+For every field, classify it as:
+
+* directly persisted;
+* derived deterministically;
+* supplied by an existing internal service;
+* unavailable because an external integration is not connected;
+* absent because customer data is prohibited in open development;
+* missing and incomplete;
+* not applicable.
+
+Do not invent favorable values for missing data.
+
+## 5. Adapter requirements
+
+Implement typed, testable adapters for the required existing application sources.
+
+Each adapter must:
+
+* accept explicit source records;
+* return the exact canonical domain type;
+* perform structural validation;
+* preserve stable identifiers;
+* preserve date, time-zone and occurrence semantics;
+* distinguish missing from false, zero, empty and not applicable;
+* return structured mapping errors;
+* avoid database access inside pure mapping functions;
+* avoid mutating source records;
+* produce deterministic output;
+* document every derivation;
+* reject ambiguous mappings where the canonical meaning cannot be established.
+
+Prefer small adapters grouped by domain responsibility rather than one large mapping function.
+
+## 6. Preserve critical source boundaries
+
+The adapters must preserve these distinctions:
+
+* Campaign is separate from Activity.
+* Webinar is an Activity.
+* Webinar occurrence is separate from the webinar definition.
+* Event status is separate from participant status.
+* Attendance is recorded per registrant.
+* Planned communication is separate from executed communication.
+* Scheduled time is separate from actual execution time.
+* Evidence is separate from an exception.
+* A valid exception resolves only an eligible blocker.
+* Development attribution is not verified identity.
+* A simulation result is not operational readiness.
+* Foundation-dependent observations are not locally recreated.
+* Missing Foundation output remains unavailable.
+* Unknown attendance is not treated as attended or absent.
+* Neutral follow-up is a distinct variant.
+
+Add regression tests for every boundary.
+
+## 7. Evaluation input assembly
+
+Create a deterministic input-assembly service that:
+
+1. Loads the authorized occurrence-scoped application records.
+2. Invokes the relevant adapters.
+3. Validates the assembled canonical input.
+4. Records all missing, invalid and unavailable inputs.
+5. Invokes the existing evaluator registry.
+6. Applies existing exception resolution.
+7. Calculates readiness stages using the existing readiness module.
+8. Calculates completion using the existing completion module.
+9. Produces request-local diagnostics.
+10. Creates an immutable simulation snapshot through the Phase 2B-1 persistence service.
+
+The assembly service must not:
+
+* change evaluator semantics;
+* add rule-specific logic outside evaluators;
+* infer external execution;
+* manufacture evidence;
+* manufacture Foundation observations;
+* convert planning records into operational facts;
+* treat evaluator coverage as readiness;
+* hide nonblocking findings;
+* suppress missing evaluator or input coverage;
+* mutate application records.
+
+## 8. Result contract
+
+Return one structured internal result containing:
+
+* activity and occurrence identifiers;
+* standard identifier and exact version;
+* calculation instant;
+* release fingerprint;
+* input fingerprint;
+* source-record references;
+* applicable rules;
+* passed rules;
+* unresolved blocking failures;
+* blockers resolved by valid exceptions;
+* nonblocking failures;
+* warnings;
+* missing input data;
+* unavailable external observations;
+* mapping errors;
+* evaluator coverage;
+* readiness-stage results;
+* completion result;
+* request-local diagnostics;
+* snapshot identifier;
+* explicit operational status.
+
+For open development, operational status must always be:
+
+`simulation-only`
+
+A result with no blocking failures must still remain nonoperational when required authorization, governed observations, evidence or integrations are unavailable.
+
+## 9. Foundation-dependent rules
+
+Do not build the Foundation connector in this increment.
+
+For rules dependent on taxonomy, standardized naming, campaign codes or UTM output:
+
+* consume an existing valid governed observation if one is explicitly present;
+* otherwise mark the governed observation unavailable;
+* do not calculate a substitute locally;
+* do not accept free-text or manual values as governed evidence;
+* preserve provenance and version information;
+* identify every affected rule;
+* show the resulting readiness effect accurately.
+
+Clearly distinguish:
+
+* evaluator implemented;
+* governed observation present;
+* live Foundation connector connected.
+
+Only the first is guaranteed in this increment.
+
+## 10. Evidence and exception handling
+
+Use the Phase 2B-1 persistence services.
+
+Requirements:
+
+* Evidence metadata may be mapped into canonical evidence inputs.
+* Source content remains referenced rather than unnecessarily duplicated.
+* Development evidence remains labelled unverified.
+* Development exceptions are simulated only.
+* A simulated exception cannot establish operational readiness.
+* Exception eligibility remains controlled by canonical rule metadata.
+* Non-overridable rules remain non-overridable.
+* Self-approval remains prohibited in restricted mode.
+* Open development does not fabricate an approver.
+* Invalid, expired, denied, incomplete or mismatched exceptions do not resolve blockers.
+
+Do not create operational evidence or approval APIs.
+
+## 11. Attendance and participant handling
+
+No customer or production participant data may be introduced.
+
+Use synthetic records only.
+
+The adapter must support the canonical distinctions among:
+
+* registered;
+* waitlisted;
+* cancelled;
+* attended;
+* absent;
+* attendance unknown;
+* internal or test record;
+* suppressed or excluded record.
+
+Requirements:
+
+* Attendance remains per registrant.
+* Event status never substitutes for attendance.
+* Unknown attendance remains unknown.
+* Cancellation does not become absence.
+* Internal and test records remain excluded where required.
+* Neutral follow-up obligations remain distinct from attended and absent follow-up.
+* Population processing must use the Phase 2B-1 deterministic pagination contract.
+
+## 12. Scheduling and time handling
+
+Preserve the existing Temporal-based scheduling contracts.
+
+Requirements:
+
+* use the exact pinned Temporal dependency;
+* preserve event time zone;
+* preserve calculation instant;
+* distinguish local scheduled time from absolute instant;
+* handle daylight-saving transitions;
+* maintain deterministic ordering;
+* do not use the server’s implicit local time zone;
+* do not silently reschedule invalid or missed obligations;
+* distinguish planned, due, overdue, suppressed, cancelled and executed states.
+
+Add boundary tests for DST changes and cross-time-zone calculations.
+
+## 13. Snapshot behavior
+
+Development evaluation snapshots must:
+
+* be occurrence-scoped;
+* use the Phase 2B-1 release fingerprint;
+* include an input fingerprint;
+* be immutable;
+* preserve source references;
+* preserve missing and unavailable inputs;
+* preserve original failures after exception resolution;
+* preserve nonblocking findings;
+* use idempotency to prevent duplicate equivalent snapshots;
+* create a new snapshot when a relevant input changes;
+* never overwrite historical results;
+* remain labelled simulation-only.
+
+Request-local diagnostics must not become authoritative snapshot evidence.
+
+## 14. Concurrency
+
+Verify the orchestrator under concurrent requests.
+
+At minimum test:
+
+* two evaluations of different occurrences;
+* two concurrent evaluations of the same occurrence;
+* input changed during evaluation;
+* stale version conflict;
+* duplicate retry with the same idempotency key;
+* equivalent input producing deterministic fingerprints;
+* changed input producing a new fingerprint and snapshot;
+* no leakage of diagnostics between requests;
+* no leakage of records between groups;
+* complete paginated population processing.
+
+## 15. Development UI boundary
+
+The existing open-development evaluation preview may consume the new orchestration result if this can be done without creating an operational API.
+
+If connected:
+
+* label the result prominently as “Development simulation—nonoperational.”
+* show blockers, warnings and missing inputs separately.
+* show unavailable Foundation observations.
+* show the standard and release versions.
+* show when the simulation was calculated.
+* do not display “approved,” “ready to send,” “ready for production” or equivalent operational language.
+* preserve unsaved drafts during conflict handling.
+* do not redesign the broader UI in this increment.
+
+Any UI change must be limited to accurately exposing the new simulation result.
+
+## 16. Schema boundary
+
+Do not add a migration unless the accepted Phase 2B-1 persistence contract is demonstrably insufficient.
+
+If a schema change appears necessary:
+
+1. Document the exact missing requirement.
+2. Show why migrations `0022–0024` cannot support it.
+3. Prefer adapting existing fields or services.
+4. Stop and report before adding migration `0025` if the change materially expands the accepted persistence model.
+
+Do not modify migrations `0001–0024`.
+
+Do not use `db push`.
+
+## 17. Legacy compatibility
+
+Legacy sessions remain unchanged.
+
+Requirements:
+
+* Do not migrate them.
+* Do not require missing new fields.
+* Do not fabricate adapter inputs.
+* Do not recalculate historical operational status.
+* Permit read-only inspection where already supported.
+* Keep historical communications auditable.
+* Exclude legacy sessions from new-standard simulation unless they are explicitly eligible under the accepted policy.
+
+## 18. Tests
+
+Add focused tests covering:
+
+* every adapter;
+* every field classification;
+* missing versus false or empty values;
+* invalid and ambiguous mappings;
+* application-to-engine hierarchy;
+* event versus participant status;
+* per-registrant attendance;
+* unknown attendance;
+* neutral follow-up selection;
+* planned versus executed communications;
+* evidence versus exception;
+* unavailable Foundation observations;
+* exact standard version;
+* release and input fingerprints;
+* deterministic assembly;
+* all 106 evaluators invoked through orchestration;
+* readiness aggregation;
+* completion calculation;
+* immutable snapshots;
+* idempotency;
+* optimistic concurrency;
+* request-local diagnostics;
+* population pagination;
+* group isolation;
+* synthetic-data enforcement;
+* simulation-only status;
+* legacy isolation;
+* DST and time-zone boundaries;
+* input immutability;
+* deterministic result ordering.
+
+Do not weaken existing tests.
+
+## 19. Verification gate
+
+Run fresh:
+
+1. Adapter unit tests.
+2. Orchestration tests.
+3. Snapshot and fingerprint tests.
+4. Concurrency and idempotency tests.
+5. Open-development and restricted-mode tests.
+6. Rule-ID drift check.
+7. Nonincremental typechecks.
+8. Full catalog and 106-evaluator suite.
+9. Exception and readiness suites.
+10. Scheduling and audience suites.
+11. Completion suite.
+12. Complete API suite.
+13. Frontend regression suite.
+14. Fresh disposable database through all 24 existing migrations.
+15. Upgrade test preserving existing payloads.
+16. Database shutdown and cleanup verification.
+17. All five canonical hash checks.
+18. Temporal pin check.
+19. Browser verification of the development simulation flow.
+
+Report separately:
+
+* test files;
+* top-level records;
+* nested subtests;
+* leaf tests;
+* grouping records;
+* failures;
+* skips;
+* cancellations;
+* TODOs;
+* setup failures;
+* teardown failures;
+* migration results;
+* database cleanup;
+* browser scenarios.
+
+## 20. Evidence
+
+Create:
+
+`docs/verification/phase-2b-2-domain-adapters.md`
+
+Include:
+
+* starting and ending commits;
+* changed-file inventory;
+* adapter inventory;
+* field-level mapping summary;
+* source-of-truth boundaries;
+* orchestration sequence;
+* result contract;
+* missing-input behavior;
+* Foundation-unavailable behavior;
+* exception behavior;
+* snapshot and fingerprint behavior;
+* concurrency evidence;
+* synthetic-data evidence;
+* legacy compatibility;
+* verification results;
+* remaining dependencies and blockers.
+
+If required, add a documentation-only clarification that Phase 2B-1 is complete and that domain adapters belong to Phase 2B-2. Do not rewrite historical evidence.
+
+## 21. Completion rule
+
+Phase 2B-2 is complete only when:
+
+* existing application records can be deterministically adapted into canonical engine inputs;
+* the complete evaluator registry can be invoked through one orchestration boundary;
+* missing and unavailable inputs remain explicit;
+* development simulations persist as immutable, versioned snapshots;
+* results remain nonoperational;
+* concurrency and idempotency pass;
+* no parallel webinar model exists;
+* no Foundation connector, operational API, customer-data integration, live approval, sending, publishing or deployment was introduced;
+* every verification gate passes.
+
+Suggested commit title:
+
+`Connect webinar domain evaluation orchestration`
+
+Stop after reporting. Do not begin Phase 2B-3.
+
+---
+
+The repeated image-path errors remain unrelated attachment noise and do not affect this work.
