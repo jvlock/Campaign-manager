@@ -94,6 +94,40 @@ export const GetDevelopmentCalendarResponse = zod.object({
 })
 
 
+/**
+ * Read-only scoped preflight for explicitly opted-in synthetic occurrences; does not evaluate, mutate or infer eligibility from template version.
+ */
+export const GetDevelopmentSimulationContextQueryParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "activityId": zod.coerce.string().uuid(),
+  "occurrenceId": zod.coerce.string().uuid()
+})
+
+export const getDevelopmentSimulationContextResponseExpectedRevisionMin = 0;
+
+
+
+export const GetDevelopmentSimulationContextResponse = zod.object({
+  "expectedRevision": zod.number().int().min(getDevelopmentSimulationContextResponseExpectedRevisionMin),
+  "standard": zod.object({
+  "id": zod.string(),
+  "version": zod.string()
+}),
+  "operationalStatus": zod.enum(['simulation-only']),
+  "unverified": zod.boolean(),
+  "authoritative": zod.boolean()
+})
+
+
+/**
+ * Open-development only. Eligible explicitly opted-in new synthetic webinar occurrences invoke the internal standards orchestrator. Webinar caller must submit a fixed calculationAt/idempotencyKey/expectedRevision tuple and retain it unchanged for retries; a new calculation needs a new tuple. Generic non-webinar preview retains its prior optional request shape. Neither legacy_9 nor default_5 template version proves eligibility.
+ */
+export const simulateDevelopmentWorkflowBodyIdempotencyKeyMax = 120;
+
+
+export const simulateDevelopmentWorkflowBodyIdempotencyKeyRegExp = new RegExp('^[A-Za-z0-9][A-Za-z0-9_.:-]{0,119}$');
+export const simulateDevelopmentWorkflowBodyExpectedRevisionMin = 0;
+
 export const simulateDevelopmentWorkflowBodyLabelMax = 120;
 
 
@@ -101,10 +135,46 @@ export const simulateDevelopmentWorkflowBodyLabelMax = 120;
 export const SimulateDevelopmentWorkflowBody = zod.object({
   "campaignId": zod.string().uuid().optional(),
   "activityId": zod.string().uuid().optional(),
+  "occurrenceId": zod.string().uuid().optional().describe('Required to identify the selected webinar occurrence; identifying an occurrence does not establish eligibility'),
+  "calculationAt": zod.coerce.date().optional().describe('Required with occurrenceId; fixed instant retained across retries'),
+  "idempotencyKey": zod.string().min(1).max(simulateDevelopmentWorkflowBodyIdempotencyKeyMax).regex(simulateDevelopmentWorkflowBodyIdempotencyKeyRegExp).optional().describe('Required with occurrenceId; retained across retries'),
+  "expectedRevision": zod.number().int().min(simulateDevelopmentWorkflowBodyExpectedRevisionMin).optional().describe('Required with occurrenceId; current source revision from read-only preflight'),
   "label": zod.string().max(simulateDevelopmentWorkflowBodyLabelMax).optional()
 })
 
-export const SimulateDevelopmentWorkflowResponse = zod.record(zod.string(), zod.unknown())
+export const SimulateDevelopmentWorkflowResponse = zod.object({
+  "simulation": zod.boolean(),
+  "unverified": zod.boolean(),
+  "authoritative": zod.boolean(),
+  "operationalReadiness": zod.boolean(),
+  "operationalStatus": zod.enum(['simulation-only']).optional(),
+  "message": zod.string().optional(),
+  "activityId": zod.string().uuid().optional(),
+  "occurrenceId": zod.string().uuid().optional(),
+  "standard": zod.object({
+  "id": zod.string(),
+  "version": zod.string()
+}).optional(),
+  "calculationAt": zod.coerce.date().optional(),
+  "releaseFingerprint": zod.string().optional(),
+  "inputFingerprint": zod.string().optional(),
+  "snapshotId": zod.string().uuid().optional(),
+  "revision": zod.number().int().optional(),
+  "sourceReferences": zod.array(zod.unknown()).optional(),
+  "applicableRules": zod.array(zod.string()).optional(),
+  "passedRules": zod.array(zod.string()).optional(),
+  "unresolvedBlockingFailures": zod.array(zod.unknown()).optional(),
+  "blockersResolvedByExceptions": zod.array(zod.unknown()).optional(),
+  "nonblockingFailures": zod.array(zod.unknown()).optional(),
+  "warnings": zod.array(zod.unknown()).optional(),
+  "missingInputData": zod.array(zod.unknown()).optional(),
+  "unavailableExternalObservations": zod.array(zod.unknown()).optional(),
+  "mappingErrors": zod.array(zod.unknown()).optional(),
+  "evaluatorCoverage": zod.record(zod.string(), zod.unknown()).optional(),
+  "readinessStages": zod.array(zod.unknown()).optional(),
+  "completionResult": zod.record(zod.string(), zod.unknown()).optional(),
+  "diagnostics": zod.record(zod.string(), zod.unknown()).optional()
+})
 
 
 export const GetActivityModelCatalogResponse = zod.object({
@@ -1320,7 +1390,11 @@ export const CreateActivityBody = zod.object({
 })).default(createActivityBodyWebinarSetupSpeakersDefault),
   "recruitmentLaunchAt": zod.coerce.date().describe('Webinar campaign launch instant'),
   "channel": zod.union([zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),zod.null()]).optional().describe('Optional explicit canonical channel; omission leaves generated communications unassigned')
-}).optional().describe('Required only when creating or converting a Webinar activity.')
+}).optional().describe('Required only when creating or converting a Webinar activity.'),
+  "developmentSimulation": zod.object({
+  "optIn": zod.literal(true),
+  "eventStatus": zod.enum(['draft', 'open_for_registration', 'scheduled', 'in_progress', 'completed', 'cancelled'])
+}).optional().describe('Explicit opt-in only when creating a NEW synthetic webinar in open development; atomically binds exact canonical standard and records explicit event status. Existing occurrences are never converted.')
 })
 
 

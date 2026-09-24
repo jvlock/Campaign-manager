@@ -3,6 +3,9 @@ import { pool } from "@workspace/db";
 import { z } from "zod";
 import { pagination, pageHeaders } from "../lib/pagination";
 import { createHash } from "node:crypto";
+import { simulateWebinarOccurrence } from "../lib/webinar-evaluation-orchestration";
+import { PersistenceConflict } from "../lib/webinar-persistence";
+import { STANDARD_ID, STANDARD_VERSION } from "../lib/webinar-standard-catalog/types";
 
 const router = Router();
 const uuid = z.string().uuid();
@@ -96,10 +99,93 @@ router.get("/development/calendar", async (req, res, next) => {
       nextCursor: hasMore ? rows[rows.length - 1].id : null, ...attribution });
   } catch (error) { await client.query("ROLLBACK"); next(error); } finally { client.release(); }
 });
-router.post("/development/simulations", (req, res) => {
-  const parsed = z.object({ campaignId: uuid.optional(), activityId: uuid.optional(), label: z.string().max(120).optional() }).strict().safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "Invalid simulation request" }); return; }
-  res.json({ simulation: true, ...attribution, operationalReadiness: false, message: "Unverified development dry-run only. No approval, evidence, delivery or integration action was created." });
+const simulationScope = z.object({ campaignId: uuid, activityId: uuid, occurrenceId: uuid }).strict();
+const simulationRequest = z.object({
+  campaignId: uuid.optional(), activityId: uuid.optional(), occurrenceId: uuid.optional(),
+  calculationAt: z.string().datetime().refine(value => Number.isFinite(Date.parse(value))).optional(),
+  expectedRevision: z.number().int().nonnegative().optional(),
+  idempotencyKey: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,119}$/).optional(),
+  label: z.string().max(120).optional(),
+}).strict();
+
+router.get("/development/simulations/context", async (req, res, next) => {
+  const parsed = simulationScope.safeParse(req.query);
+  if (!parsed.success) { res.status(400).json({ error: "A valid campaign, activity and occurrence are required." }); return; }
+  const { campaignId, activityId, occurrenceId } = parsed.data;
+  try {
+    const result = await pool.query(`SELECT b.revision,b.standard_id AS "standardId",b.standard_version AS "standardVersion",
+      EXISTS(SELECT 1 FROM webinar_persistence_records r WHERE r.session_id=s.id AND r.campaign_id=s.campaign_id
+        AND r.kind='plan' AND r.payload->>'simulationEligibility'='new-synthetic-occurrence') AS eligible
+      FROM webinar_sessions s JOIN activities a ON a.id=s.activity_id AND a.campaign_id=s.campaign_id
+      JOIN development_record_registry dr ON dr.entity_type='activity' AND dr.entity_id=a.id
+      JOIN development_record_registry cr ON cr.entity_type='campaign' AND cr.entity_id=s.campaign_id
+      LEFT JOIN webinar_persistence_bindings b ON b.session_id=s.id AND b.campaign_id=s.campaign_id
+      WHERE s.id=$1 AND s.activity_id=$2 AND s.campaign_id=$3 AND a.activity_type_id='webinar'
+      AND NOT EXISTS(SELECT 1 FROM legacy_activities l WHERE l.activity_id=a.id)
+      AND NOT EXISTS(SELECT 1 FROM legacy_campaigns l WHERE l.campaign_id=s.campaign_id)`, [occurrenceId, activityId, campaignId]);
+    if (!result.rowCount) { res.status(404).json({ error: "Synthetic webinar occurrence not found in selected campaign and activity." }); return; }
+    const row = result.rows[0];
+    if (!row.eligible || row.standardId !== STANDARD_ID || row.standardVersion !== STANDARD_VERSION || row.revision == null) {
+      res.status(409).json({ error: "Occurrence has no explicit new-synthetic exact-standard simulation binding; historical templates are not converted." }); return;
+    }
+    res.json({ expectedRevision: row.revision, standard: { id: row.standardId, version: row.standardVersion },
+      operationalStatus: "simulation-only", ...attribution });
+  } catch (error) { next(error); }
+});
+
+router.post("/development/simulations", async (req, res, next) => {
+  const parsed = simulationRequest.safeParse(req.body);
+  if (!parsed.success || (parsed.data?.activityId && !parsed.data.campaignId) || (parsed.data?.occurrenceId && !parsed.data.activityId)) {
+    res.status(400).json({ error: "Invalid simulation request: an activity requires a campaign, and an occurrence requires an activity." }); return;
+  }
+  const { campaignId, activityId, occurrenceId } = parsed.data;
+  const { calculationAt, idempotencyKey, expectedRevision } = parsed.data;
+  if (occurrenceId && (!calculationAt || !idempotencyKey || expectedRevision === undefined)
+    || !occurrenceId && (calculationAt !== undefined || idempotencyKey !== undefined || expectedRevision !== undefined)) {
+    res.status(400).json({ error: "Webinar simulations require one fixed calculationAt, idempotencyKey and expectedRevision tuple; generic previews do not accept it." }); return;
+  }
+  try {
+    if (activityId) {
+      const activity = await pool.query(`SELECT a.activity_type_id AS "activityTypeId" FROM activities a
+        JOIN development_record_registry r ON r.entity_type='activity' AND r.entity_id=a.id
+        JOIN development_record_registry cr ON cr.entity_type='campaign' AND cr.entity_id=a.campaign_id
+        WHERE a.id=$1 AND a.campaign_id=$2`, [activityId, campaignId]);
+      if (!activity.rowCount) { res.status(404).json({ error: "Development activity not found in selected campaign" }); return; }
+      if (activity.rows[0].activityTypeId === "webinar") {
+        if (!occurrenceId) { res.status(400).json({ error: "Select a webinar occurrence before running the development simulation." }); return; }
+        const session = await pool.query(`SELECT s.id FROM webinar_sessions s
+          WHERE s.id=$1 AND s.campaign_id=$2 AND s.activity_id=$3
+          AND NOT EXISTS (SELECT 1 FROM legacy_activities l WHERE l.activity_id=s.activity_id)`, [occurrenceId, campaignId, activityId]);
+        if (!session.rowCount) { res.status(404).json({ error: "Webinar occurrence not found in selected campaign and activity, or belongs to a legacy activity." }); return; }
+        const context = await pool.query(`SELECT e.creator_id AS "actorId",b.revision AS "currentRevision"
+          FROM development_planning_environment e
+          LEFT JOIN webinar_persistence_bindings b ON b.session_id=$1 AND b.campaign_id=$2
+          WHERE e.id=true`, [occurrenceId, campaignId]);
+        if (!context.rowCount) { res.status(503).json({ error: "Development actor marker is unavailable; simulation cannot be recorded." }); return; }
+        if (context.rows[0].currentRevision == null) {
+          res.status(409).json({ error: "Occurrence has no explicit new-synthetic exact-standard simulation binding. Neither template version establishes eligibility; existing occurrences are not converted." }); return;
+        }
+        const result = await simulateWebinarOccurrence({
+          campaignId: campaignId!, sessionId: occurrenceId, actorId: context.rows[0].actorId,
+          calculationAt: calculationAt!, expectedRevision: expectedRevision!, idempotencyKey: idempotencyKey!,
+        });
+        res.json({ ...result, simulation: true, ...attribution, operationalReadiness: false });
+        return;
+      }
+      if (occurrenceId) { res.status(400).json({ error: "An occurrence can only be selected for a webinar activity." }); return; }
+    }
+    res.json({ simulation: true, ...attribution, operationalReadiness: false,
+      message: "Generic unverified planning preview only; the webinar standards engine was not run. No approval, evidence, delivery or integration action was created." });
+  } catch (error) {
+    if (error instanceof PersistenceConflict) {
+      const current = occurrenceId && campaignId
+        ? await pool.query("SELECT revision FROM webinar_persistence_bindings WHERE session_id=$1 AND campaign_id=$2", [occurrenceId, campaignId])
+        : null;
+      res.status(409).json({ error: error.message, code: error.code,
+        expectedRevision, currentRevision: current?.rows[0]?.revision ?? null }); return;
+    }
+    next(error);
+  }
 });
 router.use((error: unknown, _req: import("express").Request, res: import("express").Response, _next: import("express").NextFunction) => {
   if ((error as { status?: number }).status === 400) { res.status(400).json({ error: (error as Error).message }); return; }

@@ -848,7 +848,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
           }}
           submitting={webinarSetupSaving}
           error={webinarSetupError}
-          onSubmit={(setup: WebinarSetup) => {
+          onSubmit={(setup: WebinarSetup, developmentSimulation) => {
             if (!webinarSetupDrop) return;
             setWebinarSetupError('');
             setWebinarSetupSaving(true);
@@ -867,6 +867,7 @@ function FlowCanvas({ campaign }: { campaign: CampaignDetail }) {
                 owner: 'Unassigned',
                 position: webinarSetupDrop.position,
                 webinarSetup: setup,
+                ...(developmentSimulation ? { developmentSimulation } : {}),
               },
             }, {
               onSuccess: (created) => {

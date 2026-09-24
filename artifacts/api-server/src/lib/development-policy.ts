@@ -20,6 +20,7 @@ const rules: [string, RegExp][] = [
   ["PATCH", /^\/campaigns\/[^/]+\/webinars\/[^/]+(?:\/standard)?$/],
   ["POST", /^\/campaigns\/[^/]+\/webinars\/[^/]+\/evaluate$/],
   ["GET", /^\/development\/(?:groups|calendar|ownership\/(?:campaigns|activities)\/[^/]+)$/],
+  ["GET", /^\/development\/simulations\/context$/],
   ["POST", /^\/development\/(?:groups|simulations)$/],
   ["PUT", /^\/development\/ownership\/(?:campaigns|activities)\/[^/]+$/],
 ];

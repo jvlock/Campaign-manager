@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { WebinarSetup } from '@workspace/api-client-react';
+import { useGetDevelopmentStatus } from '@workspace/api-client-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (setup: WebinarSetup) => void;
+  onSubmit: (setup: WebinarSetup, developmentSimulation?: { optIn: true; eventStatus: EventStatus }) => void;
   submitting?: boolean;
   error?: string;
 }
+type EventStatus = 'draft' | 'open_for_registration' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 
 /**
  * Convert a wall-clock value in an IANA timezone to the instant required by
@@ -57,6 +59,9 @@ function wallClockToIso(date: string, time: string, timezone: string) {
 }
 
 export default function WebinarSetupDialog({ open, onOpenChange, onSubmit, submitting = false, error = '' }: Props) {
+  const development = useGetDevelopmentStatus({ query: { queryKey: ['webinar-creation-development-status'] } });
+  const [simulationOptIn, setSimulationOptIn] = useState(false);
+  const [eventStatus, setEventStatus] = useState<EventStatus | ''>('');
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(60);
@@ -75,6 +80,8 @@ export default function WebinarSetupDialog({ open, onOpenChange, onSubmit, submi
       setPlatform('');
       setLaunchDate('');
       setLaunchTime('');
+      setSimulationOptIn(false);
+      setEventStatus('');
     }
     wasOpen.current = open;
   }, [open]);
@@ -88,7 +95,8 @@ export default function WebinarSetupDialog({ open, onOpenChange, onSubmit, submi
     && durationMinutes > 0
     && durationMinutes <= 1440
     && platform
-    && launchAt,
+    && launchAt
+    && (!simulationOptIn || (development.data?.mode === 'open-development' && eventStatus)),
   );
 
   const handleSubmit = () => {
@@ -102,7 +110,7 @@ export default function WebinarSetupDialog({ open, onOpenChange, onSubmit, submi
       platform,
       speakers: [],
       recruitmentLaunchAt: launchAt,
-    });
+    }, simulationOptIn && eventStatus ? { optIn: true, eventStatus } : undefined);
   };
 
   return (
@@ -175,6 +183,19 @@ export default function WebinarSetupDialog({ open, onOpenChange, onSubmit, submi
               <Input id="webinar-launch-time" type="time" value={launchTime} onChange={e => setLaunchTime(e.target.value)} />
             </div>
           </div>
+          {development.data?.mode === 'open-development' && <div className="space-y-2 rounded border p-3 text-sm">
+            <label className="flex items-start gap-2"><input type="checkbox" checked={simulationOptIn} onChange={e => { setSimulationOptIn(e.target.checked); setEventStatus(''); }} />
+              <span>Opt this NEW synthetic occurrence into the exact webinar standard for development simulation only. This creates an immutable plan; it does not authorize sending or operational use.</span>
+            </label>
+            {simulationOptIn && <label className="block">Explicit event status for simulation (required)
+              <select className="mt-1 w-full rounded border bg-background p-2" value={eventStatus} onChange={e => setEventStatus(e.target.value as EventStatus | '')}>
+                <option value="">Choose an event status—none is assumed</option>
+                <option value="draft">Draft</option><option value="open_for_registration">Open for registration</option>
+                <option value="scheduled">Scheduled</option><option value="in_progress">In progress</option>
+                <option value="completed">Completed</option><option value="cancelled">Cancelled</option>
+              </select>
+            </label>}
+          </div>}
           {error && <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{error}</div>}
         </div>
         <DialogFooter>

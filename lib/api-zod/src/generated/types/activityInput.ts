@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ActivityInputAnswers } from './activityInputAnswers';
+import type { ActivityInputDevelopmentSimulation } from './activityInputDevelopmentSimulation';
 import type { ActivityInputOverrides } from './activityInputOverrides';
 import type { Position } from './position';
 import type { WebinarSetup } from './webinarSetup';
@@ -25,4 +26,6 @@ export interface ActivityInput {
   rowVersion?: number;
   position: Position;
   webinarSetup?: WebinarSetup;
+  /** Explicit opt-in only when creating a NEW synthetic webinar in open development; atomically binds exact canonical standard and records explicit event status. Existing occurrences are never converted. */
+  developmentSimulation?: ActivityInputDevelopmentSimulation;
 }

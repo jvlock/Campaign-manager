@@ -9,8 +9,14 @@ Open planning does not require a chosen identity provider, but it must use an ex
 
 **How to apply:** Preserve the restricted authorization implementation and keep unverified development attribution and simulations out of operational evidence. Treat provider selection as deferred until restricted activation, not a prerequisite to synthetic planning. Verify actual isolation and explicit server mode before exposing planning routes.
 
-The owner explicitly accepted isolated open planning as the correct “open initially, lock down later” approach, but only as a bounded increment. Persistence-only completion must not be described as completion of the original integration sequence.
+The owner explicitly accepted isolated open planning as the correct “open initially, lock down later” approach, but only as a bounded increment. The owner has since **clarified that Phase 2B-1 is complete** as the bounded persistence, audit, retention and concurrency foundation; domain adapters and evaluation orchestration are **Phase 2B-2**, and Foundation connectivity, APIs, trusted auth, remaining UI and external integration are later increments. This supersedes the older full-phase classification in the historical completion report without altering that report or implying full integration is complete. See `docs/verification/phase-2b-phase-classification.md`.
 
 **Why:** Usable planning and simulated persistence do not supply authenticated evidence, governed sources, or operational readiness.
 
-**How to apply:** Reconcile completion claims against the accepted assessment; preserve later adapter/API boundaries rather than implementing them implicitly to make a foundation report look complete.
+**How to apply:** Classify completion by the owner's clarified increments, not by retroactively claiming all integration work in the foundation. Preserve later adapter/API boundaries and distinguish development simulations from operational authority.
+
+When loading canonical webinar standards during a bundled or relocated development simulation, resolve the workspace root explicitly from the application workspace before reading the catalog and capturing release provenance. Do not derive the catalog path from a source-relative `import.meta` location: a relocated ESM service bundle changes that location and can fail at runtime even when source tests pass.
+
+**Why:** A browser simulation initially returned 503 because the bundle-relative catalog path did not point at the repository standards; explicit workspace-root resolution corrected the boundary without changing canonical files.
+
+**How to apply:** Pass the explicitly resolved workspace root to catalog loading; use that same root-resolution helper inside release capture. Retain a relocated-service-bundle regression alongside source-level tests. Fail explicitly if the workspace marker or canonical files are missing rather than silently falling back to an alternate catalog.

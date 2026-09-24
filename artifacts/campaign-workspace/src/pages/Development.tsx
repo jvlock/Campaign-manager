@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQueryClient } from '@tanstack/react-query';
-import { useGetCampaign, useListCampaigns, useGetDevelopmentGroups, useGetDevelopmentOwnership, useGetDevelopmentCalendar, useCreateDevelopmentGroup, useUpdateDevelopmentOwnership, useSimulateDevelopmentWorkflow } from '@workspace/api-client-react';
+import { useGetCampaign, useListCampaigns, useListWebinars, useGetDevelopmentSimulationContext, useGetDevelopmentGroups, useGetDevelopmentOwnership, useGetDevelopmentCalendar, useCreateDevelopmentGroup, useUpdateDevelopmentOwnership, useSimulateDevelopmentWorkflow } from '@workspace/api-client-react';
 import { Link, useSearch } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,12 +14,30 @@ interface Groups { groups: Group[]; profiles: { id: string; name: string }[] }
 interface Entry { id: string; campaignId: string; groupId: string; title: string; date: string | null; timeZone: string | null; status: string; accountableOwnerId: string | null; dates?: { id: string; date: string | null; timeZone: string | null; status: string }[] }
 interface Ownership { rowVersion: number; groupId?: string; accountableOwnerId?: string | null; group_id?: string; accountable_owner_id?: string | null; creatorId?: string | null }
 interface CreateUnit { name: string; kind: string; parentId: string; accountableOwnerId: string }
+interface SimulationResult {
+  operationalStatus?: string; message?: string; activityId?: string; occurrenceId?: string;
+  standard?: { id: string; version: string }; calculationAt?: string;
+  releaseFingerprint?: string; inputFingerprint?: string; snapshotId?: string;
+  unresolvedBlockingFailures?: unknown[]; blockersResolvedByExceptions?: unknown[];
+  nonblockingFailures?: unknown[]; warnings?: unknown[]; missingInputData?: unknown[];
+  unavailableExternalObservations?: unknown[]; mappingErrors?: unknown[];
+  [key: string]: unknown;
+}
+interface SimulationTuple { calculationAt: string; idempotencyKey: string; expectedRevision: number; campaignId: string; activityId: string; occurrenceId: string }
 const selectClass = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
+
+function FindingList({ title, items }: { title: string; items?: unknown[] }) {
+  return <section><strong>{title} ({items?.length ?? 0})</strong>{items?.length ? <ul className="list-disc pl-5">{items.map((item, index) => {
+    const record = item && typeof item === 'object' ? item as Record<string, unknown> : null;
+    const description = record ? [record.ruleId ?? record.field ?? record.code, record.message ?? record.reason ?? record.description].filter(part => typeof part === 'string').join(' · ') : null;
+    return <li key={index}>{description || JSON.stringify(item)}</li>;
+  })}</ul> : <p className="text-muted-foreground">None reported.</p>}</section>;
+}
 
 function planningError(error: unknown) {
   if (error && typeof error === 'object' && 'data' in error) {
-    const data = error.data as { error?: string | { message?: string } };
-    if (typeof data?.error === 'string') return data.error;
+    const data = error.data as { error?: string | { message?: string }; currentRevision?: number | null; expectedRevision?: number };
+    if (typeof data?.error === 'string') return `${data.error}${data.currentRevision != null ? ` Current revision: ${data.currentRevision}; request revision: ${data.expectedRevision}.` : ''}`;
     if (data?.error?.message) return data.error.message;
   }
   return error instanceof Error ? error.message : 'Unable to complete this planning request.';
@@ -34,10 +52,20 @@ export default function Development() {
   useEffect(() => { setCalendarCursor(undefined); }, [calendarCampaignId]);
   const [campaignId, setCampaignId] = useState('');
   const [activityId, setActivityId] = useState('');
+  const [occurrenceId, setOccurrenceId] = useState('');
+  const [simulationTuple, setSimulationTuple] = useState<SimulationTuple | null>(null);
   const [notice, setNotice] = useState('');
   const groups = useGetDevelopmentGroups(undefined, { query: { queryKey: ['development-groups'], select: data => data as unknown as Groups, refetchInterval: 30000 } });
   const campaigns = useListCampaigns();
   const campaign = useGetCampaign(campaignId, { query: { queryKey: ['/api/campaigns', campaignId], enabled: Boolean(campaignId) } });
+  const webinars = useListWebinars(campaignId, { query: { queryKey: ['development-webinars', campaignId], enabled: Boolean(campaignId) } });
+  const selectedActivity = campaign.data?.map.activities.find(a => a.id === activityId);
+  const isWebinar = selectedActivity?.activityTypeId === 'webinar';
+  const occurrences = webinars.data?.filter(session => session.activityId === activityId) ?? [];
+  const simulationContext = useGetDevelopmentSimulationContext({ campaignId, activityId, occurrenceId }, {
+    query: { queryKey: ['development-simulation-context', campaignId, activityId, occurrenceId],
+      enabled: Boolean(campaignId && activityId && occurrenceId && isWebinar) },
+  });
   const type = activityId ? 'activities' : 'campaigns';
   const recordId = activityId || campaignId;
   const ownership = useGetDevelopmentOwnership(type, recordId, { query: {
@@ -64,7 +92,18 @@ export default function Development() {
     onSuccess: async () => { setNotice('Planning ownership saved. Attribution remains unverified.'); await refresh(); },
   } });
   const simulate = useSimulateDevelopmentWorkflow();
-  const error = groups.error || campaigns.error || campaign.error || ownership.error || calendar.error || create.error || update.error || simulate.error;
+  const runWebinarSimulation = (tuple: SimulationTuple) => simulate.mutate({ data: {
+    campaignId: tuple.campaignId, activityId: tuple.activityId, occurrenceId: tuple.occurrenceId,
+    calculationAt: tuple.calculationAt, idempotencyKey: tuple.idempotencyKey, expectedRevision: tuple.expectedRevision,
+  } });
+  const beginWebinarSimulation = (expectedRevision: number) => {
+    const tuple = { campaignId, activityId, occurrenceId, expectedRevision,
+      calculationAt: new Date().toISOString(), idempotencyKey: crypto.randomUUID() };
+    setSimulationTuple(tuple);
+    simulate.reset();
+    runWebinarSimulation(tuple);
+  };
+  const error = groups.error || campaigns.error || campaign.error || webinars.error || ownership.error || calendar.error || create.error || update.error || simulate.error;
   const groupName = (id: string) => groups.data?.groups.find(g => g.id === id)?.name ?? id;
   return (
     <div className="flex-1 overflow-auto p-6 md:p-10 space-y-6">
@@ -95,12 +134,12 @@ export default function Development() {
           <CardHeader><CardTitle>Planning ownership and preview</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <label className="block text-sm font-medium">Campaign
-              <select className={`${selectClass} mt-2`} value={campaignId} onChange={e => { setCampaignId(e.target.value); setActivityId(''); simulate.reset(); setNotice(''); }}><option value="">Choose campaign</option>{campaigns.data?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+               <select className={`${selectClass} mt-2`} value={campaignId} onChange={e => { setCampaignId(e.target.value); setActivityId(''); setOccurrenceId(''); setSimulationTuple(null); simulate.reset(); setNotice(''); }}><option value="">Choose campaign</option>{campaigns.data?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
             </label>
             {campaignId && <>
               <Link className="text-sm text-primary underline" href={`/campaigns/${campaignId}`}>Open campaign, activities, communications, schedules and evaluations</Link>
               <label className="block text-sm font-medium">Ownership target
-                <select className={`${selectClass} mt-2`} value={activityId} onChange={e => { setActivityId(e.target.value); simulate.reset(); }}><option value="">Campaign</option>{campaign.data?.map.activities.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+                 <select className={`${selectClass} mt-2`} value={activityId} onChange={e => { setActivityId(e.target.value); setOccurrenceId(''); setSimulationTuple(null); simulate.reset(); }}><option value="">Campaign</option>{campaign.data?.map.activities.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
               </label>
               <p className="text-xs text-muted-foreground break-all">Stable record ID: {recordId}. Creator attribution is unverified and is not changed by this form. Accountable owner and owning group are separate planning fields.</p>
               {ownership.isPending ? <p>Loading ownership…</p> : ownership.data && <Form {...ownerForm}>
@@ -112,9 +151,52 @@ export default function Development() {
                 </form>
               </Form>}
               <div className="border-t pt-4 space-y-2">
-                <Button variant="outline" disabled={simulate.isPending} onClick={() => simulate.mutate({ data: { campaignId, ...(activityId ? { activityId } : {}), label: 'Unverified development preview' } })}>Preview simulated approval</Button>
-                <p className="text-xs text-muted-foreground">Nonoperational dry run. No approval or authenticated evidence is recorded; this cannot establish readiness or override webinar controls.</p>
-                {simulate.data && <div role="status" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950"><strong>SIMULATED · UNVERIFIED · NONOPERATIONAL</strong><p>{String(simulate.data.message)}</p><p>Not authoritative. Operational readiness is not established.</p></div>}
+                {isWebinar && <label className="block text-sm font-medium">Webinar occurrence (required)
+                   <select className={`${selectClass} mt-2`} value={occurrenceId} onChange={e => { setOccurrenceId(e.target.value); setSimulationTuple(null); simulate.reset(); }}>
+                    <option value="">Choose occurrence</option>
+                    {occurrences.map(session => <option key={session.id} value={session.id}>{session.name} · {session.sessionDate} {session.startTime} ({session.timezone})</option>)}
+                  </select>
+                </label>}
+                {isWebinar && !webinars.isPending && occurrences.length === 0 && <p role="alert" className="text-sm text-destructive">No webinar occurrence belongs to this activity. Create an eligible new-standard occurrence before simulating.</p>}
+                {isWebinar && <p className="text-xs text-muted-foreground">Only newly created synthetic occurrences explicitly opted into the exact standard are eligible. Neither default_5 nor legacy_9 template version proves eligibility; other occurrences are rejected without evaluation. No operational action is enabled.</p>}
+                 {isWebinar && occurrenceId && (simulationContext.data
+                   ? <p className="text-xs">Exact standard: {simulationContext.data.standard.id} · {simulationContext.data.standard.version} · Current source revision: {simulationContext.data.expectedRevision}</p>
+                   : simulationContext.isPending ? <p className="text-xs">Checking occurrence eligibility and revision…</p>
+                   : simulationContext.error ? <p role="alert" className="text-sm text-destructive">{planningError(simulationContext.error)}</p> : null)}
+                {isWebinar ? <>
+                  {!simulationTuple && <Button variant="outline" disabled={simulate.isPending || simulationContext.isFetching || !simulationContext.data} onClick={() => {
+                    if (simulationContext.data) beginWebinarSimulation(simulationContext.data.expectedRevision);
+                  }}>Run development webinar simulation</Button>}
+                  {simulationTuple && <>
+                    <p className="break-all text-xs">Fixed calculation: {simulationTuple.calculationAt} · Request revision: {simulationTuple.expectedRevision} · Retry key: {simulationTuple.idempotencyKey}</p>
+                    <Button variant="outline" disabled={simulate.isPending} onClick={() => runWebinarSimulation(simulationTuple)}>Retry same calculation</Button>
+                    <Button variant="outline" disabled={simulate.isPending || simulationContext.isFetching} onClick={async () => {
+                      const refreshed = await simulationContext.refetch();
+                      if (refreshed.data) beginWebinarSimulation(refreshed.data.expectedRevision);
+                    }}>Start new calculation (refresh revision)</Button>
+                  </>}
+                </> : <Button variant="outline" disabled={simulate.isPending} onClick={() => simulate.mutate({ data: { campaignId, ...(activityId ? { activityId } : {}), label: 'Unverified development preview' } })}>Generic planning preview (not standards engine)</Button>}
+                {simulate.data && (() => {
+                  const result = simulate.data as SimulationResult;
+                  return <div role="status" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 space-y-2">
+                    <strong>Development simulation—nonoperational</strong>
+                    {result.message && <p>{result.message}</p>}
+                    {result.operationalStatus === 'simulation-only' ? <>
+                      <p>Activity: {result.activityId} · Occurrence: {result.occurrenceId}</p>
+                      <p>Standard: {result.standard?.id} · Version: {result.standard?.version} · Calculated: {result.calculationAt}</p>
+                      <p className="break-all">Release fingerprint: {result.releaseFingerprint} · Input fingerprint: {result.inputFingerprint}</p>
+                      <FindingList title="Unresolved blockers" items={result.unresolvedBlockingFailures} />
+                      <FindingList title="Blockers resolved by valid simulated exceptions" items={result.blockersResolvedByExceptions} />
+                      <FindingList title="Nonblocking findings" items={result.nonblockingFailures} />
+                      <FindingList title="Warnings" items={result.warnings} />
+                      <FindingList title="Missing inputs" items={result.missingInputData} />
+                      <FindingList title="Unavailable Foundation / external observations" items={result.unavailableExternalObservations} />
+                      <FindingList title="Mapping errors" items={result.mappingErrors} />
+                      <details><summary>Full structured simulation result</summary><pre className="overflow-auto whitespace-pre-wrap break-all text-xs">{JSON.stringify(result, null, 2)}</pre></details>
+                    </> : <p>Generic planning preview only; the webinar standards engine was not run.</p>}
+                    <p>No approval, evidence, external action or operational authority is granted.</p>
+                  </div>;
+                })()}
               </div>
             </>}
           </CardContent>

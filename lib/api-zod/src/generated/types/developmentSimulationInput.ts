@@ -9,6 +9,22 @@
 export interface DevelopmentSimulationInput {
   campaignId?: string;
   activityId?: string;
+  /** Required to identify the selected webinar occurrence; identifying an occurrence does not establish eligibility */
+  occurrenceId?: string;
+  /** Required with occurrenceId; fixed instant retained across retries */
+  calculationAt?: Date;
+  /**
+     * Required with occurrenceId; retained across retries
+     * @minLength 1
+     * @maxLength 120
+     * @pattern ^[A-Za-z0-9][A-Za-z0-9_.:-]{0,119}$
+     */
+  idempotencyKey?: string;
+  /**
+     * Required with occurrenceId; current source revision from read-only preflight
+     * @minimum 0
+     */
+  expectedRevision?: number;
   /** @maxLength 120 */
   label?: string;
 }

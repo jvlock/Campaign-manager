@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type SimulateDevelopmentWorkflow200 = { [key: string]: unknown };
+export type DevelopmentSimulationResultStandard = {
+  id: string;
+  version: string;
+};

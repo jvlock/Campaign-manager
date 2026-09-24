@@ -867,6 +867,7 @@ export async function ensureWebinarForActivity(
   activity: typeof activities.$inferSelect,
   setup: unknown,
   executor: any,
+  newSessionId?: string,
 ) {
   const activityType = activity.type.toLowerCase();
   if (activityType !== "webinar" && activityType !== "events") return null;
@@ -886,6 +887,7 @@ export async function ensureWebinarForActivity(
   if (!session) {
     if (!parsedSetup || !parsedSetup.success) throw new WebinarStandardValidationError("webinarSetup is required");
     const [created] = await executor.insert(webinarSessions).values({
+      ...(newSessionId ? { id: newSessionId } : {}),
       campaignId,
       activityId: activity.id,
       name: activity.name,

@@ -9,7 +9,8 @@ import { loadWebinarStandardCatalog } from "./webinar-standard-catalog";
 import { createReleaseFingerprint, createWebinarEvaluatorRegistry } from "./webinar-standard-evaluation";
 
 const run = promisify(execFile);
-function repositoryRoot() {
+/** Stable in both source execution and relocated esbuild bundles. Never caller supplied. */
+export function resolveWebinarRepositoryRoot() {
   let root = resolve(process.cwd());
   while (!existsSync(join(root, "pnpm-workspace.yaml"))) {
     const parent = dirname(root);
@@ -21,7 +22,7 @@ function repositoryRoot() {
 
 /** No caller-provided hashes, source bytes, versions, dependency claims or release identities. */
 export async function captureWebinarRelease(calculatedAtEpochMs: number) {
-  const root = repositoryRoot();
+  const root = resolveWebinarRepositoryRoot();
   const canonicalDocuments: Record<string, string> = {};
   for (const filename of ["WEB-STANDARD-001.rules.json", "WEB-STANDARD-001.md", "WEBINAR-PILOT-IMPLEMENTATION-AUTHORIZATION.md", "CHANGELOG-RC1.md", "manifest.json"]) {
     const path = `docs/standards/webinar/${filename}`;
@@ -32,14 +33,14 @@ export async function captureWebinarRelease(calculatedAtEpochMs: number) {
   const evaluatorImplementation: Record<string, string> = {};
   const lib = join(root, "artifacts/api-server/src/lib");
   // Hash the complete engine implementation and its policy helpers, not just the registry list.
-  for (const directory of (await readdir(lib, { withFileTypes: true })).filter(entry => entry.isDirectory() && entry.name.startsWith("webinar-standard-"))) {
+  for (const directory of (await readdir(lib, { withFileTypes: true })).filter(entry => entry.isDirectory() && (entry.name.startsWith("webinar-standard-") || entry.name === "webinar-domain-adapters"))) {
     for (const file of (await readdir(join(lib, directory.name))).filter(name => name.endsWith(".ts")).sort()) {
       const path = join(lib, directory.name, file);
       evaluatorImplementation[relative(root, path)] = await readFile(path, "utf8");
     }
   }
   // The trusted capture boundary itself affects effective release identity.
-  for (const filename of ["webinar-release-provenance.ts", "webinar-persistence.ts"]) {
+  for (const filename of ["webinar-release-provenance.ts", "webinar-persistence.ts", "webinar-simulation-snapshot.ts", "webinar-evaluation-orchestration.ts", "webinar-evaluation-sources.ts"]) {
     const path = join(lib, filename);
     evaluatorImplementation[relative(root, path)] = await readFile(path, "utf8");
   }

@@ -34,9 +34,75 @@ export interface DevelopmentOwnershipInput {
 export interface DevelopmentSimulationInput {
   campaignId?: string;
   activityId?: string;
+  /** Required to identify the selected webinar occurrence; identifying an occurrence does not establish eligibility */
+  occurrenceId?: string;
+  /** Required with occurrenceId; fixed instant retained across retries */
+  calculationAt?: string;
+  /**
+     * Required with occurrenceId; retained across retries
+     * @minLength 1
+     * @maxLength 120
+     * @pattern ^[A-Za-z0-9][A-Za-z0-9_.:-]{0,119}$
+     */
+  idempotencyKey?: string;
+  /**
+     * Required with occurrenceId; current source revision from read-only preflight
+     * @minimum 0
+     */
+  expectedRevision?: number;
   /** @maxLength 120 */
   label?: string;
 }
+
+export type DevelopmentSimulationResultOperationalStatus = typeof DevelopmentSimulationResultOperationalStatus[keyof typeof DevelopmentSimulationResultOperationalStatus];
+
+
+export const DevelopmentSimulationResultOperationalStatus = {
+  'simulation-only': 'simulation-only',
+} as const;
+
+export type DevelopmentSimulationResultStandard = {
+  id: string;
+  version: string;
+};
+
+export type DevelopmentSimulationResultEvaluatorCoverage = { [key: string]: unknown };
+
+export type DevelopmentSimulationResultCompletionResult = { [key: string]: unknown };
+
+export type DevelopmentSimulationResultDiagnostics = { [key: string]: unknown };
+
+export interface DevelopmentSimulationResult {
+  simulation: boolean;
+  unverified: boolean;
+  authoritative: boolean;
+  operationalReadiness: boolean;
+  operationalStatus?: DevelopmentSimulationResultOperationalStatus;
+  message?: string;
+  activityId?: string;
+  occurrenceId?: string;
+  standard?: DevelopmentSimulationResultStandard;
+  calculationAt?: string;
+  releaseFingerprint?: string;
+  inputFingerprint?: string;
+  snapshotId?: string;
+  revision?: number;
+  sourceReferences?: unknown[];
+  applicableRules?: string[];
+  passedRules?: string[];
+  unresolvedBlockingFailures?: unknown[];
+  blockersResolvedByExceptions?: unknown[];
+  nonblockingFailures?: unknown[];
+  warnings?: unknown[];
+  missingInputData?: unknown[];
+  unavailableExternalObservations?: unknown[];
+  mappingErrors?: unknown[];
+  evaluatorCoverage?: DevelopmentSimulationResultEvaluatorCoverage;
+  readinessStages?: unknown[];
+  completionResult?: DevelopmentSimulationResultCompletionResult;
+  diagnostics?: DevelopmentSimulationResultDiagnostics;
+  [key: string]: unknown;
+ }
 
 export type OrganizationAccessErrorError = {
   code: string;
@@ -486,6 +552,26 @@ export type ActivityInputAnswers = { [key: string]: unknown };
 
 export type ActivityInputOverrides = { [key: string]: unknown };
 
+export type ActivityInputDevelopmentSimulationEventStatus = typeof ActivityInputDevelopmentSimulationEventStatus[keyof typeof ActivityInputDevelopmentSimulationEventStatus];
+
+
+export const ActivityInputDevelopmentSimulationEventStatus = {
+  draft: 'draft',
+  open_for_registration: 'open_for_registration',
+  scheduled: 'scheduled',
+  in_progress: 'in_progress',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Explicit opt-in only when creating a NEW synthetic webinar in open development; atomically binds exact canonical standard and records explicit event status. Existing occurrences are never converted.
+ */
+export type ActivityInputDevelopmentSimulation = {
+  optIn: true;
+  eventStatus: ActivityInputDevelopmentSimulationEventStatus;
+};
+
 export interface ActivityInput {
   /** Descriptive input used by the governed name generator; generated names and codes cannot be supplied. */
   namingInput?: string;
@@ -501,6 +587,8 @@ export interface ActivityInput {
   rowVersion?: number;
   position: Position;
   webinarSetup?: WebinarSetup;
+  /** Explicit opt-in only when creating a NEW synthetic webinar in open development; atomically binds exact canonical standard and records explicit event status. Existing occurrences are never converted. */
+  developmentSimulation?: ActivityInputDevelopmentSimulation;
 }
 
 export type GovernedChannelType = typeof GovernedChannelType[keyof typeof GovernedChannelType];
@@ -2030,7 +2118,32 @@ export type GetDevelopmentCalendar200 = {
   authoritative?: boolean;
 };
 
-export type SimulateDevelopmentWorkflow200 = { [key: string]: unknown };
+export type GetDevelopmentSimulationContextParams = {
+campaignId: string;
+activityId: string;
+occurrenceId: string;
+};
+
+export type GetDevelopmentSimulationContext200Standard = {
+  id: string;
+  version: string;
+};
+
+export type GetDevelopmentSimulationContext200OperationalStatus = typeof GetDevelopmentSimulationContext200OperationalStatus[keyof typeof GetDevelopmentSimulationContext200OperationalStatus];
+
+
+export const GetDevelopmentSimulationContext200OperationalStatus = {
+  'simulation-only': 'simulation-only',
+} as const;
+
+export type GetDevelopmentSimulationContext200 = {
+  /** @minimum 0 */
+  expectedRevision: number;
+  standard: GetDevelopmentSimulationContext200Standard;
+  operationalStatus: GetDevelopmentSimulationContext200OperationalStatus;
+  unverified: boolean;
+  authoritative: boolean;
+};
 
 export type ListOrganizationCampaignsParams = {
 /**

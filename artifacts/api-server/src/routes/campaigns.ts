@@ -1,14 +1,19 @@
 import { Router, type IRouter } from "express";
+import { randomUUID } from "node:crypto";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { z } from "zod";
 import { syncCapacityConflicts } from "../lib/implementation-tasks";
 import { pagination, pageHeaders } from "../lib/pagination";
 import { and, desc, eq, inArray, not, or, sql } from "drizzle-orm";
 import {
-  db, campaigns, campaignStrategy, activities, activityConnections,
+  db, planningAccessMode, campaigns, campaignStrategy, activities, activityConnections,
   activityTasks, communications, conflicts, scheduleRules, taxonomyTerms, taxonomyVersions, utmLinks,
   webinarSessions,
 } from "@workspace/db";
 import { deliveryFor } from "../lib/delivery";
 import { ensureWebinarForActivity } from "../lib/webinar-standard";
+import { WebinarPersistence, type WebinarTransactionClient } from "../lib/webinar-persistence";
+import { initializeNewSyntheticOccurrence } from "../lib/webinar-evaluation-orchestration";
 import {
   appendUtm,
   compileUtm,
@@ -648,6 +653,15 @@ router.post("/campaigns/:id/activities", async (req, res, next) => {
     assertNoFinalityRequest(req.body);
     assertNoSuppliedGeneratedIdentity(req.body, { includeId: true, path: "activity" });
     assertNoSuppliedGeneratedIdentity(req.body.webinarSetup, { path: "activity.webinarSetup" });
+    const optIn = req.body.developmentSimulation;
+    const acceptedOptIn = z.object({
+      optIn: z.literal(true),
+      eventStatus: z.enum(["draft", "open_for_registration", "scheduled", "in_progress", "completed", "cancelled"]),
+    }).strict().safeParse(optIn);
+    if (optIn !== undefined && (!acceptedOptIn.success || planningAccessMode !== "open-development" || req.body.activityTypeId !== "webinar")) {
+      res.status(400).json({ error: "New synthetic webinar simulation opt-in requires open development, a new Webinar activity, and an explicit event status." });
+      return;
+    }
     const version = expectedRowVersion(req);
     if (version === undefined) {
       res.status(428).json({ error: "rowVersion is required for an existing campaign" });
@@ -672,7 +686,7 @@ router.post("/campaigns/:id/activities", async (req, res, next) => {
         campaignName: existingCampaign.name,
         inherited: inheritedFor(existingCampaign, activityStrategy),
       });
-    const [a] = await db.transaction(async (tx) => {
+    const create = async (tx: any, newSessionId?: string, client?: WebinarTransactionClient) => {
       const [campaign] = await tx.update(campaigns).set({
         rowVersion: sql`${campaigns.rowVersion} + 1`,
         updatedAt: new Date(),
@@ -688,9 +702,23 @@ router.post("/campaigns/:id/activities", async (req, res, next) => {
         namingInput: req.body.namingInput !== undefined && req.body.namingInput !== null ? String(req.body.namingInput) : null,
         effectiveInheritance: model.effectiveInheritance,
       }).returning();
-      await ensureWebinarForActivity(req.params.id, activity, req.body.webinarSetup, tx);
-      return [activity];
-    });
+      const session = await ensureWebinarForActivity(req.params.id, activity, req.body.webinarSetup, tx, newSessionId);
+      if (client && acceptedOptIn.success) {
+        if (!session || session.id !== newSessionId) throw new Error("Synthetic occurrence creation was not atomic");
+        const actor = await client.query(`SELECT creator_id AS "actorId" FROM development_planning_environment WHERE id=true`);
+        const actorId = actor.rows[0]?.actorId as string | undefined;
+        if (!actorId) throw new Error("Development actor marker is required for synthetic simulation opt-in");
+        await initializeNewSyntheticOccurrence(client, req.params.id, session.id, actorId, acceptedOptIn.data.eventStatus);
+      }
+      return activity;
+    };
+    const newSessionId = acceptedOptIn.success ? randomUUID() : null;
+    const a = newSessionId
+      ? await new WebinarPersistence().withEvaluationTransaction(
+          { campaignId: req.params.id, sessionId: newSessionId },
+          (client) => create(drizzle(client), newSessionId, client),
+        )
+      : await db.transaction(tx => create(tx));
     res.status(201).json(activityResponse(a, model.effectiveInheritance));
   } catch (e) {
     if (e instanceof GovernanceQuarantineError) {

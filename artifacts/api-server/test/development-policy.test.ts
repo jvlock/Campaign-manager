@@ -12,6 +12,7 @@ test("explicit planning allowlist retains ordinary workflows", () => {
     ["GET", "/campaigns/c/activities/a/task-settings"],
     ["PATCH", "/campaigns/c/activities/a/task-settings"],
     ["POST", "/development/simulations"],
+    ["GET", "/development/simulations/context"],
   ]) assert.equal(allowsDevelopmentPlanning(method, path), true, path);
 });
 test("operational, authority, customer and unknown routes stay closed", () => {
@@ -23,5 +24,6 @@ test("operational, authority, customer and unknown routes stay closed", () => {
     ["GET", "/organization/campaigns"], ["PATCH", "/task-defaults"],
     ["DELETE", "/campaigns/c/activities/a/task-settings"],
     ["POST", "/campaigns/c/activities/a/task-settings"],
+    ["GET", "/development/simulations/other"],
   ]) assert.equal(allowsDevelopmentPlanning(method, path), false, path);
 });

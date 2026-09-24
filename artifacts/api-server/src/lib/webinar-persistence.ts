@@ -2,25 +2,31 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { pool, assertPlanningDatabaseIsolation, planningAccessMode } from "@workspace/db";
 import { captureWebinarRelease } from "./webinar-release-provenance";
+import { simulationSnapshotSchema } from "./webinar-simulation-snapshot";
 
 const hash = z.string().regex(/^[a-f0-9]{64}$/);
 // Opaque identifiers only: no URLs, free-form commentary, email, content or participant copies.
 const token = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$/);
 const exactVersion = z.string().regex(/^\d+\.\d+(?:\.\d+)?(?:-[A-Za-z0-9][A-Za-z0-9.-]*)?(?:\+[A-Za-z0-9.-]+)?$/);
 const uuid = z.string().uuid();
+const acquireClient = () => pool.connect();
+export type WebinarTransactionClient = Awaited<ReturnType<typeof acquireClient>>;
 const reference = z.object({
   kind: z.literal("source"), sourceSystem: token, sourceType: z.enum(["occurrence", "content", "foundation", "delivery", "measurement"]),
   sourceId: uuid, sourceVersion: token, sourceHash: hash,
   observedAt: z.string().datetime(), status: z.enum(["available", "missing", "expired"]),
 }).strict();
 export const persistencePayload = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("plan"), state: z.enum(["draft", "planned", "superseded"]), planFingerprint: hash }).strict(),
+  z.object({ kind: z.literal("plan"), state: z.enum(["draft", "planned", "superseded"]), planFingerprint: hash,
+    eventStatus: z.enum(["draft", "open_for_registration", "scheduled", "in_progress", "completed", "cancelled"]).optional(),
+    simulationEligibility: z.literal("new-synthetic-occurrence").optional(),
+  }).strict(),
   reference,
   z.object({ kind: z.literal("evidence"), evidenceType: z.enum(["qa", "manual-review", "source-observation"]), contentFingerprint: hash, result: z.enum(["pass", "fail", "unknown"]) }).strict(),
   z.object({ kind: z.literal("exception-request"), ruleId: token, findingFingerprint: hash, reasonCode: token }).strict(),
   z.object({ kind: z.literal("exception-disposition"), disposition: z.enum(["approved", "denied"]), reasonCode: token }).strict(),
-  z.object({ kind: z.literal("readiness"), stage: z.enum(["setup", "recruitment", "follow-up", "completion"]), result: z.enum(["ready", "not-ready", "unknown"]), resultFingerprint: hash, evidenceIds: z.array(uuid).max(500), exceptionIds: z.array(uuid).max(500) }).strict(),
-  z.object({ kind: z.literal("completion"), result: z.enum(["complete", "incomplete", "unknown"]), resultFingerprint: hash, evidenceIds: z.array(uuid).max(500), exceptionIds: z.array(uuid).max(500) }).strict(),
+  z.object({ kind: z.literal("readiness"), stage: z.enum(["setup", "recruitment", "follow-up", "completion"]), result: z.enum(["ready", "not-ready", "unknown"]), resultFingerprint: hash, evidenceIds: z.array(uuid).max(500), exceptionIds: z.array(uuid).max(500), simulation: simulationSnapshotSchema.optional() }).strict(),
+  z.object({ kind: z.literal("completion"), result: z.enum(["complete", "incomplete", "unknown"]), resultFingerprint: hash, evidenceIds: z.array(uuid).max(500), exceptionIds: z.array(uuid).max(500), simulation: simulationSnapshotSchema.optional() }).strict(),
   // The server captures every release field. Supplied digests/manifests are rejected.
   z.object({ kind: z.literal("release") }).strict(),
   z.object({ kind: z.literal("legal-hold"), held: z.boolean(), reasonCode: token }).strict(),
@@ -64,7 +70,44 @@ function canonical(value: unknown): string {
  * Future verified authentication and domain adapters must use a separately reviewed boundary.
  */
 export class WebinarPersistence {
+  private transactionClient?: WebinarTransactionClient;
   constructor(private readonly connection = pool, private readonly retention = baselineRetention) {}
+
+  /**
+   * One internal occurrence transaction, with an occurrence lock shared with ordinary
+   * appends. The callback may only append immutable records; application sources
+   * remain authoritative. The orchestrator owns mapping, never this repository.
+   */
+  async withEvaluationTransaction<T>(
+    scope: { campaignId: string; sessionId: string },
+    work: (client: WebinarTransactionClient, repository: WebinarPersistence) => Promise<T>,
+  ): Promise<T> {
+    uuid.parse(scope.campaignId); uuid.parse(scope.sessionId);
+    await this.assertSimulationBoundary();
+    const client = await this.connection.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`webinar-simulation:${scope.sessionId}`]);
+      await client.query("SELECT session_id FROM webinar_persistence_bindings WHERE session_id=$1 AND campaign_id=$2 FOR UPDATE", [scope.sessionId, scope.campaignId]);
+      const scoped = new WebinarPersistence(this.connection, this.retention);
+      scoped.transactionClient = client;
+      const result = await work(client, scoped);
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      if (["40001", "40P01"].includes((error as { code?: string }).code ?? "")) throw new PersistenceConflict("Source records changed during simulation; reload before retrying");
+      throw error;
+    } finally { client.release(); }
+  }
+
+  /** Internal atomic creation boundary; caller owns BEGIN/COMMIT/ROLLBACK. */
+  async appendInCreationTransaction(client: WebinarTransactionClient, input: PersistenceMutation) {
+    await this.assertSimulationBoundary();
+    const scoped = new WebinarPersistence(this.connection, this.retention);
+    scoped.transactionClient = client;
+    return scoped.append(input);
+  }
 
   private async assertSimulationBoundary() {
     if (process.env.NODE_ENV === "test" && !process.env.REPLIT_DEPLOYMENT) {
@@ -84,9 +127,9 @@ export class WebinarPersistence {
     const m = mutation.parse(input);
     await this.assertSimulationBoundary();
     const requestHash = createHash("sha256").update(canonical(m)).digest("hex");
-    const client = await this.connection.connect();
+    const client = this.transactionClient ?? await this.connection.connect();
     try {
-      await client.query("BEGIN");
+      if (!this.transactionClient) await client.query("BEGIN");
       const legacy = await client.query(`SELECT 1 FROM webinar_sessions s JOIN legacy_activities l ON l.activity_id=s.activity_id
         WHERE s.id=$1 AND s.campaign_id=$2`, [m.sessionId, m.campaignId]);
       if (legacy.rowCount) throw new Error("Legacy activity sessions are isolated from new-standard persistence");
@@ -97,7 +140,7 @@ export class WebinarPersistence {
       const { rows: [retry] } = await client.query("SELECT * FROM webinar_persistence_records WHERE session_id=$1 AND idempotency_key=$2", [m.sessionId, m.idempotencyKey]);
       if (retry) {
         if (retry.request_hash !== requestHash) throw new PersistenceConflict("Idempotency key was used for different input");
-        await client.query("COMMIT");
+        if (!this.transactionClient) await client.query("COMMIT");
         return retry;
       }
       if (binding.revision !== m.expectedRevision) throw new PersistenceConflict("Occurrence revision changed; reload before editing");
@@ -121,6 +164,15 @@ export class WebinarPersistence {
       if (["readiness", "completion"].includes(m.payload.kind) && !m.releaseId) throw new Error("Snapshot release is required");
       if (m.releaseId && !["readiness", "completion"].includes(m.payload.kind)) throw new Error("Only snapshots may reference a release");
       if (m.payload.kind === "readiness" || m.payload.kind === "completion") {
+        if (m.payload.simulation) {
+          const snapshot = m.payload.simulation;
+          if (snapshot.occurrenceId !== m.sessionId || snapshot.standard.id !== m.standard?.id
+            || snapshot.standard.version !== m.standard?.version || snapshot.calculationAt !== m.calculationAt
+            || snapshot.inputFingerprint !== m.inputFingerprint
+            || createHash("sha256").update(canonical(snapshot)).digest("hex") !== m.payload.resultFingerprint) {
+            throw new Error("Simulation snapshot identity or content fingerprint mismatch");
+          }
+        }
         for (const [ids, kind] of [[m.payload.evidenceIds, "evidence"], [m.payload.exceptionIds, "exception-disposition"]] as const) {
           if (new Set(ids).size !== ids.length) throw new Error("Duplicate snapshot reference");
           const refs = await client.query("SELECT id FROM webinar_persistence_records WHERE id=ANY($1::uuid[]) AND campaign_id=$2 AND session_id=$3 AND kind=$4", [ids, m.campaignId, m.sessionId, kind]);
@@ -130,6 +182,8 @@ export class WebinarPersistence {
       if (m.releaseId) {
         const { rows: [release] } = await client.query("SELECT * FROM webinar_persistence_records WHERE id=$1 AND session_id=$2 AND campaign_id=$3 AND kind='release'", [m.releaseId, m.sessionId, m.campaignId]);
         if (!release || release.standard_id !== m.standard?.id || release.standard_version !== m.standard?.version || release.calculation_at.toISOString() !== m.calculationAt) throw new Error("Snapshot must use an exact release, standard and calculation instant");
+        if ((m.payload.kind === "readiness" || m.payload.kind === "completion") && m.payload.simulation
+          && m.payload.simulation.releaseFingerprint !== release.payload.digest) throw new Error("Simulation release fingerprint mismatch");
       }
       const category = m.payload.kind === "source" || m.payload.kind === "release" ? "provenance" : "decision";
       let storedPayload: unknown = m.payload;
@@ -151,13 +205,13 @@ export class WebinarPersistence {
       await client.query(`INSERT INTO webinar_persistence_audit(record_id,campaign_id,session_id,actor_id,action,expires_at)
         VALUES ($1,$2,$3,$4,'simulation-recorded',$5)`, [record.id, m.campaignId, m.sessionId, m.actorId, retentionExpiration("audit", now, this.retention)]);
       await client.query("UPDATE webinar_persistence_bindings SET revision=revision+1 WHERE session_id=$1", [m.sessionId]);
-      await client.query("COMMIT");
+      if (!this.transactionClient) await client.query("COMMIT");
       return record;
     } catch (error) {
-      await client.query("ROLLBACK");
+      if (!this.transactionClient) await client.query("ROLLBACK");
       if ((error as { code?: string }).code === "23505") throw new PersistenceConflict("Duplicate immutable record");
       throw error;
-    } finally { client.release(); }
+    } finally { if (!this.transactionClient) client.release(); }
   }
 
   async load(campaignId: string, sessionId: string, afterRevision = 0, limit = 100) {

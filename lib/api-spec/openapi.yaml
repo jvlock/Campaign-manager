@@ -108,9 +108,41 @@ paths:
                   nextCursor: {type: [string, "null"]}
                   unverified: {type: boolean}
                   authoritative: {type: boolean}
+  /development/simulations/context:
+    get:
+      operationId: getDevelopmentSimulationContext
+      description: Read-only scoped preflight for explicitly opted-in synthetic occurrences; does not evaluate, mutate or infer eligibility from template version.
+      parameters:
+        - {name: campaignId, in: query, required: true, schema: {type: string, format: uuid}}
+        - {name: activityId, in: query, required: true, schema: {type: string, format: uuid}}
+        - {name: occurrenceId, in: query, required: true, schema: {type: string, format: uuid}}
+      responses:
+        "200":
+          description: Exact standard and current source revision for preparing a new fixed retry tuple.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [expectedRevision, standard, operationalStatus, unverified, authoritative]
+                properties:
+                  expectedRevision: {type: integer, minimum: 0}
+                  standard:
+                    type: object
+                    required: [id, version]
+                    properties:
+                      id: {type: string}
+                      version: {type: string}
+                  operationalStatus: {type: string, enum: [simulation-only]}
+                  unverified: {type: boolean}
+                  authoritative: {type: boolean}
+        "404":
+          description: No synthetic occurrence in requested campaign/activity scope
+        "409":
+          description: Occurrence not explicitly eligible for the exact standard
   /development/simulations:
     post:
       operationId: simulateDevelopmentWorkflow
+      description: Open-development only. Eligible explicitly opted-in new synthetic webinar occurrences invoke the internal standards orchestrator. Webinar caller must submit a fixed calculationAt/idempotencyKey/expectedRevision tuple and retain it unchanged for retries; a new calculation needs a new tuple. Generic non-webinar preview retains its prior optional request shape. Neither legacy_9 nor default_5 template version proves eligibility.
       requestBody:
         required: true
         content:
@@ -118,10 +150,16 @@ paths:
             schema: {$ref: "#/components/schemas/DevelopmentSimulationInput"}
       responses:
         "200":
-          description: Unverified dry-run; never approval, evidence or operational readiness.
+          description: Simulation-only structured webinar result or clearly differentiated generic preview; never approval, evidence or operational authority.
           content:
             application/json:
-              schema: {type: object, additionalProperties: true}
+              schema: {$ref: "#/components/schemas/DevelopmentSimulationResult"}
+        "400":
+          description: Invalid or incomplete selection, including a webinar activity without an occurrence
+        "404":
+          description: Selected campaign, activity or occurrence not found in scope
+        "409":
+          description: Ineligible occurrence or stale revision; drafts remain unchanged
   /activity-model/catalog:
     get:
       operationId: getActivityModelCatalog
@@ -1515,7 +1553,49 @@ components:
       properties:
         campaignId: {type: string, format: uuid}
         activityId: {type: string, format: uuid}
+        occurrenceId: {type: string, format: uuid, description: Required to identify the selected webinar occurrence; identifying an occurrence does not establish eligibility}
+        calculationAt: {type: string, format: date-time, description: Required with occurrenceId; fixed instant retained across retries}
+        idempotencyKey: {type: string, minLength: 1, maxLength: 120, pattern: "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,119}$", description: Required with occurrenceId; retained across retries}
+        expectedRevision: {type: integer, minimum: 0, description: Required with occurrenceId; current source revision from read-only preflight}
         label: {type: string, maxLength: 120}
+    DevelopmentSimulationResult:
+      type: object
+      additionalProperties: true
+      required: [simulation, unverified, authoritative, operationalReadiness]
+      properties:
+        simulation: {type: boolean}
+        unverified: {type: boolean}
+        authoritative: {type: boolean}
+        operationalReadiness: {type: boolean}
+        operationalStatus: {type: string, enum: [simulation-only]}
+        message: {type: string}
+        activityId: {type: string, format: uuid}
+        occurrenceId: {type: string, format: uuid}
+        standard:
+          type: object
+          required: [id, version]
+          properties:
+            id: {type: string}
+            version: {type: string}
+        calculationAt: {type: string, format: date-time}
+        releaseFingerprint: {type: string}
+        inputFingerprint: {type: string}
+        snapshotId: {type: string, format: uuid}
+        revision: {type: integer}
+        sourceReferences: {type: array, items: {}}
+        applicableRules: {type: array, items: {type: string}}
+        passedRules: {type: array, items: {type: string}}
+        unresolvedBlockingFailures: {type: array, items: {}}
+        blockersResolvedByExceptions: {type: array, items: {}}
+        nonblockingFailures: {type: array, items: {}}
+        warnings: {type: array, items: {}}
+        missingInputData: {type: array, items: {}}
+        unavailableExternalObservations: {type: array, items: {}}
+        mappingErrors: {type: array, items: {}}
+        evaluatorCoverage: {type: object, additionalProperties: true}
+        readinessStages: {type: array, items: {}}
+        completionResult: {type: object, additionalProperties: true}
+        diagnostics: {type: object, additionalProperties: true}
     OrganizationAccessError:
       type: object
       required: [error]
@@ -1649,6 +1729,14 @@ components:
         rowVersion: {type: integer, minimum: 1}
         position: {$ref: "#/components/schemas/Position"}
         webinarSetup: {$ref: "#/components/schemas/WebinarSetup"}
+        developmentSimulation:
+          type: object
+          additionalProperties: false
+          description: Explicit opt-in only when creating a NEW synthetic webinar in open development; atomically binds exact canonical standard and records explicit event status. Existing occurrences are never converted.
+          required: [optIn, eventStatus]
+          properties:
+            optIn: {type: boolean, enum: [true]}
+            eventStatus: {type: string, enum: [draft, open_for_registration, scheduled, in_progress, completed, cancelled]}
     GovernedChannel:
       type: object
       required: [id, displayName, type, governance]

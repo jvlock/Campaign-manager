@@ -82,6 +82,113 @@ test("actual open app allows synthetic planning but not operational authority", 
     const simulation = await (await send("/development/simulations", {})).json();
     assert.equal(simulation.authoritative, false);
     assert.equal(simulation.operationalReadiness, false);
+    assert.match(simulation.message, /generic|planning/i, "empty selection is only a generic planning preview");
+    const fixedRequest = (campaignId: string, activityId: string, occurrenceId: string, expectedRevision: number) => ({
+      campaignId, activityId, occurrenceId, expectedRevision,
+      calculationAt: new Date().toISOString(), idempotencyKey: randomUUID(),
+    });
+    const invalidOccurrence = await send("/development/simulations", { campaignId: campaign.id, activityId: activity.id, occurrenceId: "not-a-uuid" });
+    assert.equal(invalidOccurrence.status, 400);
+    const incompleteOccurrence = await send("/development/simulations", { occurrenceId: randomUUID() });
+    assert.equal(incompleteOccurrence.status, 400);
+    const unrelatedActivity = await send("/development/simulations", { campaignId: randomUUID(), activityId: activity.id });
+    assert.equal(unrelatedActivity.status, 404);
+    const unrelatedOccurrence = await send("/development/simulations", { campaignId: campaign.id, activityId: activity.id, occurrenceId: randomUUID() });
+    assert.equal(unrelatedOccurrence.status, 400);
+    const webinarActivity = await send(`/campaigns/${campaign.id}/activities`, {
+      namingInput: "Simulation webinar", activityTypeId: "webinar", answers: {},
+      audience: "Synthetic test audience", region: "Global", timing: "2027-04-21",
+      status: "Confirmed", owner: "Development", position: { x: 0, y: 0 }, rowVersion: 1,
+      webinarSetup: { eventDate: "2027-04-21", eventTime: "14:00", durationMinutes: 60,
+        timezone: "America/New_York", platform: "Planning platform", speakers: [{ name: "Synthetic speaker" }],
+        recruitmentLaunchAt: "2027-03-01T15:00:00.000Z" },
+    });
+    assert.equal(webinarActivity.status, 201, await webinarActivity.clone().text());
+    const webinar = await webinarActivity.json();
+    const missingOccurrence = await send("/development/simulations", { campaignId: campaign.id, activityId: webinar.id });
+    assert.equal(missingOccurrence.status, 400);
+    const wrongOccurrence = await send("/development/simulations", fixedRequest(campaign.id, webinar.id, randomUUID(), 0));
+    assert.equal(wrongOccurrence.status, 404);
+    const sessions = await (await fetch(`${base}/campaigns/${campaign.id}/webinars`)).json();
+    const occurrence = sessions.find((session: { activityId: string }) => session.activityId === webinar.id);
+    assert.ok(occurrence, "new webinar activity has an explicit occurrence");
+    const preflightUnavailable = await fetch(`${base}/development/simulations/context?campaignId=${campaign.id}&activityId=${webinar.id}&occurrenceId=${occurrence.id}`);
+    assert.equal(preflightUnavailable.status, 409);
+    const incompleteTuple = await send("/development/simulations", { campaignId: campaign.id, activityId: webinar.id, occurrenceId: occurrence.id });
+    assert.equal(incompleteTuple.status, 400);
+    const malformedInstant = await send("/development/simulations", {
+      ...fixedRequest(campaign.id, webinar.id, occurrence.id, 0), calculationAt: "not-an-instant",
+    });
+    assert.equal(malformedInstant.status, 400);
+    const unavailable = await send("/development/simulations", fixedRequest(campaign.id, webinar.id, occurrence.id, 0));
+    assert.equal(unavailable.status, 409, await unavailable.clone().text());
+    assert.match((await unavailable.json()).error, /no explicit new-synthetic exact-standard simulation binding/i);
+    const snapshots = await pool.query("SELECT count(*)::int AS count FROM webinar_persistence_records WHERE session_id=$1", [occurrence.id]);
+    assert.equal(snapshots.rows[0].count, 0, "template version alone cannot cause engine evaluation or snapshot");
+    const currentCampaign = await (await fetch(`${base}/campaigns/${campaign.id}`)).json();
+    const missingStatus = await send(`/campaigns/${campaign.id}/activities`, {
+      namingInput: "Rejected synthetic opt-in", activityTypeId: "webinar", answers: {},
+      audience: "Synthetic test audience", region: "Global", timing: "2027-04-22",
+      status: "Estimated", owner: "Development", position: { x: 0, y: 0 }, rowVersion: currentCampaign.rowVersion,
+      webinarSetup: { eventDate: "2027-04-22", eventTime: "14:00", durationMinutes: 60,
+        timezone: "America/New_York", platform: "Planning platform", speakers: [],
+        recruitmentLaunchAt: "2027-03-01T15:00:00.000Z" },
+      developmentSimulation: { optIn: true },
+    });
+    assert.equal(missingStatus.status, 400, "event status is never inferred from planning status");
+    const opted = await send(`/campaigns/${campaign.id}/activities`, {
+      namingInput: "Synthetic opt-in webinar", activityTypeId: "webinar", answers: {},
+      audience: "Synthetic test audience", region: "Global", timing: "2027-04-22",
+      status: "Estimated", owner: "Development", position: { x: 0, y: 0 }, rowVersion: currentCampaign.rowVersion,
+      webinarSetup: { eventDate: "2027-04-22", eventTime: "14:00", durationMinutes: 60,
+        timezone: "America/New_York", platform: "Planning platform", speakers: [],
+        recruitmentLaunchAt: "2027-03-01T15:00:00.000Z" },
+      developmentSimulation: { optIn: true, eventStatus: "draft" },
+    });
+    assert.equal(opted.status, 201, await opted.clone().text());
+    const optedActivity = await opted.json();
+    const optedSessions = await (await fetch(`${base}/campaigns/${campaign.id}/webinars`)).json();
+    const optedOccurrence = optedSessions.find((session: { activityId: string }) => session.activityId === optedActivity.id);
+    assert.ok(optedOccurrence);
+    const plan = await pool.query(`SELECT b.standard_id,b.standard_version,b.revision,r.payload
+      FROM webinar_persistence_bindings b JOIN webinar_persistence_records r ON r.session_id=b.session_id
+      WHERE b.session_id=$1 AND r.kind='plan'`, [optedOccurrence.id]);
+    assert.equal(plan.rows.length, 1);
+    assert.equal(plan.rows[0].payload.eventStatus, "draft", "explicit status is preserved; not silently promoted");
+    assert.equal(plan.rows[0].payload.simulationEligibility, "new-synthetic-occurrence");
+    assert.equal(plan.rows[0].standard_id, "WEB-STANDARD-001");
+    assert.equal(plan.rows[0].standard_version, "1.0-pilot-rc1");
+    const preflight = await fetch(`${base}/development/simulations/context?campaignId=${campaign.id}&activityId=${optedActivity.id}&occurrenceId=${optedOccurrence.id}`);
+    assert.equal(preflight.status, 200, await preflight.clone().text());
+    const context = await preflight.json();
+    assert.equal(context.expectedRevision, plan.rows[0].revision);
+    assert.equal(context.standard.version, "1.0-pilot-rc1");
+    const request = fixedRequest(campaign.id, optedActivity.id, optedOccurrence.id, context.expectedRevision);
+    const evaluated = await send("/development/simulations", request);
+    assert.equal(evaluated.status, 200, await evaluated.clone().text());
+    const result = await evaluated.json();
+    assert.equal(result.operationalStatus, "simulation-only");
+    assert.equal(result.authoritative, false);
+    assert.equal(result.operationalReadiness, false);
+    assert.equal(result.activityId, optedActivity.id);
+    assert.equal(result.occurrenceId, optedOccurrence.id);
+    assert.equal(result.standard.version, "1.0-pilot-rc1");
+    assert.ok(result.releaseFingerprint && result.inputFingerprint && result.calculationAt && result.snapshotId);
+    for (const key of ["unresolvedBlockingFailures", "blockersResolvedByExceptions", "nonblockingFailures", "warnings",
+      "missingInputData", "unavailableExternalObservations", "mappingErrors"]) assert.ok(Array.isArray(result[key]), key);
+    const simulationRetry = await send("/development/simulations", request);
+    assert.equal(simulationRetry.status, 200, await simulationRetry.clone().text());
+    const replay = await simulationRetry.json();
+    assert.equal(replay.snapshotId, result.snapshotId, "fixed tuple replays the immutable calculation");
+    assert.equal(replay.calculationAt, result.calculationAt);
+    const staleSimulation = await send("/development/simulations", {
+      ...fixedRequest(campaign.id, optedActivity.id, optedOccurrence.id, context.expectedRevision),
+      calculationAt: new Date(Date.parse(request.calculationAt) + 1000).toISOString(),
+    });
+    assert.equal(staleSimulation.status, 409);
+    const staleConflict = await staleSimulation.json();
+    assert.equal(staleConflict.expectedRevision, context.expectedRevision);
+    assert.equal(staleConflict.currentRevision, result.revision);
     const branchId = randomUUID();
     const participantId = randomUUID();
     await pool.query("INSERT INTO audiences(id,campaign_id,name,region) VALUES($1,$2,'Synthetic contamination probe','Global')", [branchId, campaign.id]);

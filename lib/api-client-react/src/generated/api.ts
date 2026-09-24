@@ -57,11 +57,14 @@ import type {
   DevelopmentGroupInput,
   DevelopmentOwnershipInput,
   DevelopmentSimulationInput,
+  DevelopmentSimulationResult,
   GetDevelopmentCalendar200,
   GetDevelopmentCalendarParams,
   GetDevelopmentGroups200,
   GetDevelopmentGroupsParams,
   GetDevelopmentOwnership200,
+  GetDevelopmentSimulationContext200,
+  GetDevelopmentSimulationContextParams,
   GetDevelopmentStatus200,
   GetPortfolioParams,
   Governance,
@@ -100,7 +103,6 @@ import type {
   ScheduledInstance,
   ScheduledInstanceAdjustment,
   ScopedOperationUnavailableResponse,
-  SimulateDevelopmentWorkflow200,
   SyntheticPersonInput,
   TaskDefault,
   TaskDefaultsUpdate,
@@ -627,6 +629,87 @@ export function useGetDevelopmentCalendar<TData = Awaited<ReturnType<typeof getD
 
 
 
+export const getGetDevelopmentSimulationContextUrl = (params: GetDevelopmentSimulationContextParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/development/simulations/context?${stringifiedParams}` : `/api/development/simulations/context`
+}
+
+/**
+ * Read-only scoped preflight for explicitly opted-in synthetic occurrences; does not evaluate, mutate or infer eligibility from template version.
+ */
+export const getDevelopmentSimulationContext = async (params: GetDevelopmentSimulationContextParams, options?: Parameters<typeof customFetch>[1]): Promise<GetDevelopmentSimulationContext200> => {
+
+  return customFetch<GetDevelopmentSimulationContext200>(getGetDevelopmentSimulationContextUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDevelopmentSimulationContextQueryKey = (params?: GetDevelopmentSimulationContextParams,) => {
+    return [
+    `/api/development/simulations/context`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDevelopmentSimulationContextQueryOptions = <TData = Awaited<ReturnType<typeof getDevelopmentSimulationContext>>, TError = ErrorType<void>>(params: GetDevelopmentSimulationContextParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentSimulationContext>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDevelopmentSimulationContextQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDevelopmentSimulationContext>>> = ({ signal }) => getDevelopmentSimulationContext(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentSimulationContext>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDevelopmentSimulationContextQueryResult = NonNullable<Awaited<ReturnType<typeof getDevelopmentSimulationContext>>>
+export type GetDevelopmentSimulationContextQueryError = ErrorType<void>
+
+
+
+export function useGetDevelopmentSimulationContext<TData = Awaited<ReturnType<typeof getDevelopmentSimulationContext>>, TError = ErrorType<void>>(
+ params: GetDevelopmentSimulationContextParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevelopmentSimulationContext>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDevelopmentSimulationContextQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getSimulateDevelopmentWorkflowUrl = () => {
 
 
@@ -635,7 +718,10 @@ export const getSimulateDevelopmentWorkflowUrl = () => {
   return `/api/development/simulations`
 }
 
-export const simulateDevelopmentWorkflow = async (developmentSimulationInput: DevelopmentSimulationInput, options?: Parameters<typeof customFetch>[1]): Promise<SimulateDevelopmentWorkflow200> => {
+/**
+ * Open-development only. Eligible explicitly opted-in new synthetic webinar occurrences invoke the internal standards orchestrator. Webinar caller must submit a fixed calculationAt/idempotencyKey/expectedRevision tuple and retain it unchanged for retries; a new calculation needs a new tuple. Generic non-webinar preview retains its prior optional request shape. Neither legacy_9 nor default_5 template version proves eligibility.
+ */
+export const simulateDevelopmentWorkflow = async (developmentSimulationInput: DevelopmentSimulationInput, options?: Parameters<typeof customFetch>[1]): Promise<DevelopmentSimulationResult> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -651,7 +737,7 @@ export const simulateDevelopmentWorkflow = async (developmentSimulationInput: De
     }
     return headers;
   };
-return customFetch<SimulateDevelopmentWorkflow200>(getSimulateDevelopmentWorkflowUrl(),
+return customFetch<DevelopmentSimulationResult>(getSimulateDevelopmentWorkflowUrl(),
   {
     ...options,
     method: 'POST',
@@ -666,7 +752,7 @@ return customFetch<SimulateDevelopmentWorkflow200>(getSimulateDevelopmentWorkflo
 
 export const getSimulateDevelopmentWorkflowMutationKey = () => ['simulateDevelopmentWorkflow'] as const;
 
-export const getSimulateDevelopmentWorkflowMutationOptions = <TError = ErrorType<unknown>,
+export const getSimulateDevelopmentWorkflowMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof simulateDevelopmentWorkflow>>, TError,SimulateDevelopmentWorkflowMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof simulateDevelopmentWorkflow>>, TError,SimulateDevelopmentWorkflowMutationVariables, TContext> => {
 
@@ -695,10 +781,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type SimulateDevelopmentWorkflowMutationResult = NonNullable<Awaited<ReturnType<typeof simulateDevelopmentWorkflow>>>
     export type SimulateDevelopmentWorkflowMutationBody = BodyType<DevelopmentSimulationInput>
-    export type SimulateDevelopmentWorkflowMutationError = ErrorType<unknown>
+    export type SimulateDevelopmentWorkflowMutationError = ErrorType<void>
     export type SimulateDevelopmentWorkflowMutationVariables = {data: BodyType<DevelopmentSimulationInput>}
 
-    export const useSimulateDevelopmentWorkflow = <TError = ErrorType<unknown>,
+    export const useSimulateDevelopmentWorkflow = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof simulateDevelopmentWorkflow>>, TError,SimulateDevelopmentWorkflowMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof simulateDevelopmentWorkflow>>,
