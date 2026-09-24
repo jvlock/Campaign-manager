@@ -26,6 +26,10 @@ const rules: [string, RegExp][] = [
   ["POST", /^\/development\/participants\/(?:fixtures|transitions)$/],
   ["GET", /^\/development\/foundation\/observations$/],
   ["POST", /^\/development\/foundation\/observations\/refresh$/],
+  // Read and simulation-only contracts are scoped to the existing webinar occurrence.
+  ["GET", /^\/campaigns\/[^/]+\/webinars\/[^/]+\/standard\/(?:summary|evaluations|readiness|completion|evidence|exceptions|history)$/],
+  ["POST", /^\/campaigns\/[^/]+\/webinars\/[^/]+\/standard\/(?:evaluations|evidence|exceptions)$/],
+  ["POST", /^\/campaigns\/[^/]+\/webinars\/[^/]+\/standard\/exceptions\/[^/]+\/review$/],
   ["PUT", /^\/development\/ownership\/(?:campaigns|activities)\/[^/]+$/],
 ];
 export function allowsDevelopmentPlanning(method: string, path: string): boolean {

@@ -3,6 +3,23 @@ import { RULE_IDS, READINESS_STAGES, PRIMARY_RULE_TYPES, HIERARCHY_LEVELS, EVIDE
 
 const text = z.string().max(20000);
 const hash = z.string().regex(/^[a-f0-9]{64}$/);
+const engineRelease = z.object({
+  digest: hash,
+  provenance: z.object({
+    schemaVersion: z.literal(1), mode: z.literal("open-development"), operational: z.literal(false),
+    standardId: z.literal(STANDARD_ID), standardVersion: z.literal(STANDARD_VERSION),
+    canonicalDocuments: z.record(z.string(), hash),
+    evaluatorRegistry: z.object({
+      digest: hash, implementationHashes: z.record(z.string(), hash),
+      coverage: z.object({
+        implemented: z.literal(106), total: z.literal(106), implementedRuleIds: z.array(z.enum(RULE_IDS)),
+        unimplementedRuleIds: z.array(z.string()).length(0),
+      }).strict(),
+    }).strict(),
+    applicationRelease: z.string().regex(/^[a-f0-9]{40}$/).nullable(),
+    dependencies: z.record(z.string(), z.string()),
+  }).strict(),
+}).strict();
 const ruleId = z.enum(RULE_IDS);
 const stage = z.enum(READINESS_STAGES);
 const rule = z.object({
@@ -50,6 +67,8 @@ export const simulationSnapshotSchema = z.object({
   activityId: z.string().uuid(), occurrenceId: z.string().uuid(),
   standard: z.object({ id: z.literal(STANDARD_ID), version: z.literal(STANDARD_VERSION) }).strict(),
   calculationAt: z.string().datetime(), releaseFingerprint: hash, inputFingerprint: hash,
+  /** Absent only on historical snapshots written before the distinct engine identity existed. */
+  engineReleaseFingerprint: hash.optional(), engineRelease: engineRelease.optional(),
   sourceReferences: z.array(sourceReference),
   applicableRules: z.array(ruleId), passedRules: z.array(ruleId),
   results: findings, unresolvedBlockingFailures: findings,

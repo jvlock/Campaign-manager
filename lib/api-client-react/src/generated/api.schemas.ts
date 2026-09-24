@@ -5,24 +5,656 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
-export type DevelopmentFoundationInspectionContractLabel = typeof DevelopmentFoundationInspectionContractLabel[keyof typeof DevelopmentFoundationInspectionContractLabel];
+export type WebinarApiErrorErrorCode = typeof WebinarApiErrorErrorCode[keyof typeof WebinarApiErrorErrorCode];
 
 
-export const DevelopmentFoundationInspectionContractLabel = {
-  'synthetic-contract-only': 'synthetic-contract-only',
+export const WebinarApiErrorErrorCode = {
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  NOT_FOUND: 'NOT_FOUND',
+  CONFLICT: 'CONFLICT',
+  IDEMPOTENCY_CONFLICT: 'IDEMPOTENCY_CONFLICT',
+  UNAUTHENTICATED: 'UNAUTHENTICATED',
+  UNAUTHORIZED: 'UNAUTHORIZED',
+  CAPABILITY_UNAVAILABLE: 'CAPABILITY_UNAVAILABLE',
+  PROVIDER_NOT_CONFIGURED: 'PROVIDER_NOT_CONFIGURED',
+  PROVIDER_UNAVAILABLE: 'PROVIDER_UNAVAILABLE',
+  PROVIDER_RESPONSE_INVALID: 'PROVIDER_RESPONSE_INVALID',
+  UNSUPPORTED_GOVERNED_OUTPUT: 'UNSUPPORTED_GOVERNED_OUTPUT',
+  STALE_INPUT: 'STALE_INPUT',
+  MISSING_REQUIRED_INPUT: 'MISSING_REQUIRED_INPUT',
+  EVALUATION_INCOMPLETE: 'EVALUATION_INCOMPLETE',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const;
 
-export type DevelopmentFoundationInspectionOperationalStatus = typeof DevelopmentFoundationInspectionOperationalStatus[keyof typeof DevelopmentFoundationInspectionOperationalStatus];
+export type WebinarApiErrorError = {
+  code: WebinarApiErrorErrorCode;
+  message: string;
+};
+
+export interface WebinarApiError {
+  error: WebinarApiErrorError;
+}
+
+export interface WebinarApiEvaluationInput {
+  /**
+     * Current scoped source revision, not a rule result.
+     * @minimum 0
+     */
+  expectedRevision: number;
+  /** Scoped to occurrence and evaluation; exact key and body must be reused on retry. */
+  idempotencyKey: string;
+  /** Fixed diagnostic instant accepted only on this isolated development route. */
+  calculationAt: string;
+}
+
+export type WebinarApiEvidenceInputEvidenceType = typeof WebinarApiEvidenceInputEvidenceType[keyof typeof WebinarApiEvidenceInputEvidenceType];
 
 
-export const DevelopmentFoundationInspectionOperationalStatus = {
+export const WebinarApiEvidenceInputEvidenceType = {
+  qa: 'qa',
+  'manual-review': 'manual-review',
+  'source-observation': 'source-observation',
+} as const;
+
+/**
+ * Exact type of scoped persisted available source; qa requires content or occurrence; manual-review requires content.
+ */
+export type WebinarApiEvidenceInputSourceType = typeof WebinarApiEvidenceInputSourceType[keyof typeof WebinarApiEvidenceInputSourceType];
+
+
+export const WebinarApiEvidenceInputSourceType = {
+  occurrence: 'occurrence',
+  content: 'content',
+  foundation: 'foundation',
+  delivery: 'delivery',
+  measurement: 'measurement',
+} as const;
+
+export interface WebinarApiEvidenceInput {
+  sourceId: string;
+  evidenceType: WebinarApiEvidenceInputEvidenceType;
+  /** Exact type of scoped persisted available source; qa requires content or occurrence; manual-review requires content. */
+  sourceType: WebinarApiEvidenceInputSourceType;
+  /**
+     * Exact immutable source version; a changed version is STALE_INPUT.
+     * @pattern ^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$
+     */
+  sourceVersion: string;
+  /**
+     * Exact immutable source content hash; changed hash is STALE_INPUT.
+     * @pattern ^[a-f0-9]{64}$
+     */
+  sourceHash: string;
+  /** @minimum 0 */
+  expectedRevision: number;
+  idempotencyKey: string;
+  calculationAt: string;
+}
+
+export interface WebinarApiExceptionInput {
+  /**
+     * Must belong to canonical RULE_IDS; a currently failed blocking, exception-eligible rule. WEB-EXC-001 cannot exempt itself.
+     * @pattern ^WEB-[A-Z0-9-]+$
+     */
+  ruleId: string;
+  evidenceId: string;
+  /** @pattern ^[A-Za-z0-9][A-Za-z0-9_.:-]{0,119}$ */
+  reasonCode: string;
+  /** @minimum 0 */
+  expectedRevision: number;
+  idempotencyKey: string;
+  calculationAt: string;
+  /** Must be after calculationAt. */
+  expiresAt: string;
+}
+
+/**
+ * Review has no available action; empty body only.
+ */
+export interface WebinarApiEmptyReview { [key: string]: unknown }
+
+export type WebinarApiStandardId = typeof WebinarApiStandardId[keyof typeof WebinarApiStandardId];
+
+
+export const WebinarApiStandardId = {
+  'WEB-STANDARD-001': 'WEB-STANDARD-001',
+} as const;
+
+export interface WebinarApiStandard {
+  id: WebinarApiStandardId;
+  version: string;
+}
+
+export type WebinarApiEngineReleaseProvenanceSchemaVersion = typeof WebinarApiEngineReleaseProvenanceSchemaVersion[keyof typeof WebinarApiEngineReleaseProvenanceSchemaVersion];
+
+
+export const WebinarApiEngineReleaseProvenanceSchemaVersion = {
+  NUMBER_1: 1,
+} as const;
+
+export type WebinarApiEngineReleaseProvenanceMode = typeof WebinarApiEngineReleaseProvenanceMode[keyof typeof WebinarApiEngineReleaseProvenanceMode];
+
+
+export const WebinarApiEngineReleaseProvenanceMode = {
+  'open-development': 'open-development',
+} as const;
+
+export type WebinarApiEngineReleaseProvenanceStandardId = typeof WebinarApiEngineReleaseProvenanceStandardId[keyof typeof WebinarApiEngineReleaseProvenanceStandardId];
+
+
+export const WebinarApiEngineReleaseProvenanceStandardId = {
+  'WEB-STANDARD-001': 'WEB-STANDARD-001',
+} as const;
+
+export type WebinarApiEngineReleaseProvenanceCanonicalDocuments = {[key: string]: string};
+
+export type WebinarApiEngineReleaseProvenanceEvaluatorRegistryImplementationHashes = {[key: string]: string};
+
+export type WebinarApiEngineCoverageImplemented = typeof WebinarApiEngineCoverageImplemented[keyof typeof WebinarApiEngineCoverageImplemented];
+
+
+export const WebinarApiEngineCoverageImplemented = {
+  NUMBER_106: 106,
+} as const;
+
+export type WebinarApiEngineCoverageTotal = typeof WebinarApiEngineCoverageTotal[keyof typeof WebinarApiEngineCoverageTotal];
+
+
+export const WebinarApiEngineCoverageTotal = {
+  NUMBER_106: 106,
+} as const;
+
+export interface WebinarApiEngineCoverage {
+  implemented: WebinarApiEngineCoverageImplemented;
+  total: WebinarApiEngineCoverageTotal;
+  implementedRuleIds: string[];
+  unimplementedRuleIds: string[];
+}
+
+export type WebinarApiEngineReleaseProvenanceEvaluatorRegistry = {
+  digest: string;
+  implementationHashes: WebinarApiEngineReleaseProvenanceEvaluatorRegistryImplementationHashes;
+  coverage: WebinarApiEngineCoverage;
+};
+
+export type WebinarApiEngineReleaseProvenanceDependencies = {[key: string]: string};
+
+export type WebinarApiEngineReleaseProvenance = {
+  schemaVersion: WebinarApiEngineReleaseProvenanceSchemaVersion;
+  mode: WebinarApiEngineReleaseProvenanceMode;
+  operational: false;
+  standardId: WebinarApiEngineReleaseProvenanceStandardId;
+  standardVersion: string;
+  canonicalDocuments: WebinarApiEngineReleaseProvenanceCanonicalDocuments;
+  evaluatorRegistry: WebinarApiEngineReleaseProvenanceEvaluatorRegistry;
+  /**
+     * Actual 40-character Git commit, or null if unavailable; never fabricated.
+     * @nullable
+     */
+  applicationRelease: string | null;
+  dependencies: WebinarApiEngineReleaseProvenanceDependencies;
+};
+
+export interface WebinarApiEngineRelease {
+  /** @pattern ^[a-f0-9]{64}$ */
+  digest: string;
+  provenance: WebinarApiEngineReleaseProvenance;
+}
+
+export interface WebinarApiCoverage {
+  totalRuleCount: number;
+  implementedRuleCount: number;
+  missingEvaluatorCount: number;
+  implementedRuleIds: string[];
+  missingEvaluatorRuleIds: string[];
+}
+
+export interface WebinarApiSourceReference {
+  sourceType: string;
+  sourceId: string;
+  sourceHash?: string;
+  sourceVersion?: string;
+}
+
+export interface WebinarApiMissingInput {
+  field: string;
+  reason: string;
+  sourceReference: WebinarApiSourceReference | null;
+}
+
+export type WebinarApiFindingMode = typeof WebinarApiFindingMode[keyof typeof WebinarApiFindingMode];
+
+
+export const WebinarApiFindingMode = {
+  descriptive_only: 'descriptive_only',
+} as const;
+
+export type WebinarApiFindingStandardId = typeof WebinarApiFindingStandardId[keyof typeof WebinarApiFindingStandardId];
+
+
+export const WebinarApiFindingStandardId = {
+  'WEB-STANDARD-001': 'WEB-STANDARD-001',
+} as const;
+
+export type WebinarApiFindingRule = {
+  ruleId: string;
+  ruleName: string;
+  hierarchyLevel: string;
+  trigger: string;
+  expectedBehavior: string;
+  primaryRuleType: string;
+  evidenceBasis: string;
+  readinessStage: string;
+  validationMethod: string;
+  exceptionEligible: boolean;
+  /** @nullable */
+  exceptionEligibleNote: string | null;
+  failureMessage: string;
+  resolutionGuidance: string;
+};
+
+export type WebinarApiFindingStatus = typeof WebinarApiFindingStatus[keyof typeof WebinarApiFindingStatus];
+
+
+export const WebinarApiFindingStatus = {
+  pass: 'pass',
+  fail: 'fail',
+  not_applicable: 'not_applicable',
+  evidence_unavailable: 'evidence_unavailable',
+  unimplemented: 'unimplemented',
+} as const;
+
+export type WebinarApiFindingReason = typeof WebinarApiFindingReason[keyof typeof WebinarApiFindingReason];
+
+
+export const WebinarApiFindingReason = {
+  satisfied: 'satisfied',
+  violation: 'violation',
+  condition_not_met: 'condition_not_met',
+  missing_evidence: 'missing_evidence',
+  invalid_context: 'invalid_context',
+  not_implemented: 'not_implemented',
+} as const;
+
+export interface WebinarApiFinding {
+  mode: WebinarApiFindingMode;
+  standardId: WebinarApiFindingStandardId;
+  standardVersion: string;
+  ruleId: string;
+  rule: WebinarApiFindingRule;
+  status: WebinarApiFindingStatus;
+  reason: WebinarApiFindingReason;
+  /** @nullable */
+  participantId: string | null;
+  evidence: string[];
+}
+
+export type WebinarApiResolvedBlockerClassification = typeof WebinarApiResolvedBlockerClassification[keyof typeof WebinarApiResolvedBlockerClassification];
+
+
+export const WebinarApiResolvedBlockerClassification = {
+  resolvedByException: 'resolvedByException',
+} as const;
+
+/**
+ * Exact exception disposition snapshot, not evidence or a planning draft.
+ */
+export type WebinarApiResolvedBlockerException = { [key: string]: unknown };
+
+export interface WebinarApiResolvedBlocker {
+  ruleId: string;
+  classification: WebinarApiResolvedBlockerClassification;
+  originalFailure: WebinarApiFinding;
+  /** Exact exception disposition snapshot, not evidence or a planning draft. */
+  exception: WebinarApiResolvedBlockerException;
+}
+
+export interface WebinarApiReadinessIssue {
+  code: string;
+  /** @nullable */
+  ruleId: string | null;
+  /** @nullable */
+  stage: string | null;
+  message: string;
+}
+
+export type WebinarApiStageStage = typeof WebinarApiStageStage[keyof typeof WebinarApiStageStage];
+
+
+export const WebinarApiStageStage = {
+  Ready_to_recruit: 'Ready to recruit',
+  Ready_to_run: 'Ready to run',
+  Ready_to_follow_up: 'Ready to follow up',
+  Complete: 'Complete',
+} as const;
+
+export type WebinarApiStageStatus = typeof WebinarApiStageStatus[keyof typeof WebinarApiStageStatus];
+
+
+export const WebinarApiStageStatus = {
+  ready: 'ready',
+  blocked: 'blocked',
+  incomplete: 'incomplete',
+} as const;
+
+export type WebinarApiStagePrerequisiteIssuesItemPrerequisite = typeof WebinarApiStagePrerequisiteIssuesItemPrerequisite[keyof typeof WebinarApiStagePrerequisiteIssuesItemPrerequisite];
+
+
+export const WebinarApiStagePrerequisiteIssuesItemPrerequisite = {
+  Ready_to_run: 'Ready to run',
+  attendanceReconciliation: 'attendanceReconciliation',
+  requiredFollowUpCompletion: 'requiredFollowUpCompletion',
+  exceptionRecording: 'exceptionRecording',
+  measurementCapture: 'measurementCapture',
+} as const;
+
+export type WebinarApiStagePrerequisiteIssuesItemStatus = typeof WebinarApiStagePrerequisiteIssuesItemStatus[keyof typeof WebinarApiStagePrerequisiteIssuesItemStatus];
+
+
+export const WebinarApiStagePrerequisiteIssuesItemStatus = {
+  blocked: 'blocked',
+  incomplete: 'incomplete',
+} as const;
+
+export type WebinarApiStagePrerequisiteIssuesItem = {
+  prerequisite: WebinarApiStagePrerequisiteIssuesItemPrerequisite;
+  status: WebinarApiStagePrerequisiteIssuesItemStatus;
+  message: string;
+};
+
+export interface WebinarApiStage {
+  stage: WebinarApiStageStage;
+  status: WebinarApiStageStatus;
+  fullyEvaluated: boolean;
+  assignedRuleIds: string[];
+  applicableRuleIds: string[];
+  evaluatedRuleIds: string[];
+  missingRuleIds: string[];
+  passes: WebinarApiFinding[];
+  notApplicable: WebinarApiFinding[];
+  failedBlockers: WebinarApiFinding[];
+  unassessedBlockers: WebinarApiFinding[];
+  unassessedAdvisories: WebinarApiFinding[];
+  failedNonBlocking: WebinarApiFinding[];
+  warnings: WebinarApiFinding[];
+  exceptionResolvedBlockers: WebinarApiResolvedBlocker[];
+  unresolvedRuleIds: string[];
+  diagnosticCoveragePercent: number;
+  issues: WebinarApiReadinessIssue[];
+  prerequisiteIssues: WebinarApiStagePrerequisiteIssuesItem[];
+}
+
+export type WebinarApiReadinessStageStaleness = typeof WebinarApiReadinessStageStaleness[keyof typeof WebinarApiReadinessStageStaleness];
+
+
+export const WebinarApiReadinessStageStaleness = {
+  current: 'current',
+  stale: 'stale',
+  not_evaluated: 'not_evaluated',
+} as const;
+
+export type WebinarApiReadinessStage = WebinarApiStage & {
+  calculationAt: string;
+  applicableRuleCount: number;
+  passedRules: WebinarApiFinding[];
+  unresolvedBlockingFailures: WebinarApiFinding[];
+  resolvedBlockingFailures: WebinarApiResolvedBlocker[];
+  nonblockingFailures: WebinarApiFinding[];
+  missingInputs: WebinarApiMissingInput[];
+  missingEvaluatorCoverage: string[];
+  evidenceReferences: string[];
+  exceptionReferences: string[];
+  staleness: WebinarApiReadinessStageStaleness;
+};
+
+export type WebinarApiCompletionObligationsRequiredItem = typeof WebinarApiCompletionObligationsRequiredItem[keyof typeof WebinarApiCompletionObligationsRequiredItem];
+
+
+export const WebinarApiCompletionObligationsRequiredItem = {
+  attendanceReconciliation: 'attendanceReconciliation',
+  requiredFollowUpCompletion: 'requiredFollowUpCompletion',
+  exceptionRecording: 'exceptionRecording',
+  measurementCapture: 'measurementCapture',
+} as const;
+
+export type WebinarApiCompletionObligationsUnsatisfiedOperationalItem = typeof WebinarApiCompletionObligationsUnsatisfiedOperationalItem[keyof typeof WebinarApiCompletionObligationsUnsatisfiedOperationalItem];
+
+
+export const WebinarApiCompletionObligationsUnsatisfiedOperationalItem = {
+  attendanceReconciliation: 'attendanceReconciliation',
+  requiredFollowUpCompletion: 'requiredFollowUpCompletion',
+  exceptionRecording: 'exceptionRecording',
+  measurementCapture: 'measurementCapture',
+} as const;
+
+export type WebinarApiCompletionObligationsUnknownOperationalItem = typeof WebinarApiCompletionObligationsUnknownOperationalItem[keyof typeof WebinarApiCompletionObligationsUnknownOperationalItem];
+
+
+export const WebinarApiCompletionObligationsUnknownOperationalItem = {
+  attendanceReconciliation: 'attendanceReconciliation',
+  requiredFollowUpCompletion: 'requiredFollowUpCompletion',
+  exceptionRecording: 'exceptionRecording',
+  measurementCapture: 'measurementCapture',
+} as const;
+
+/**
+ * The required set is the canonical COMPLETE_OBLIGATIONS constant. Only names in the last completionResult.operationalGaps are classified unsatisfied; all remaining names are unknown, never inferred satisfied from absence. Without a snapshot every required obligation is unknown.
+ */
+export interface WebinarApiCompletionObligations {
+  required: WebinarApiCompletionObligationsRequiredItem[];
+  /** Always empty absent independently verified operational observations. */
+  satisfiedOperational: string[];
+  /** Only canonical names explicitly present in the completion result's operationalGaps; no snapshot means empty. */
+  unsatisfiedOperational: WebinarApiCompletionObligationsUnsatisfiedOperationalItem[];
+  /** Canonical names not explicitly present in operationalGaps; absence is not proof of satisfaction. */
+  unknownOperational: WebinarApiCompletionObligationsUnknownOperationalItem[];
+  diagnosticOperationalGaps: string[];
+}
+
+export type WebinarApiMeasurementObligationsStatus = typeof WebinarApiMeasurementObligationsStatus[keyof typeof WebinarApiMeasurementObligationsStatus];
+
+
+export const WebinarApiMeasurementObligationsStatus = {
+  unavailable: 'unavailable',
+} as const;
+
+export interface WebinarApiMeasurementObligations {
+  status: WebinarApiMeasurementObligationsStatus;
+  operationalEvidence: false;
+}
+
+export type WebinarApiCompletionResultOutcome = typeof WebinarApiCompletionResultOutcome[keyof typeof WebinarApiCompletionResultOutcome];
+
+
+export const WebinarApiCompletionResultOutcome = {
+  complete: 'complete',
+  incomplete_blocker: 'incomplete_blocker',
+  incomplete_evidence: 'incomplete_evidence',
+  incomplete_operational: 'incomplete_operational',
+  incomplete_invalid_context: 'incomplete_invalid_context',
+  incomplete_evaluator_unavailable: 'incomplete_evaluator_unavailable',
+  resolvedByException: 'resolvedByException',
+  advisory: 'advisory',
+} as const;
+
+export interface WebinarApiCompletionResult {
+  outcome: WebinarApiCompletionResultOutcome;
+  complete: boolean;
+  blockers: WebinarApiFinding[];
+  evidenceUnavailable: WebinarApiFinding[];
+  operationalGaps: string[];
+  resolvedByException: string[];
+  advisories: WebinarApiFinding[];
+  issues: string[];
+}
+
+export interface WebinarApiCapabilities {
+  view: true;
+  evaluateSynthetic: true;
+  submitUnverifiedEvidence: true;
+  requestDraftException: true;
+  reviewException: false;
+  send: false;
+  publish: false;
+}
+
+/**
+ * Historical snapshots without recorded stable engine release are unavailable-historical, never silently relabeled.
+ */
+export type WebinarApiIdentityReleaseIdentityStatus = typeof WebinarApiIdentityReleaseIdentityStatus[keyof typeof WebinarApiIdentityReleaseIdentityStatus];
+
+
+export const WebinarApiIdentityReleaseIdentityStatus = {
+  recorded: 'recorded',
+  'unavailable-historical': 'unavailable-historical',
+  not_evaluated: 'not_evaluated',
+} as const;
+
+export type WebinarApiIdentityStaleness = typeof WebinarApiIdentityStaleness[keyof typeof WebinarApiIdentityStaleness];
+
+
+export const WebinarApiIdentityStaleness = {
+  current: 'current',
+  stale: 'stale',
+  not_evaluated: 'not_evaluated',
+} as const;
+
+export type WebinarApiIdentityOperationalStatus = typeof WebinarApiIdentityOperationalStatus[keyof typeof WebinarApiIdentityOperationalStatus];
+
+
+export const WebinarApiIdentityOperationalStatus = {
   'simulation-only': 'simulation-only',
 } as const;
 
-export type DevelopmentFoundationObservationType = typeof DevelopmentFoundationObservationType[keyof typeof DevelopmentFoundationObservationType];
+export type WebinarApiIdentityStatus = typeof WebinarApiIdentityStatus[keyof typeof WebinarApiIdentityStatus];
 
 
-export const DevelopmentFoundationObservationType = {
+export const WebinarApiIdentityStatus = {
+  'available-synthetic': 'available-synthetic',
+  not_evaluated: 'not_evaluated',
+} as const;
+
+export interface WebinarApiIdentity {
+  campaignId: string;
+  activityId: string;
+  occurrenceId: string;
+  standard: WebinarApiStandard;
+  retrievedAt: string;
+  /** @nullable */
+  calculationAt: string | null;
+  /**
+     * Stable engine release digest, null before first evaluation or for historical legacy snapshots; never use calculation time as release identity.
+     * @nullable
+     */
+  engineReleaseFingerprint: string | null;
+  engineRelease: WebinarApiEngineRelease | null;
+  /** Historical snapshots without recorded stable engine release are unavailable-historical, never silently relabeled. */
+  releaseIdentityStatus: WebinarApiIdentityReleaseIdentityStatus;
+  /**
+     * Legacy calculation-as-of-dependent digest; never use as engine release identity.
+     * @nullable
+     */
+  evaluationContextFingerprint: string | null;
+  /** @nullable */
+  inputFingerprint: string | null;
+  /** @nullable */
+  snapshotId: string | null;
+  /** @nullable */
+  snapshotRevision: number | null;
+  staleness: WebinarApiIdentityStaleness;
+  operationalStatus: WebinarApiIdentityOperationalStatus;
+  unverified: true;
+  authoritative: false;
+  operationalReadiness: false;
+  capabilities: WebinarApiCapabilities;
+  status: WebinarApiIdentityStatus;
+}
+
+export type WebinarApiPopulationRegistration = {[key: string]: number};
+
+export type WebinarApiPopulationAttendance = {[key: string]: number};
+
+export type WebinarApiPopulationLifecycle = {[key: string]: number};
+
+export interface WebinarApiPopulation {
+  total: number;
+  registration: WebinarApiPopulationRegistration;
+  attendance: WebinarApiPopulationAttendance;
+  lifecycle: WebinarApiPopulationLifecycle;
+  remaining: number;
+}
+
+export type WebinarApiFoundationStatusEnvironment = typeof WebinarApiFoundationStatusEnvironment[keyof typeof WebinarApiFoundationStatusEnvironment];
+
+
+export const WebinarApiFoundationStatusEnvironment = {
+  'synthetic-contract-only': 'synthetic-contract-only',
+} as const;
+
+export type WebinarApiFoundationStatusCapabilitiesTaxonomy = typeof WebinarApiFoundationStatusCapabilitiesTaxonomy[keyof typeof WebinarApiFoundationStatusCapabilitiesTaxonomy];
+
+
+export const WebinarApiFoundationStatusCapabilitiesTaxonomy = {
+  not_configured: 'not_configured',
+  configured_but_unavailable: 'configured_but_unavailable',
+  'available-synthetic': 'available-synthetic',
+  stale: 'stale',
+  failed: 'failed',
+  unsupported: 'unsupported',
+} as const;
+
+export type WebinarApiFoundationStatusCapabilitiesInternalTitle = typeof WebinarApiFoundationStatusCapabilitiesInternalTitle[keyof typeof WebinarApiFoundationStatusCapabilitiesInternalTitle];
+
+
+export const WebinarApiFoundationStatusCapabilitiesInternalTitle = {
+  unsupported: 'unsupported',
+} as const;
+
+export type WebinarApiFoundationStatusCapabilitiesCampaignCode = typeof WebinarApiFoundationStatusCapabilitiesCampaignCode[keyof typeof WebinarApiFoundationStatusCapabilitiesCampaignCode];
+
+
+export const WebinarApiFoundationStatusCapabilitiesCampaignCode = {
+  unsupported: 'unsupported',
+} as const;
+
+/**
+ * All unsupported UTM scopes remain visible individually in observations; no governed URL is inferred.
+ */
+export type WebinarApiFoundationStatusCapabilitiesUtm = typeof WebinarApiFoundationStatusCapabilitiesUtm[keyof typeof WebinarApiFoundationStatusCapabilitiesUtm];
+
+
+export const WebinarApiFoundationStatusCapabilitiesUtm = {
+  unsupported: 'unsupported',
+} as const;
+
+export type WebinarApiFoundationStatusCapabilitiesObjective = typeof WebinarApiFoundationStatusCapabilitiesObjective[keyof typeof WebinarApiFoundationStatusCapabilitiesObjective];
+
+
+export const WebinarApiFoundationStatusCapabilitiesObjective = {
+  unsupported: 'unsupported',
+} as const;
+
+export type WebinarApiFoundationStatusCapabilitiesExclusion = typeof WebinarApiFoundationStatusCapabilitiesExclusion[keyof typeof WebinarApiFoundationStatusCapabilitiesExclusion];
+
+
+export const WebinarApiFoundationStatusCapabilitiesExclusion = {
+  unsupported: 'unsupported',
+} as const;
+
+export type WebinarApiFoundationStatusCapabilities = {
+  taxonomy: WebinarApiFoundationStatusCapabilitiesTaxonomy;
+  internalTitle: WebinarApiFoundationStatusCapabilitiesInternalTitle;
+  campaignCode: WebinarApiFoundationStatusCapabilitiesCampaignCode;
+  /** All unsupported UTM scopes remain visible individually in observations; no governed URL is inferred. */
+  utm: WebinarApiFoundationStatusCapabilitiesUtm;
+  objective: WebinarApiFoundationStatusCapabilitiesObjective;
+  exclusion: WebinarApiFoundationStatusCapabilitiesExclusion;
+};
+
+export type WebinarApiFoundationObservationType = typeof WebinarApiFoundationObservationType[keyof typeof WebinarApiFoundationObservationType];
+
+
+export const WebinarApiFoundationObservationType = {
   taxonomy: 'taxonomy',
   internal_title: 'internal_title',
   campaign_code: 'campaign_code',
@@ -31,10 +663,10 @@ export const DevelopmentFoundationObservationType = {
   campaign_exclusion: 'campaign_exclusion',
 } as const;
 
-export type DevelopmentFoundationObservationStatus = typeof DevelopmentFoundationObservationStatus[keyof typeof DevelopmentFoundationObservationStatus];
+export type WebinarApiFoundationObservationStatus = typeof WebinarApiFoundationObservationStatus[keyof typeof WebinarApiFoundationObservationStatus];
 
 
-export const DevelopmentFoundationObservationStatus = {
+export const WebinarApiFoundationObservationStatus = {
   available: 'available',
   unavailable: 'unavailable',
   stale: 'stale',
@@ -42,52 +674,358 @@ export const DevelopmentFoundationObservationStatus = {
   deprecated: 'deprecated',
 } as const;
 
-export type DevelopmentFoundationObservationSource = typeof DevelopmentFoundationObservationSource[keyof typeof DevelopmentFoundationObservationSource];
+export type WebinarApiFoundationObservationProviderSource = typeof WebinarApiFoundationObservationProviderSource[keyof typeof WebinarApiFoundationObservationProviderSource];
 
 
-export const DevelopmentFoundationObservationSource = {
+export const WebinarApiFoundationObservationProviderSource = {
   'synthetic-provider': 'synthetic-provider',
   'immutable-history': 'immutable-history',
   none: 'none',
 } as const;
 
-export type DevelopmentFoundationObservationOutput = { [key: string]: unknown } | null;
+export type WebinarApiFoundationObservationValidity = typeof WebinarApiFoundationObservationValidity[keyof typeof WebinarApiFoundationObservationValidity];
 
-export type DevelopmentFoundationObservationProvenance = { [key: string]: unknown } | null;
 
-export interface DevelopmentFoundationObservation {
-  type: DevelopmentFoundationObservationType;
+export const WebinarApiFoundationObservationValidity = {
+  available: 'available',
+  unavailable: 'unavailable',
+  stale: 'stale',
+  expired: 'expired',
+  deprecated: 'deprecated',
+} as const;
+
+export type WebinarApiFoundationObservationSupersessionState = typeof WebinarApiFoundationObservationSupersessionState[keyof typeof WebinarApiFoundationObservationSupersessionState];
+
+
+export const WebinarApiFoundationObservationSupersessionState = {
+  superseded: 'superseded',
+  'latest-for-input': 'latest-for-input',
+  'no-matching-receipt': 'no-matching-receipt',
+} as const;
+
+export interface WebinarApiFoundationReceipt {
+  id: string;
+  createdAt: string;
+  /** @nullable */
+  supersedesId: string | null;
+}
+
+/**
+ * @nullable
+ */
+export type WebinarApiFoundationObservationProvenance = { [key: string]: unknown } | null;
+
+export interface WebinarApiFoundationObservation {
+  type: WebinarApiFoundationObservationType;
+  status: WebinarApiFoundationObservationStatus;
+  providerSource: WebinarApiFoundationObservationProviderSource;
+  /** @nullable */
+  error: string | null;
   requestReference: string;
   inputFingerprint: string;
-  status: DevelopmentFoundationObservationStatus;
-  error: string | null;
-  source: DevelopmentFoundationObservationSource;
-  output: DevelopmentFoundationObservationOutput;
-  serviceId: string | null;
+  /** @nullable */
   serviceVersion: string | null;
+  /** @nullable */
   taxonomyVersion: string | null;
-  provenance: DevelopmentFoundationObservationProvenance;
-  receivedAt: string | null;
-  respondedAt: string | null;
-  expiresAt: string | null;
-  simulationOnly: boolean;
-  retryCount: number;
-  affectedRules: string[];
+  supportedByFixture: boolean;
+  validity: WebinarApiFoundationObservationValidity;
+  /** @nullable */
+  effectiveVersion: string | null;
+  /** @nullable */
+  provenance: WebinarApiFoundationObservationProvenance;
+  /** @nullable */
+  providerIdentity: string | null;
+  /** @nullable */
+  observationId: string | null;
+  /** @nullable */
+  createdAt: string | null;
+  supersessionState: WebinarApiFoundationObservationSupersessionState;
+  receipt: WebinarApiFoundationReceipt | null;
 }
 
-export interface DevelopmentFoundationInspection {
-  contractLabel: DevelopmentFoundationInspectionContractLabel;
-  evaluatorImplemented: boolean;
-  observationAvailable: boolean;
-  connectorConfigured: boolean;
-  connectorReachable: boolean;
-  liveProductionConnection: boolean;
-  revision: number;
-  operationalStatus: DevelopmentFoundationInspectionOperationalStatus;
-  unverified: boolean;
-  authoritative: boolean;
-  observations: DevelopmentFoundationObservation[];
+export type WebinarApiFoundationOutputType = typeof WebinarApiFoundationOutputType[keyof typeof WebinarApiFoundationOutputType];
+
+
+export const WebinarApiFoundationOutputType = {
+  taxonomy: 'taxonomy',
+  internal_title: 'internal_title',
+  campaign_code: 'campaign_code',
+  utm: 'utm',
+  objective_membership: 'objective_membership',
+  campaign_exclusion: 'campaign_exclusion',
+} as const;
+
+export type WebinarApiFoundationOutputStatus = typeof WebinarApiFoundationOutputStatus[keyof typeof WebinarApiFoundationOutputStatus];
+
+
+export const WebinarApiFoundationOutputStatus = {
+  not_configured: 'not_configured',
+  configured_but_unavailable: 'configured_but_unavailable',
+  'available-synthetic': 'available-synthetic',
+  stale: 'stale',
+  failed: 'failed',
+  unsupported: 'unsupported',
+} as const;
+
+export type WebinarApiFoundationOutputEnvironment = typeof WebinarApiFoundationOutputEnvironment[keyof typeof WebinarApiFoundationOutputEnvironment];
+
+
+export const WebinarApiFoundationOutputEnvironment = {
+  'synthetic-contract-only': 'synthetic-contract-only',
+} as const;
+
+export type WebinarApiFoundationOutputValidity = typeof WebinarApiFoundationOutputValidity[keyof typeof WebinarApiFoundationOutputValidity];
+
+
+export const WebinarApiFoundationOutputValidity = {
+  available: 'available',
+  unavailable: 'unavailable',
+  stale: 'stale',
+  expired: 'expired',
+  deprecated: 'deprecated',
+  unsupported: 'unsupported',
+} as const;
+
+export type WebinarApiFoundationOutputProviderSource = typeof WebinarApiFoundationOutputProviderSource[keyof typeof WebinarApiFoundationOutputProviderSource];
+
+
+export const WebinarApiFoundationOutputProviderSource = {
+  'synthetic-provider': 'synthetic-provider',
+  'immutable-history': 'immutable-history',
+  none: 'none',
+} as const;
+
+export type WebinarApiFoundationOutputSupersessionState = typeof WebinarApiFoundationOutputSupersessionState[keyof typeof WebinarApiFoundationOutputSupersessionState];
+
+
+export const WebinarApiFoundationOutputSupersessionState = {
+  superseded: 'superseded',
+  'latest-for-input': 'latest-for-input',
+  'no-matching-receipt': 'no-matching-receipt',
+} as const;
+
+/**
+ * @nullable
+ */
+export type WebinarApiFoundationOutputProvenance = { [key: string]: unknown } | null;
+
+export interface WebinarApiFoundationOutput {
+  type: WebinarApiFoundationOutputType;
+  status: WebinarApiFoundationOutputStatus;
+  supportedByFixture: boolean;
+  configured: boolean;
+  environment: WebinarApiFoundationOutputEnvironment;
+  availableFromRealProvider: false;
+  validity: WebinarApiFoundationOutputValidity;
+  /** @nullable */
+  error: string | null;
+  providerSource: WebinarApiFoundationOutputProviderSource;
+  /** @nullable */
+  requestReference: string | null;
+  /** @nullable */
+  inputFingerprint: string | null;
+  /** @nullable */
+  serviceVersion: string | null;
+  /** @nullable */
+  taxonomyVersion: string | null;
+  /** @nullable */
+  effectiveVersion: string | null;
+  /** @nullable */
+  provenance: WebinarApiFoundationOutputProvenance;
+  /** @nullable */
+  providerIdentity: string | null;
+  /** @nullable */
+  observationId: string | null;
+  /** @nullable */
+  createdAt: string | null;
+  supersessionState: WebinarApiFoundationOutputSupersessionState;
+  receipt: WebinarApiFoundationReceipt | null;
 }
+
+export interface WebinarApiFoundationStatus {
+  evaluatorImplemented: boolean;
+  connectorConfigured: boolean;
+  /** Validated provider response during THIS request; a valid persisted receipt may be available without a new provider call. */
+  connectorReachable: boolean;
+  liveProductionConnection: false;
+  environment: WebinarApiFoundationStatusEnvironment;
+  observationAvailable: boolean;
+  capabilities: WebinarApiFoundationStatusCapabilities;
+  observations: WebinarApiFoundationObservation[];
+  /**
+     * Exactly one item per governed output type; unsupported outputs stay explicit rather than disappearing when no request is built.
+     * @minItems 6
+     * @maxItems 6
+     */
+  outputs: WebinarApiFoundationOutput[];
+  inspection: string;
+}
+
+export type WebinarApiSummaryRegistrationSummaryStatus = typeof WebinarApiSummaryRegistrationSummaryStatus[keyof typeof WebinarApiSummaryRegistrationSummaryStatus];
+
+
+export const WebinarApiSummaryRegistrationSummaryStatus = {
+  'synthetic-recorded': 'synthetic-recorded',
+  not_recorded: 'not_recorded',
+} as const;
+
+export type WebinarApiSummaryRegistrationSummary = {
+  status: WebinarApiSummaryRegistrationSummaryStatus;
+  registered: number;
+  cancelled: number;
+  waitlisted: number;
+  notRegistered: number;
+};
+
+export type WebinarApiSummaryAttendanceSummaryStatus = typeof WebinarApiSummaryAttendanceSummaryStatus[keyof typeof WebinarApiSummaryAttendanceSummaryStatus];
+
+
+export const WebinarApiSummaryAttendanceSummaryStatus = {
+  'synthetic-recorded': 'synthetic-recorded',
+  not_recorded: 'not_recorded',
+} as const;
+
+export type WebinarApiSummaryAttendanceSummary = {
+  status: WebinarApiSummaryAttendanceSummaryStatus;
+  attended: number;
+  noShow: number;
+  operationallyVerified: false;
+};
+
+export type WebinarApiSummaryCommunicationsPlanStatus = typeof WebinarApiSummaryCommunicationsPlanStatus[keyof typeof WebinarApiSummaryCommunicationsPlanStatus];
+
+
+export const WebinarApiSummaryCommunicationsPlanStatus = {
+  'configured-synthetic': 'configured-synthetic',
+  not_configured: 'not_configured',
+} as const;
+
+export type WebinarApiSummaryCommunicationsExecutionStatus = typeof WebinarApiSummaryCommunicationsExecutionStatus[keyof typeof WebinarApiSummaryCommunicationsExecutionStatus];
+
+
+export const WebinarApiSummaryCommunicationsExecutionStatus = {
+  unavailable: 'unavailable',
+} as const;
+
+export type WebinarApiSummaryCommunications = {
+  configured: number;
+  applicationRecords: number;
+  planStatus: WebinarApiSummaryCommunicationsPlanStatus;
+  executionStatus: WebinarApiSummaryCommunicationsExecutionStatus;
+};
+
+export type WebinarApiSummarySuppression = {
+  recordedObligations: number;
+  operational: false;
+};
+
+export type WebinarApiSummaryEvidenceVerificationStatus = typeof WebinarApiSummaryEvidenceVerificationStatus[keyof typeof WebinarApiSummaryEvidenceVerificationStatus];
+
+
+export const WebinarApiSummaryEvidenceVerificationStatus = {
+  unverified: 'unverified',
+} as const;
+
+export type WebinarApiSummaryEvidence = {
+  records: number;
+  verificationStatus: WebinarApiSummaryEvidenceVerificationStatus;
+  includedInLastEvaluation: string[];
+};
+
+export type WebinarApiSummaryEvaluation = {
+  applicable: number;
+  passed: number;
+  coverage: WebinarApiCoverage | null;
+  missingEvaluatorCoverage: string[];
+  /** @nullable */
+  lastEvaluationId: string | null;
+};
+
+export type WebinarApiSummaryLinks = {
+  evaluations: string;
+  readiness: string;
+  completion: string;
+  evidence: string;
+  exceptions: string;
+  history: string;
+};
+
+export type WebinarApiSummary = WebinarApiIdentity & ({
+  eventStatus: string;
+  population: WebinarApiPopulation;
+  registrationSummary: WebinarApiSummaryRegistrationSummary;
+  attendanceSummary: WebinarApiSummaryAttendanceSummary;
+  communications: WebinarApiSummaryCommunications;
+  suppression: WebinarApiSummarySuppression;
+  evidence: WebinarApiSummaryEvidence;
+  foundation: WebinarApiFoundationStatus;
+  evaluation: WebinarApiSummaryEvaluation;
+  readinessStages: WebinarApiStage[];
+  completion: WebinarApiCompletionResult | null;
+  missingInputData: WebinarApiMissingInput[];
+  unavailableExternalObservations: WebinarApiMissingInput[];
+  unresolvedBlockingFailures: WebinarApiFinding[];
+  nonblockingFailures: WebinarApiFinding[];
+  resolvedBlockers: WebinarApiResolvedBlocker[];
+  links: WebinarApiSummaryLinks;
+});
+
+export type WebinarApiEvaluations = WebinarApiIdentity & ({
+  results: WebinarApiFinding[];
+  evaluatorCoverage: WebinarApiCoverage | null;
+  missingInputData: WebinarApiMissingInput[];
+  unavailableExternalObservations: WebinarApiMissingInput[];
+  sourceReferences: WebinarApiSourceReference[];
+});
+
+export type WebinarApiReadiness = WebinarApiIdentity & ({
+  stages: WebinarApiReadinessStage[];
+  issues: WebinarApiReadinessIssue[];
+  evaluatorCoverage: WebinarApiCoverage | null;
+});
+
+export type WebinarApiCompletionOperationalObservations = typeof WebinarApiCompletionOperationalObservations[keyof typeof WebinarApiCompletionOperationalObservations];
+
+
+export const WebinarApiCompletionOperationalObservations = {
+  unavailable: 'unavailable',
+} as const;
+
+export type WebinarApiCompletion = WebinarApiIdentity & ({
+  result: WebinarApiCompletionResult | null;
+  evidenceReferences: string[];
+  exceptionReferences: string[];
+  missingInputData: WebinarApiMissingInput[];
+  obligations: WebinarApiCompletionObligations;
+  measurementObligations: WebinarApiMeasurementObligations;
+  operationalObservations: WebinarApiCompletionOperationalObservations;
+});
+
+export type WebinarApiEvaluationResultStatus = typeof WebinarApiEvaluationResultStatus[keyof typeof WebinarApiEvaluationResultStatus];
+
+
+export const WebinarApiEvaluationResultStatus = {
+  'available-synthetic': 'available-synthetic',
+} as const;
+
+/**
+ * Request-local diagnostics; not shared authoritative state.
+ */
+export type WebinarApiEvaluationResultDiagnostics = { [key: string]: unknown };
+
+export type WebinarApiEvaluationResultMappingErrorsItem = {
+  code: string;
+  field: string;
+  message: string;
+  sourceReference: WebinarApiSourceReference | null;
+};
+
+export type WebinarApiEvaluationResultOperationalStatus = typeof WebinarApiEvaluationResultOperationalStatus[keyof typeof WebinarApiEvaluationResultOperationalStatus];
+
+
+export const WebinarApiEvaluationResultOperationalStatus = {
+  'simulation-only': 'simulation-only',
+} as const;
 
 export type DevelopmentSimulationResultOperationalStatus = typeof DevelopmentSimulationResultOperationalStatus[keyof typeof DevelopmentSimulationResultOperationalStatus];
 
@@ -138,6 +1076,437 @@ export interface DevelopmentSimulationResult {
   diagnostics?: DevelopmentSimulationResultDiagnostics;
   [key: string]: unknown;
  }
+
+export type WebinarApiEvaluationResult = DevelopmentSimulationResult & {
+  engineReleaseFingerprint: string;
+  engineRelease: WebinarApiEngineRelease;
+  status: WebinarApiEvaluationResultStatus;
+  snapshotId: string;
+  revision: number;
+  /** Request-local diagnostics; not shared authoritative state. */
+  diagnostics: WebinarApiEvaluationResultDiagnostics;
+  simulation: true;
+  operationalReadiness: false;
+  unverified: true;
+  authoritative: false;
+  activityId: string;
+  occurrenceId: string;
+  standard: WebinarApiStandard;
+  calculationAt: string;
+  /** Legacy as-of evaluation context fingerprint, not the engine identity; renamed from the internal snapshot releaseFingerprint. */
+  evaluationContextFingerprint: string;
+  inputFingerprint: string;
+  sourceReferences: WebinarApiSourceReference[];
+  applicableRules: string[];
+  passedRules: string[];
+  /** All applicable canonical evaluator results in deterministic rule-ID order; 106/106 evaluator implementation is not readiness. */
+  results: WebinarApiFinding[];
+  unresolvedBlockingFailures: WebinarApiFinding[];
+  blockersResolvedByExceptions: WebinarApiResolvedBlocker[];
+  nonblockingFailures: WebinarApiFinding[];
+  warnings: WebinarApiFinding[];
+  missingInputData: WebinarApiMissingInput[];
+  unavailableExternalObservations: WebinarApiMissingInput[];
+  mappingErrors: WebinarApiEvaluationResultMappingErrorsItem[];
+  evaluatorCoverage: WebinarApiCoverage;
+  readinessStages: WebinarApiStage[];
+  readinessIssues: WebinarApiReadinessIssue[];
+  completionResult: WebinarApiCompletionResult;
+  operationalStatus: WebinarApiEvaluationResultOperationalStatus;
+};
+
+/**
+ * Null only if historical parent source reference is missing.
+ * @nullable
+ */
+export type WebinarApiEvidenceRecordSourceType = typeof WebinarApiEvidenceRecordSourceType[keyof typeof WebinarApiEvidenceRecordSourceType] | null;
+
+
+export const WebinarApiEvidenceRecordSourceType = {
+  occurrence: 'occurrence',
+  content: 'content',
+  foundation: 'foundation',
+  delivery: 'delivery',
+  measurement: 'measurement',
+} as const;
+
+export type WebinarApiEvidenceRecordType = typeof WebinarApiEvidenceRecordType[keyof typeof WebinarApiEvidenceRecordType];
+
+
+export const WebinarApiEvidenceRecordType = {
+  qa: 'qa',
+  'manual-review': 'manual-review',
+  'source-observation': 'source-observation',
+} as const;
+
+export type WebinarApiEvidenceRecordResult = typeof WebinarApiEvidenceRecordResult[keyof typeof WebinarApiEvidenceRecordResult];
+
+
+export const WebinarApiEvidenceRecordResult = {
+  unknown: 'unknown',
+} as const;
+
+export interface WebinarApiEvidenceRecord {
+  id: string;
+  revision: number;
+  sourceId: string;
+  /**
+     * Null only if historical parent source reference is missing.
+     * @nullable
+     */
+  sourceType: WebinarApiEvidenceRecordSourceType;
+  /** @nullable */
+  sourceVersion: string | null;
+  /** @nullable */
+  sourceHash: string | null;
+  type: WebinarApiEvidenceRecordType;
+  result: WebinarApiEvidenceRecordResult;
+  recordedAt: string;
+  authenticated: false;
+  unverified: true;
+}
+
+export interface WebinarApiEvidenceList {
+  campaignId: string;
+  activityId: string;
+  occurrenceId: string;
+  retrievedAt: string;
+  revision: number;
+  simulationOnly: true;
+  records: WebinarApiEvidenceRecord[];
+}
+
+export type WebinarApiEvidenceCreatedSourceType = typeof WebinarApiEvidenceCreatedSourceType[keyof typeof WebinarApiEvidenceCreatedSourceType];
+
+
+export const WebinarApiEvidenceCreatedSourceType = {
+  occurrence: 'occurrence',
+  content: 'content',
+  foundation: 'foundation',
+  delivery: 'delivery',
+  measurement: 'measurement',
+} as const;
+
+export type WebinarApiEvidenceCreatedEvidenceType = typeof WebinarApiEvidenceCreatedEvidenceType[keyof typeof WebinarApiEvidenceCreatedEvidenceType];
+
+
+export const WebinarApiEvidenceCreatedEvidenceType = {
+  qa: 'qa',
+  'manual-review': 'manual-review',
+  'source-observation': 'source-observation',
+} as const;
+
+export type WebinarApiEvidenceCreatedResult = typeof WebinarApiEvidenceCreatedResult[keyof typeof WebinarApiEvidenceCreatedResult];
+
+
+export const WebinarApiEvidenceCreatedResult = {
+  unknown: 'unknown',
+} as const;
+
+export interface WebinarApiEvidenceCreated {
+  id: string;
+  revision: number;
+  sourceId: string;
+  sourceType: WebinarApiEvidenceCreatedSourceType;
+  sourceVersion: string;
+  sourceHash: string;
+  evidenceType: WebinarApiEvidenceCreatedEvidenceType;
+  result: WebinarApiEvidenceCreatedResult;
+  authenticated: false;
+  unverified: true;
+  operational: false;
+  replayed: boolean;
+  recordedAt: string;
+}
+
+export type WebinarApiExceptionRecordStatus = typeof WebinarApiExceptionRecordStatus[keyof typeof WebinarApiExceptionRecordStatus];
+
+
+export const WebinarApiExceptionRecordStatus = {
+  'draft-unverified': 'draft-unverified',
+} as const;
+
+export interface WebinarApiExceptionRecord {
+  id: string;
+  revision: number;
+  ruleId: string;
+  evidenceId: string;
+  reasonCode: string;
+  recordedAt: string;
+  /** @nullable */
+  requestedExpiresAt: string | null;
+  status: WebinarApiExceptionRecordStatus;
+  resolvesBlocker: false;
+}
+
+export interface WebinarApiExceptionList {
+  campaignId: string;
+  activityId: string;
+  occurrenceId: string;
+  retrievedAt: string;
+  simulationOnly: true;
+  reviewAvailable: false;
+  records: WebinarApiExceptionRecord[];
+}
+
+export type WebinarApiExceptionCreatedStatus = typeof WebinarApiExceptionCreatedStatus[keyof typeof WebinarApiExceptionCreatedStatus];
+
+
+export const WebinarApiExceptionCreatedStatus = {
+  'draft-unverified': 'draft-unverified',
+} as const;
+
+export interface WebinarApiExceptionCreated {
+  id: string;
+  revision: number;
+  ruleId: string;
+  evidenceId: string;
+  reasonCode: string;
+  expiryRequested: string;
+  authenticated: false;
+  status: WebinarApiExceptionCreatedStatus;
+  reviewAvailable: false;
+  resolvesBlocker: false;
+  operational: false;
+  replayed: boolean;
+}
+
+export type WebinarApiHistoryRecordKind = typeof WebinarApiHistoryRecordKind[keyof typeof WebinarApiHistoryRecordKind];
+
+
+export const WebinarApiHistoryRecordKind = {
+  source: 'source',
+  plan: 'plan',
+  evidence: 'evidence',
+  'exception-request': 'exception-request',
+  'exception-disposition': 'exception-disposition',
+  release: 'release',
+  readiness: 'readiness',
+  completion: 'completion',
+  'legal-hold': 'legal-hold',
+} as const;
+
+/**
+ * For source/release/readiness records only safe references or metadata; other immutable persisted payloads are returned directly.
+ */
+export type WebinarApiHistoryRecordPayload = { [key: string]: unknown };
+
+export interface WebinarApiHistoryRecord {
+  id: string;
+  revision: number;
+  kind: WebinarApiHistoryRecordKind;
+  /** @nullable */
+  parentId: string | null;
+  /** @nullable */
+  releaseId: string | null;
+  calculationAt: string;
+  createdAt: string;
+  inputFingerprint: string;
+  /** For source/release/readiness records only safe references or metadata; other immutable persisted payloads are returned directly. */
+  payload: WebinarApiHistoryRecordPayload;
+}
+
+export interface WebinarApiHistory {
+  campaignId: string;
+  activityId: string;
+  occurrenceId: string;
+  retrievedAt: string;
+  total: number;
+  returned: number;
+  /** @nullable */
+  nextRevision: number | null;
+  records: WebinarApiHistoryRecord[];
+  simulationOnly: true;
+  unverified: true;
+}
+
+export type DevelopmentFoundationInspectionContractLabel = typeof DevelopmentFoundationInspectionContractLabel[keyof typeof DevelopmentFoundationInspectionContractLabel];
+
+
+export const DevelopmentFoundationInspectionContractLabel = {
+  'synthetic-contract-only': 'synthetic-contract-only',
+} as const;
+
+export type DevelopmentFoundationInspectionOperationalStatus = typeof DevelopmentFoundationInspectionOperationalStatus[keyof typeof DevelopmentFoundationInspectionOperationalStatus];
+
+
+export const DevelopmentFoundationInspectionOperationalStatus = {
+  'simulation-only': 'simulation-only',
+} as const;
+
+export type DevelopmentFoundationObservationType = typeof DevelopmentFoundationObservationType[keyof typeof DevelopmentFoundationObservationType];
+
+
+export const DevelopmentFoundationObservationType = {
+  taxonomy: 'taxonomy',
+  internal_title: 'internal_title',
+  campaign_code: 'campaign_code',
+  utm: 'utm',
+  objective_membership: 'objective_membership',
+  campaign_exclusion: 'campaign_exclusion',
+} as const;
+
+export type DevelopmentFoundationObservationStatus = typeof DevelopmentFoundationObservationStatus[keyof typeof DevelopmentFoundationObservationStatus];
+
+
+export const DevelopmentFoundationObservationStatus = {
+  available: 'available',
+  unavailable: 'unavailable',
+  stale: 'stale',
+  expired: 'expired',
+  deprecated: 'deprecated',
+  unsupported: 'unsupported',
+} as const;
+
+/**
+ * Optional original transport result state for a built request; never overrides unsupported fixture capability.
+ */
+export type DevelopmentFoundationObservationObservationState = typeof DevelopmentFoundationObservationObservationState[keyof typeof DevelopmentFoundationObservationObservationState];
+
+
+export const DevelopmentFoundationObservationObservationState = {
+  available: 'available',
+  unavailable: 'unavailable',
+  stale: 'stale',
+  expired: 'expired',
+  deprecated: 'deprecated',
+} as const;
+
+/**
+ * Present for unrequested unsupported output rows.
+ */
+export type DevelopmentFoundationObservationAvailability = typeof DevelopmentFoundationObservationAvailability[keyof typeof DevelopmentFoundationObservationAvailability];
+
+
+export const DevelopmentFoundationObservationAvailability = {
+  unsupported: 'unsupported',
+} as const;
+
+export type DevelopmentFoundationObservationSource = typeof DevelopmentFoundationObservationSource[keyof typeof DevelopmentFoundationObservationSource];
+
+
+export const DevelopmentFoundationObservationSource = {
+  'synthetic-provider': 'synthetic-provider',
+  'immutable-history': 'immutable-history',
+  none: 'none',
+} as const;
+
+export type DevelopmentFoundationObservationProviderKind = typeof DevelopmentFoundationObservationProviderKind[keyof typeof DevelopmentFoundationObservationProviderKind];
+
+
+export const DevelopmentFoundationObservationProviderKind = {
+  'synthetic-contract-only': 'synthetic-contract-only',
+  unconfigured: 'unconfigured',
+} as const;
+
+export type DevelopmentFoundationObservationEnvironment = typeof DevelopmentFoundationObservationEnvironment[keyof typeof DevelopmentFoundationObservationEnvironment];
+
+
+export const DevelopmentFoundationObservationEnvironment = {
+  synthetic: 'synthetic',
+  'synthetic-only': 'synthetic-only',
+} as const;
+
+export type DevelopmentFoundationObservationSupersessionState = typeof DevelopmentFoundationObservationSupersessionState[keyof typeof DevelopmentFoundationObservationSupersessionState];
+
+
+export const DevelopmentFoundationObservationSupersessionState = {
+  superseded: 'superseded',
+  'latest-for-input': 'latest-for-input',
+  'no-matching-receipt': 'no-matching-receipt',
+} as const;
+
+export type DevelopmentFoundationObservationValidity = typeof DevelopmentFoundationObservationValidity[keyof typeof DevelopmentFoundationObservationValidity];
+
+
+export const DevelopmentFoundationObservationValidity = {
+  available: 'available',
+  unavailable: 'unavailable',
+  stale: 'stale',
+  expired: 'expired',
+  deprecated: 'deprecated',
+  unsupported: 'unsupported',
+} as const;
+
+export interface DevelopmentFoundationReceipt {
+  id: string;
+  createdAt: string;
+  /** @nullable */
+  supersedesId: string | null;
+  /** @nullable */
+  receivedAt: string | null;
+}
+
+export type DevelopmentFoundationObservationOutput = { [key: string]: unknown } | null;
+
+export type DevelopmentFoundationObservationProvenance = { [key: string]: unknown } | null;
+
+export interface DevelopmentFoundationObservation {
+  type: DevelopmentFoundationObservationType;
+  /**
+     * Null for an unsupported type with no constructed request.
+     * @nullable
+     */
+  requestReference: string | null;
+  /** @nullable */
+  inputFingerprint: string | null;
+  status: DevelopmentFoundationObservationStatus;
+  /** Optional original transport result state for a built request; never overrides unsupported fixture capability. */
+  observationState?: DevelopmentFoundationObservationObservationState;
+  /** Present for unrequested unsupported output rows. */
+  availability?: DevelopmentFoundationObservationAvailability;
+  error: string | null;
+  source: DevelopmentFoundationObservationSource;
+  output: DevelopmentFoundationObservationOutput;
+  serviceId: string | null;
+  serviceVersion: string | null;
+  taxonomyVersion: string | null;
+  provenance: DevelopmentFoundationObservationProvenance;
+  receivedAt: string | null;
+  respondedAt: string | null;
+  expiresAt: string | null;
+  simulationOnly: boolean;
+  retryCount: number;
+  affectedRules: string[];
+  /** Only taxonomy is supplied by the synthetic contract fixture. */
+  supportedByFixture: boolean;
+  providerConfigured: boolean;
+  providerKind: DevelopmentFoundationObservationProviderKind;
+  environment: DevelopmentFoundationObservationEnvironment;
+  /** @nullable */
+  observationId: string | null;
+  /** @nullable */
+  observationCreatedAt: string | null;
+  /** @nullable */
+  supersedesId: string | null;
+  supersessionState: DevelopmentFoundationObservationSupersessionState;
+  validity: DevelopmentFoundationObservationValidity;
+  /** @nullable */
+  effectiveVersion: string | null;
+  /** @nullable */
+  providerIdentity: string | null;
+  /** @nullable */
+  validFrom: string | null;
+  receipt: DevelopmentFoundationReceipt | null;
+}
+
+export interface DevelopmentFoundationInspection {
+  contractLabel: DevelopmentFoundationInspectionContractLabel;
+  evaluatorImplemented: boolean;
+  observationAvailable: boolean;
+  connectorConfigured: boolean;
+  connectorReachable: boolean;
+  liveProductionConnection: boolean;
+  revision: number;
+  operationalStatus: DevelopmentFoundationInspectionOperationalStatus;
+  unverified: boolean;
+  authoritative: boolean;
+  /**
+     * Includes all six governed output types, plus additional scoped UTM observations. Only taxonomy is available from the synthetic fixture; unsupported output rows remain explicit.
+     * @minItems 6
+     */
+  observations: DevelopmentFoundationObservation[];
+}
 
 export interface DevelopmentFoundationRefreshResult {
   inspection: DevelopmentFoundationInspection;
@@ -2435,6 +3804,36 @@ export interface GovernanceAuditEvent {
 }
 
 /**
+ * VALIDATION_ERROR; malformed scope, time, unknown request fields, untrusted identity or request over 16 KiB.
+ */
+export type WebinarApiValidationErrorResponse = WebinarApiError;
+
+/**
+ * NOT_FOUND; occurrence not in the selected campaign.
+ */
+export type WebinarApiNotFoundResponse = WebinarApiError;
+
+/**
+ * CONFLICT or IDEMPOTENCY_CONFLICT (revision/key mismatch), STALE_INPUT, CAPABILITY_UNAVAILABLE (ineligible).
+ */
+export type WebinarApiConflictResponse = WebinarApiError;
+
+/**
+ * MISSING_REQUIRED_INPUT or EVALUATION_INCOMPLETE; caller must supply scoped evidence or evaluate the current revision.
+ */
+export type WebinarApiIncompleteResponse = WebinarApiError;
+
+/**
+ * UNAUTHORIZED; trusted independent reviewer authorization does not exist in open development.
+ */
+export type WebinarApiUnauthorizedResponse = WebinarApiError;
+
+/**
+ * CAPABILITY_UNAVAILABLE or INTERNAL_ERROR; nonoperational development server or storage is unavailable, without connection details.
+ */
+export type WebinarApiUnavailableResponse = WebinarApiError;
+
+/**
  * Trusted authentication is not configured or cannot verify the request; protected operations are disabled (AUTHENTICATION_UNAVAILABLE).
  */
 export type AuthenticationUnavailableResponse = OrganizationAccessError;
@@ -2501,6 +3900,18 @@ export type RecordIdParameter = string;
 export type RequiredRecordTypeParameter = string;
 
 export type RequiredRecordIdParameter = string;
+
+export type GetWebinarStandardHistoryParams = {
+/**
+ * @minimum 0
+ */
+afterRevision?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
 
 export type GetDevelopmentStatus200Mode = typeof GetDevelopmentStatus200Mode[keyof typeof GetDevelopmentStatus200Mode];
 

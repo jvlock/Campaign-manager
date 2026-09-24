@@ -170,6 +170,8 @@ export class WebinarPersistence {
       if (m.payload.kind === "readiness" || m.payload.kind === "completion") {
         if (m.payload.simulation) {
           const snapshot = m.payload.simulation;
+          if ((snapshot.engineRelease === undefined) !== (snapshot.engineReleaseFingerprint === undefined))
+            throw new Error("Simulation engine release identity is incomplete");
           if (snapshot.occurrenceId !== m.sessionId || snapshot.standard.id !== m.standard?.id
             || snapshot.standard.version !== m.standard?.version || snapshot.calculationAt !== m.calculationAt
             || snapshot.inputFingerprint !== m.inputFingerprint
@@ -188,6 +190,12 @@ export class WebinarPersistence {
         if (!release || release.standard_id !== m.standard?.id || release.standard_version !== m.standard?.version || release.calculation_at.toISOString() !== m.calculationAt) throw new Error("Snapshot must use an exact release, standard and calculation instant");
         if ((m.payload.kind === "readiness" || m.payload.kind === "completion") && m.payload.simulation
           && m.payload.simulation.releaseFingerprint !== release.payload.digest) throw new Error("Simulation release fingerprint mismatch");
+        if ((m.payload.kind === "readiness" || m.payload.kind === "completion") && m.payload.simulation?.engineRelease
+          && (m.payload.simulation.engineRelease.digest !== m.payload.simulation.engineReleaseFingerprint
+            || m.payload.simulation.engineRelease.digest !== release.payload.engineReleaseFingerprint
+            || canonical(m.payload.simulation.engineRelease) !== canonical(release.payload.engineRelease))) {
+          throw new Error("Simulation engine release identity mismatch");
+        }
       }
       const category = m.payload.kind === "source" || m.payload.kind === "release" ? "provenance" : "decision";
       let storedPayload: unknown = m.payload;

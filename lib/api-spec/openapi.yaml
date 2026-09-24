@@ -16,6 +16,233 @@ tags:
   - name: portfolio
   - name: governance
 paths:
+  /campaigns/{campaignId}/webinars/{sessionId}/standard/summary:
+    parameters:
+      - {$ref: "#/components/parameters/WebinarApiCampaignId"}
+      - {$ref: "#/components/parameters/WebinarApiSessionId"}
+    get:
+      operationId: getWebinarStandardSummary
+      tags: [webinars]
+      description: "Development-only isolated synthetic webinar summary. A complete evaluator registry is not operational readiness. Source revision and fingerprint determine staleness; the Foundation is not connected to production."
+      x-authorization: open-development-only; unverified synthetic actor; no operational authority
+      responses:
+        "200":
+          description: Consistent occurrence-scoped source and immutable snapshot projection; taxonomy is synthetic-only.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarApiSummary"}
+        "400": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "404": {$ref: "#/components/responses/WebinarApiNotFound"}
+        "409": {$ref: "#/components/responses/WebinarApiConflict"}
+  /campaigns/{campaignId}/webinars/{sessionId}/standard/evaluations:
+    parameters:
+      - {$ref: "#/components/parameters/WebinarApiCampaignId"}
+      - {$ref: "#/components/parameters/WebinarApiSessionId"}
+    get:
+      operationId: getWebinarStandardEvaluations
+      tags: [webinars]
+      description: Development-only read of the last immutable synthetic evaluation; never runs an evaluator.
+      x-authorization: open-development-only
+      responses:
+        "200":
+          description: Ordered results or explicit not_evaluated status; source revision and fingerprint determine staleness.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarApiEvaluations"}
+        "400": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "404": {$ref: "#/components/responses/WebinarApiNotFound"}
+        "409": {$ref: "#/components/responses/WebinarApiConflict"}
+    post:
+      operationId: evaluateWebinarStandard
+      tags: [webinars]
+      description: "Isolated development diagnostic simulation. Fixed calculationAt/expectedRevision/idempotencyKey tuple must be reused unchanged on retry. The sole orchestration evaluates all 106 canonical rules and persists an immutable snapshot; not operational approval."
+      x-authorization: open-development-only; server-derived unverified actor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/WebinarApiEvaluationInput"}
+            example: {expectedRevision: 3, idempotencyKey: "1bef1faf-47a0-42c4-823f-cc0e980a913c", calculationAt: "2026-09-24T12:00:00.000Z"}
+      responses:
+        "200":
+          description: Immutable, complete synthetic snapshot; idempotent same-key/same-request replay returns the prior result.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarApiEvaluationResult"}
+        "400": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "404": {$ref: "#/components/responses/WebinarApiNotFound"}
+        "409": {$ref: "#/components/responses/WebinarApiConflict"}
+        "413": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "503": {$ref: "#/components/responses/WebinarApiUnavailable"}
+  /campaigns/{campaignId}/webinars/{sessionId}/standard/readiness:
+    parameters:
+      - {$ref: "#/components/parameters/WebinarApiCampaignId"}
+      - {$ref: "#/components/parameters/WebinarApiSessionId"}
+    get:
+      operationId: getWebinarStandardReadiness
+      tags: [webinars]
+      description: "Development-only last snapshot. Stages are independent per canonical dependencies; ready-to-run does not inherit ready-to-recruit. Incomplete inputs, failed blockers and advisories remain visible."
+      x-authorization: open-development-only
+      responses:
+        "200":
+          description: Four stage results or not_evaluated without implying readiness.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarApiReadiness"}
+        "400": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "404": {$ref: "#/components/responses/WebinarApiNotFound"}
+        "409": {$ref: "#/components/responses/WebinarApiConflict"}
+  /campaigns/{campaignId}/webinars/{sessionId}/standard/completion:
+    parameters:
+      - {$ref: "#/components/parameters/WebinarApiCampaignId"}
+      - {$ref: "#/components/parameters/WebinarApiSessionId"}
+    get:
+      operationId: getWebinarStandardCompletion
+      tags: [webinars]
+      description: Development-only last immutable completion result; planning and complete evaluator coverage are not operational evidence.
+      x-authorization: open-development-only
+      responses:
+        "200":
+          description: Completion result, missing inputs and evidence references or not_evaluated.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarApiCompletion"}
+        "400": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "404": {$ref: "#/components/responses/WebinarApiNotFound"}
+        "409": {$ref: "#/components/responses/WebinarApiConflict"}
+  /campaigns/{campaignId}/webinars/{sessionId}/standard/evidence:
+    parameters:
+      - {$ref: "#/components/parameters/WebinarApiCampaignId"}
+      - {$ref: "#/components/parameters/WebinarApiSessionId"}
+    get:
+      operationId: getWebinarStandardEvidence
+      tags: [webinars]
+      description: Development-only immutable evidence references, not approved proof of execution.
+      x-authorization: open-development-only
+      responses:
+        "200":
+          description: Scoped unverified evidence references.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarApiEvidenceList"}
+        "400": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "404": {$ref: "#/components/responses/WebinarApiNotFound"}
+        "409": {$ref: "#/components/responses/WebinarApiConflict"}
+    post:
+      operationId: submitWebinarStandardEvidence
+      tags: [webinars]
+      description: "Development-only immutable unverified source reference. Caller supplies exact sourceType/sourceVersion/sourceHash of the available scoped immutable source, not just its ID. Mismatch or later observations fail closed as STALE_INPUT. Governed source receipts must remain valid. Result is always unknown. Same scoped idempotency key and request replays; different input conflicts. Does not pass rules or create exceptions."
+      x-authorization: open-development-only; server-derived unverified actor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/WebinarApiEvidenceInput"}
+      responses:
+        "201":
+          description: Appended evidence or replay of the same immutable record.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarApiEvidenceCreated"}
+              example:
+                id: 11ebd7f4-20c3-4a68-85f1-bb06fe3b2844
+                revision: 6
+                sourceId: 119a1ae8-43da-4593-8060-f039e5d69605
+                sourceType: occurrence
+                sourceVersion: "1.0-pilot-rc1"
+                sourceHash: "d54e3545f77a346cae96b09b6b48abe42f72b8a3fb848120b5859cce06cbdc49"
+                evidenceType: source-observation
+                result: unknown
+                authenticated: false
+                unverified: true
+                operational: false
+                replayed: false
+                recordedAt: "2026-09-24T12:00:01.000Z"
+        "400": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "404": {$ref: "#/components/responses/WebinarApiNotFound"}
+        "409": {$ref: "#/components/responses/WebinarApiConflict"}
+        "413": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "422": {$ref: "#/components/responses/WebinarApiIncomplete"}
+        "503": {$ref: "#/components/responses/WebinarApiUnavailable"}
+  /campaigns/{campaignId}/webinars/{sessionId}/standard/exceptions:
+    parameters:
+      - {$ref: "#/components/parameters/WebinarApiCampaignId"}
+      - {$ref: "#/components/parameters/WebinarApiSessionId"}
+    get:
+      operationId: getWebinarStandardExceptions
+      tags: [webinars]
+      description: Development-only requests remain unverified drafts; no exception decision is available.
+      x-authorization: open-development-only
+      responses:
+        "200":
+          description: Scoped draft requests; none resolves a blocker.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarApiExceptionList"}
+        "400": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "404": {$ref: "#/components/responses/WebinarApiNotFound"}
+        "409": {$ref: "#/components/responses/WebinarApiConflict"}
+    post:
+      operationId: requestWebinarStandardException
+      tags: [webinars]
+      description: "Development-only draft. Requires a failed blocking exception-eligible rule and evidence included in current snapshot. WEB-EXC-001 cannot exempt itself. Advisory lock/revision and scoped idempotency protect concurrent requests. No approval or readiness override."
+      x-authorization: open-development-only; server-derived unverified actor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/WebinarApiExceptionInput"}
+      responses:
+        "201":
+          description: Immutable unauthenticated draft, never a reviewer decision.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarApiExceptionCreated"}
+        "400": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "404": {$ref: "#/components/responses/WebinarApiNotFound"}
+        "409": {$ref: "#/components/responses/WebinarApiConflict"}
+        "413": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "422": {$ref: "#/components/responses/WebinarApiIncomplete"}
+        "503": {$ref: "#/components/responses/WebinarApiUnavailable"}
+  /campaigns/{campaignId}/webinars/{sessionId}/standard/exceptions/{exceptionId}/review:
+    parameters:
+      - {$ref: "#/components/parameters/WebinarApiCampaignId"}
+      - {$ref: "#/components/parameters/WebinarApiSessionId"}
+      - {name: exceptionId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      operationId: reviewWebinarStandardException
+      tags: [webinars]
+      description: "Development-only stable denial contract. Trusted reviewer identity/authorization unavailable. Never approves, denies, revokes or mutates; client-supplied name, header, email and role are not authentication."
+      x-authorization: unavailable-until-independent-trusted-reviewer-identity
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/WebinarApiEmptyReview"}
+      responses:
+        "400": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "403": {$ref: "#/components/responses/WebinarApiUnauthorized"}
+  /campaigns/{campaignId}/webinars/{sessionId}/standard/history:
+    parameters:
+      - {$ref: "#/components/parameters/WebinarApiCampaignId"}
+      - {$ref: "#/components/parameters/WebinarApiSessionId"}
+    get:
+      operationId: getWebinarStandardHistory
+      tags: [webinars]
+      description: "Development-only immutable occurrence history ordered by revision; keyset pagination. Only simulation-safe source metadata, no stored provider payloads. Historical snapshots may have no stable engine release identity."
+      x-authorization: open-development-only
+      parameters:
+        - {name: afterRevision, in: query, schema: {type: integer, minimum: 0, default: 0}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 50}}
+      responses:
+        "200":
+          description: Bounded immutable history page.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarApiHistory"}
+        "400": {$ref: "#/components/responses/WebinarApiValidationError"}
+        "404": {$ref: "#/components/responses/WebinarApiNotFound"}
+        "409": {$ref: "#/components/responses/WebinarApiConflict"}
   /development/status:
     get:
       operationId: getDevelopmentStatus
@@ -1572,6 +1799,8 @@ components:
       description: 'JSON object with total (authorized scoped records), returned (this response), hasMore and nextOffset (null at end). Stable ID ordered live pages; restart on population changes. For composite objects each top-level collection receives the same limit/offset independently, totals/returned sum the collections. Generated client consumes all pages, rejects partial failures, and deduplicates by ID.'
       schema: {type: string}
   parameters:
+    WebinarApiCampaignId: {name: campaignId, in: path, required: true, schema: {type: string, format: uuid}}
+    WebinarApiSessionId: {name: sessionId, in: path, required: true, schema: {type: string, format: uuid}}
     SyntheticCampaignId: {name: campaignId, in: query, required: true, schema: {type: string, format: uuid}}
     SyntheticActivityId: {name: activityId, in: query, required: true, schema: {type: string, format: uuid}}
     SyntheticSessionId: {name: sessionId, in: query, required: true, schema: {type: string, format: uuid}}
@@ -1651,6 +1880,40 @@ components:
       required: true
       schema: {type: string, format: uuid}
   responses:
+    WebinarApiValidationError:
+      description: VALIDATION_ERROR; malformed scope, time, unknown request fields, untrusted identity or request over 16 KiB.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/WebinarApiError"}
+          example: {error: {code: VALIDATION_ERROR, message: "Invalid scoped webinar API request"}}
+    WebinarApiNotFound:
+      description: NOT_FOUND; occurrence not in the selected campaign.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/WebinarApiError"}
+          example: {error: {code: NOT_FOUND, message: "Webinar occurrence not found"}}
+    WebinarApiConflict:
+      description: CONFLICT or IDEMPOTENCY_CONFLICT (revision/key mismatch), STALE_INPUT, CAPABILITY_UNAVAILABLE (ineligible).
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/WebinarApiError"}
+          example: {error: {code: IDEMPOTENCY_CONFLICT, message: "Idempotency key does not match the original request"}}
+    WebinarApiIncomplete:
+      description: MISSING_REQUIRED_INPUT or EVALUATION_INCOMPLETE; caller must supply scoped evidence or evaluate the current revision.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/WebinarApiError"}
+    WebinarApiUnauthorized:
+      description: UNAUTHORIZED; trusted independent reviewer authorization does not exist in open development.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/WebinarApiError"}
+          example: {error: {code: UNAUTHORIZED, message: "Exception review requires independently verified reviewer identity and authorization"}}
+    WebinarApiUnavailable:
+      description: CAPABILITY_UNAVAILABLE or INTERNAL_ERROR; nonoperational development server or storage is unavailable, without connection details.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/WebinarApiError"}
     AuthenticationUnavailable:
       description: Trusted authentication is not configured or cannot verify the request; protected operations are disabled (AUTHENTICATION_UNAVAILABLE).
       content:
@@ -1691,6 +1954,652 @@ components:
         application/json:
           schema: {$ref: "#/components/schemas/Error"}
   schemas:
+    WebinarApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: {type: string, enum: [VALIDATION_ERROR, NOT_FOUND, CONFLICT, IDEMPOTENCY_CONFLICT, UNAUTHENTICATED, UNAUTHORIZED, CAPABILITY_UNAVAILABLE, PROVIDER_NOT_CONFIGURED, PROVIDER_UNAVAILABLE, PROVIDER_RESPONSE_INVALID, UNSUPPORTED_GOVERNED_OUTPUT, STALE_INPUT, MISSING_REQUIRED_INPUT, EVALUATION_INCOMPLETE, INTERNAL_ERROR]}
+            message: {type: string}
+    WebinarApiEvaluationInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, idempotencyKey, calculationAt]
+      properties:
+        expectedRevision: {type: integer, minimum: 0, description: "Current scoped source revision, not a rule result."}
+        idempotencyKey: {type: string, format: uuid, description: "Scoped to occurrence and evaluation; exact key and body must be reused on retry."}
+        calculationAt: {type: string, format: date-time, description: "Fixed diagnostic instant accepted only on this isolated development route."}
+    WebinarApiEvidenceInput:
+      type: object
+      additionalProperties: false
+      required: [sourceId, evidenceType, sourceType, sourceVersion, sourceHash, expectedRevision, idempotencyKey, calculationAt]
+      properties:
+        sourceId: {type: string, format: uuid}
+        evidenceType: {type: string, enum: [qa, manual-review, source-observation]}
+        sourceType: {type: string, enum: [occurrence, content, foundation, delivery, measurement], description: "Exact type of scoped persisted available source; qa requires content or occurrence; manual-review requires content."}
+        sourceVersion: {type: string, pattern: "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$", description: "Exact immutable source version; a changed version is STALE_INPUT."}
+        sourceHash: {type: string, pattern: "^[a-f0-9]{64}$", description: "Exact immutable source content hash; changed hash is STALE_INPUT."}
+        expectedRevision: {type: integer, minimum: 0}
+        idempotencyKey: {type: string, format: uuid}
+        calculationAt: {type: string, format: date-time}
+    WebinarApiExceptionInput:
+      type: object
+      additionalProperties: false
+      required: [ruleId, evidenceId, reasonCode, expectedRevision, idempotencyKey, calculationAt, expiresAt]
+      properties:
+        ruleId: {type: string, pattern: "^WEB-[A-Z0-9-]+$", description: "Must belong to canonical RULE_IDS; a currently failed blocking, exception-eligible rule. WEB-EXC-001 cannot exempt itself."}
+        evidenceId: {type: string, format: uuid}
+        reasonCode: {type: string, pattern: "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,119}$"}
+        expectedRevision: {type: integer, minimum: 0}
+        idempotencyKey: {type: string, format: uuid}
+        calculationAt: {type: string, format: date-time}
+        expiresAt: {type: string, format: date-time, description: Must be after calculationAt.}
+    WebinarApiEmptyReview: {type: object, additionalProperties: false, description: "Review has no available action; empty body only."}
+    WebinarApiStandard:
+      type: object
+      required: [id, version]
+      properties:
+        id: {type: string, enum: [WEB-STANDARD-001]}
+        version: {type: string}
+    WebinarApiEngineRelease:
+      type: object
+      required: [digest, provenance]
+      properties:
+        digest: {type: string, pattern: "^[a-f0-9]{64}$"}
+        provenance:
+          type: object
+          required: [schemaVersion, mode, operational, standardId, standardVersion, canonicalDocuments, evaluatorRegistry, applicationRelease, dependencies]
+          properties:
+            schemaVersion: {type: integer, enum: [1]}
+            mode: {type: string, enum: [open-development]}
+            operational: {type: boolean, enum: [false]}
+            standardId: {type: string, enum: [WEB-STANDARD-001]}
+            standardVersion: {type: string}
+            canonicalDocuments: {type: object, additionalProperties: {type: string, pattern: "^[a-f0-9]{64}$"}}
+            evaluatorRegistry:
+              type: object
+              required: [digest, implementationHashes, coverage]
+              properties:
+                digest: {type: string}
+                implementationHashes: {type: object, additionalProperties: {type: string}}
+                coverage: {$ref: "#/components/schemas/WebinarApiEngineCoverage"}
+            applicationRelease: {type: [string, "null"], description: "Actual 40-character Git commit, or null if unavailable; never fabricated."}
+            dependencies: {type: object, additionalProperties: {type: string}}
+    WebinarApiEngineCoverage:
+      type: object
+      required: [implemented, total, implementedRuleIds, unimplementedRuleIds]
+      properties:
+        implemented: {type: integer, enum: [106]}
+        total: {type: integer, enum: [106]}
+        implementedRuleIds: {type: array, items: {type: string}}
+        unimplementedRuleIds: {type: array, items: {type: string}}
+    WebinarApiCoverage:
+      type: object
+      required: [totalRuleCount, implementedRuleCount, missingEvaluatorCount, implementedRuleIds, missingEvaluatorRuleIds]
+      properties:
+        totalRuleCount: {type: integer}
+        implementedRuleCount: {type: integer}
+        missingEvaluatorCount: {type: integer}
+        implementedRuleIds: {type: array, items: {type: string}}
+        missingEvaluatorRuleIds: {type: array, items: {type: string}}
+    WebinarApiSourceReference:
+      type: object
+      required: [sourceType, sourceId]
+      properties:
+        sourceType: {type: string}
+        sourceId: {type: string}
+        sourceHash: {type: string}
+        sourceVersion: {type: string}
+    WebinarApiMissingInput:
+      type: object
+      required: [field, reason, sourceReference]
+      properties:
+        field: {type: string}
+        reason: {type: string}
+        sourceReference:
+          anyOf:
+            - {$ref: "#/components/schemas/WebinarApiSourceReference"}
+            - {type: "null"}
+    WebinarApiFinding:
+      type: object
+      required: [mode, standardId, standardVersion, ruleId, rule, status, reason, participantId, evidence]
+      properties:
+        mode: {type: string, enum: [descriptive_only]}
+        standardId: {type: string, enum: [WEB-STANDARD-001]}
+        standardVersion: {type: string}
+        ruleId: {type: string}
+        rule:
+          type: object
+          required: [ruleId, ruleName, hierarchyLevel, trigger, expectedBehavior, primaryRuleType, evidenceBasis, readinessStage, validationMethod, exceptionEligible, exceptionEligibleNote, failureMessage, resolutionGuidance]
+          properties:
+            ruleId: {type: string}
+            ruleName: {type: string}
+            hierarchyLevel: {type: string}
+            trigger: {type: string}
+            expectedBehavior: {type: string}
+            primaryRuleType: {type: string}
+            evidenceBasis: {type: string}
+            readinessStage: {type: string}
+            validationMethod: {type: string}
+            exceptionEligible: {type: boolean}
+            exceptionEligibleNote: {type: [string, "null"]}
+            failureMessage: {type: string}
+            resolutionGuidance: {type: string}
+        status: {type: string, enum: [pass, fail, not_applicable, evidence_unavailable, unimplemented]}
+        reason: {type: string, enum: [satisfied, violation, condition_not_met, missing_evidence, invalid_context, not_implemented]}
+        participantId: {type: [string, "null"]}
+        evidence: {type: array, items: {type: string}}
+    WebinarApiResolvedBlocker:
+      type: object
+      required: [ruleId, classification, originalFailure, exception]
+      properties:
+        ruleId: {type: string}
+        classification: {type: string, enum: [resolvedByException]}
+        originalFailure: {$ref: "#/components/schemas/WebinarApiFinding"}
+        exception: {type: object, additionalProperties: true, description: "Exact exception disposition snapshot, not evidence or a planning draft."}
+    WebinarApiReadinessIssue:
+      type: object
+      required: [code, ruleId, stage, message]
+      properties:
+        code: {type: string}
+        ruleId: {type: [string, "null"]}
+        stage: {type: [string, "null"]}
+        message: {type: string}
+    WebinarApiStage:
+      type: object
+      required: [stage, status, fullyEvaluated, assignedRuleIds, applicableRuleIds, evaluatedRuleIds, missingRuleIds, passes, notApplicable, failedBlockers, unassessedBlockers, unassessedAdvisories, failedNonBlocking, warnings, exceptionResolvedBlockers, unresolvedRuleIds, diagnosticCoveragePercent, issues, prerequisiteIssues]
+      properties:
+        stage: {type: string, enum: [Ready to recruit, Ready to run, Ready to follow up, Complete]}
+        status: {type: string, enum: [ready, blocked, incomplete]}
+        fullyEvaluated: {type: boolean}
+        assignedRuleIds: {type: array, items: {type: string}}
+        applicableRuleIds: {type: array, items: {type: string}}
+        evaluatedRuleIds: {type: array, items: {type: string}}
+        missingRuleIds: {type: array, items: {type: string}}
+        passes: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+        notApplicable: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+        failedBlockers: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+        unassessedBlockers: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+        unassessedAdvisories: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+        failedNonBlocking: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+        warnings: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+        exceptionResolvedBlockers: {type: array, items: {$ref: "#/components/schemas/WebinarApiResolvedBlocker"}}
+        unresolvedRuleIds: {type: array, items: {type: string}}
+        diagnosticCoveragePercent: {type: number}
+        issues: {type: array, items: {$ref: "#/components/schemas/WebinarApiReadinessIssue"}}
+        prerequisiteIssues:
+          type: array
+          items:
+            type: object
+            required: [prerequisite, status, message]
+            properties:
+              prerequisite: {type: string, enum: [Ready to run, attendanceReconciliation, requiredFollowUpCompletion, exceptionRecording, measurementCapture]}
+              status: {type: string, enum: [blocked, incomplete]}
+              message: {type: string}
+    WebinarApiReadinessStage:
+      allOf:
+        - {$ref: "#/components/schemas/WebinarApiStage"}
+        - type: object
+          required: [calculationAt, applicableRuleCount, passedRules, unresolvedBlockingFailures, resolvedBlockingFailures, nonblockingFailures, missingInputs, missingEvaluatorCoverage, evidenceReferences, exceptionReferences, staleness]
+          properties:
+            calculationAt: {type: string, format: date-time}
+            applicableRuleCount: {type: integer}
+            passedRules: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+            unresolvedBlockingFailures: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+            resolvedBlockingFailures: {type: array, items: {$ref: "#/components/schemas/WebinarApiResolvedBlocker"}}
+            nonblockingFailures: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+            missingInputs: {type: array, items: {$ref: "#/components/schemas/WebinarApiMissingInput"}}
+            missingEvaluatorCoverage: {type: array, items: {type: string}}
+            evidenceReferences: {type: array, items: {type: string, format: uuid}}
+            exceptionReferences: {type: array, items: {type: string, format: uuid}}
+            staleness: {type: string, enum: [current, stale, not_evaluated]}
+    WebinarApiCompletionObligations:
+      type: object
+      required: [required, satisfiedOperational, unsatisfiedOperational, unknownOperational, diagnosticOperationalGaps]
+      description: "The required set is the canonical COMPLETE_OBLIGATIONS constant. Only names in the last completionResult.operationalGaps are classified unsatisfied; all remaining names are unknown, never inferred satisfied from absence. Without a snapshot every required obligation is unknown."
+      properties:
+        required: {type: array, items: {type: string, enum: [attendanceReconciliation, requiredFollowUpCompletion, exceptionRecording, measurementCapture]}}
+        satisfiedOperational: {type: array, items: {type: string}, description: "Always empty absent independently verified operational observations."}
+        unsatisfiedOperational: {type: array, items: {type: string, enum: [attendanceReconciliation, requiredFollowUpCompletion, exceptionRecording, measurementCapture]}, description: "Only canonical names explicitly present in the completion result's operationalGaps; no snapshot means empty."}
+        unknownOperational: {type: array, items: {type: string, enum: [attendanceReconciliation, requiredFollowUpCompletion, exceptionRecording, measurementCapture]}, description: "Canonical names not explicitly present in operationalGaps; absence is not proof of satisfaction."}
+        diagnosticOperationalGaps: {type: array, items: {type: string}}
+    WebinarApiMeasurementObligations:
+      type: object
+      required: [status, operationalEvidence]
+      properties:
+        status: {type: string, enum: [unavailable]}
+        operationalEvidence: {type: boolean, enum: [false]}
+    WebinarApiCompletionResult:
+      type: object
+      required: [outcome, complete, blockers, evidenceUnavailable, operationalGaps, resolvedByException, advisories, issues]
+      properties:
+        outcome: {type: string, enum: [complete, incomplete_blocker, incomplete_evidence, incomplete_operational, incomplete_invalid_context, incomplete_evaluator_unavailable, resolvedByException, advisory]}
+        complete: {type: boolean}
+        blockers: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+        evidenceUnavailable: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+        operationalGaps: {type: array, items: {type: string}}
+        resolvedByException: {type: array, items: {type: string}}
+        advisories: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+        issues: {type: array, items: {type: string}}
+    WebinarApiCapabilities:
+      type: object
+      required: [view, evaluateSynthetic, submitUnverifiedEvidence, requestDraftException, reviewException, send, publish]
+      properties:
+        view: {type: boolean, enum: [true]}
+        evaluateSynthetic: {type: boolean, enum: [true]}
+        submitUnverifiedEvidence: {type: boolean, enum: [true]}
+        requestDraftException: {type: boolean, enum: [true]}
+        reviewException: {type: boolean, enum: [false]}
+        send: {type: boolean, enum: [false]}
+        publish: {type: boolean, enum: [false]}
+    WebinarApiIdentity:
+      type: object
+      required: [campaignId, activityId, occurrenceId, standard, retrievedAt, calculationAt, engineReleaseFingerprint, engineRelease, releaseIdentityStatus, evaluationContextFingerprint, inputFingerprint, snapshotId, snapshotRevision, staleness, operationalStatus, unverified, authoritative, operationalReadiness, capabilities, status]
+      properties:
+        campaignId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        occurrenceId: {type: string, format: uuid}
+        standard: {$ref: "#/components/schemas/WebinarApiStandard"}
+        retrievedAt: {type: string, format: date-time}
+        calculationAt: {type: [string, "null"], format: date-time}
+        engineReleaseFingerprint: {type: [string, "null"], description: "Stable engine release digest, null before first evaluation or for historical legacy snapshots; never use calculation time as release identity."}
+        engineRelease:
+          anyOf:
+            - {$ref: "#/components/schemas/WebinarApiEngineRelease"}
+            - {type: "null"}
+        releaseIdentityStatus: {type: string, enum: [recorded, unavailable-historical, not_evaluated], description: "Historical snapshots without recorded stable engine release are unavailable-historical, never silently relabeled."}
+        evaluationContextFingerprint: {type: [string, "null"], description: "Legacy calculation-as-of-dependent digest; never use as engine release identity."}
+        inputFingerprint: {type: [string, "null"]}
+        snapshotId: {type: [string, "null"], format: uuid}
+        snapshotRevision: {type: [integer, "null"]}
+        staleness: {type: string, enum: [current, stale, not_evaluated]}
+        operationalStatus: {type: string, enum: [simulation-only]}
+        unverified: {type: boolean, enum: [true]}
+        authoritative: {type: boolean, enum: [false]}
+        operationalReadiness: {type: boolean, enum: [false]}
+        capabilities: {$ref: "#/components/schemas/WebinarApiCapabilities"}
+        status: {type: string, enum: [available-synthetic, not_evaluated]}
+    WebinarApiPopulation:
+      type: object
+      required: [total, registration, attendance, lifecycle, remaining]
+      properties:
+        total: {type: integer}
+        registration: {type: object, additionalProperties: {type: integer}}
+        attendance: {type: object, additionalProperties: {type: integer}}
+        lifecycle: {type: object, additionalProperties: {type: integer}}
+        remaining: {type: integer}
+    WebinarApiFoundationStatus:
+      type: object
+      required: [evaluatorImplemented, connectorConfigured, connectorReachable, liveProductionConnection, environment, observationAvailable, capabilities, observations, outputs, inspection]
+      properties:
+        evaluatorImplemented: {type: boolean}
+        connectorConfigured: {type: boolean}
+        connectorReachable: {type: boolean, description: "Validated provider response during THIS request; a valid persisted receipt may be available without a new provider call."}
+        liveProductionConnection: {type: boolean, enum: [false]}
+        environment: {type: string, enum: [synthetic-contract-only]}
+        observationAvailable: {type: boolean}
+        capabilities:
+          type: object
+          required: [taxonomy, internalTitle, campaignCode, utm, objective, exclusion]
+          properties:
+            taxonomy: {type: string, enum: [not_configured, configured_but_unavailable, available-synthetic, stale, failed, unsupported]}
+            internalTitle: {type: string, enum: [unsupported]}
+            campaignCode: {type: string, enum: [unsupported]}
+            utm: {type: string, enum: [unsupported], description: "All unsupported UTM scopes remain visible individually in observations; no governed URL is inferred."}
+            objective: {type: string, enum: [unsupported]}
+            exclusion: {type: string, enum: [unsupported]}
+        observations:
+          type: array
+          items: {$ref: "#/components/schemas/WebinarApiFoundationObservation"}
+        outputs:
+          type: array
+          minItems: 6
+          maxItems: 6
+          description: "Exactly one item per governed output type; unsupported outputs stay explicit rather than disappearing when no request is built."
+          items: {$ref: "#/components/schemas/WebinarApiFoundationOutput"}
+        inspection: {type: string}
+    WebinarApiFoundationReceipt:
+      type: object
+      required: [id, createdAt, supersedesId]
+      properties:
+        id: {type: string, format: uuid}
+        createdAt: {type: string, format: date-time}
+        supersedesId: {type: [string, "null"], format: uuid}
+    WebinarApiFoundationObservation:
+      type: object
+      required: [type, status, providerSource, error, requestReference, inputFingerprint, serviceVersion, taxonomyVersion, supportedByFixture, validity, effectiveVersion, provenance, providerIdentity, observationId, createdAt, supersessionState, receipt]
+      properties:
+        type: {type: string, enum: [taxonomy, internal_title, campaign_code, utm, objective_membership, campaign_exclusion]}
+        status: {type: string, enum: [available, unavailable, stale, expired, deprecated]}
+        providerSource: {type: string, enum: [synthetic-provider, immutable-history, none]}
+        error: {type: [string, "null"]}
+        requestReference: {type: string}
+        inputFingerprint: {type: string}
+        serviceVersion: {type: [string, "null"]}
+        taxonomyVersion: {type: [string, "null"]}
+        supportedByFixture: {type: boolean}
+        validity: {type: string, enum: [available, unavailable, stale, expired, deprecated]}
+        effectiveVersion: {type: [string, "null"]}
+        provenance: {type: [object, "null"], additionalProperties: true}
+        providerIdentity: {type: [string, "null"]}
+        observationId: {type: [string, "null"], format: uuid}
+        createdAt: {type: [string, "null"], format: date-time}
+        supersessionState: {type: string, enum: [superseded, latest-for-input, no-matching-receipt]}
+        receipt:
+          anyOf:
+            - {$ref: "#/components/schemas/WebinarApiFoundationReceipt"}
+            - {type: "null"}
+    WebinarApiFoundationOutput:
+      type: object
+      required: [type, status, supportedByFixture, configured, environment, availableFromRealProvider, validity, error, providerSource, requestReference, inputFingerprint, serviceVersion, taxonomyVersion, effectiveVersion, provenance, providerIdentity, observationId, createdAt, supersessionState, receipt]
+      properties:
+        type: {type: string, enum: [taxonomy, internal_title, campaign_code, utm, objective_membership, campaign_exclusion]}
+        status: {type: string, enum: [not_configured, configured_but_unavailable, available-synthetic, stale, failed, unsupported]}
+        supportedByFixture: {type: boolean}
+        configured: {type: boolean}
+        environment: {type: string, enum: [synthetic-contract-only]}
+        availableFromRealProvider: {type: boolean, enum: [false]}
+        validity: {type: string, enum: [available, unavailable, stale, expired, deprecated, unsupported]}
+        error: {type: [string, "null"]}
+        providerSource: {type: string, enum: [synthetic-provider, immutable-history, none]}
+        requestReference: {type: [string, "null"]}
+        inputFingerprint: {type: [string, "null"]}
+        serviceVersion: {type: [string, "null"]}
+        taxonomyVersion: {type: [string, "null"]}
+        effectiveVersion: {type: [string, "null"]}
+        provenance: {type: [object, "null"], additionalProperties: true}
+        providerIdentity: {type: [string, "null"]}
+        observationId: {type: [string, "null"], format: uuid}
+        createdAt: {type: [string, "null"], format: date-time}
+        supersessionState: {type: string, enum: [superseded, latest-for-input, no-matching-receipt]}
+        receipt:
+          anyOf:
+            - {$ref: "#/components/schemas/WebinarApiFoundationReceipt"}
+            - {type: "null"}
+    WebinarApiSummary:
+      allOf:
+        - {$ref: "#/components/schemas/WebinarApiIdentity"}
+        - type: object
+          required: [eventStatus, population, registrationSummary, attendanceSummary, communications, suppression, evidence, foundation, evaluation, readinessStages, completion, missingInputData, unavailableExternalObservations, unresolvedBlockingFailures, nonblockingFailures, resolvedBlockers, links]
+          properties:
+            eventStatus: {type: string}
+            population: {$ref: "#/components/schemas/WebinarApiPopulation"}
+            registrationSummary:
+              type: object
+              required: [status, registered, cancelled, waitlisted, notRegistered]
+              properties:
+                status: {type: string, enum: [synthetic-recorded, not_recorded]}
+                registered: {type: integer}
+                cancelled: {type: integer}
+                waitlisted: {type: integer}
+                notRegistered: {type: integer}
+            attendanceSummary:
+              type: object
+              required: [status, attended, noShow, operationallyVerified]
+              properties:
+                status: {type: string, enum: [synthetic-recorded, not_recorded]}
+                attended: {type: integer}
+                noShow: {type: integer}
+                operationallyVerified: {type: boolean, enum: [false]}
+            communications:
+              type: object
+              required: [configured, applicationRecords, planStatus, executionStatus]
+              properties:
+                configured: {type: integer}
+                applicationRecords: {type: integer}
+                planStatus: {type: string, enum: [configured-synthetic, not_configured]}
+                executionStatus: {type: string, enum: [unavailable]}
+            suppression:
+              type: object
+              required: [recordedObligations, operational]
+              properties:
+                recordedObligations: {type: integer}
+                operational: {type: boolean, enum: [false]}
+            evidence:
+              type: object
+              required: [records, verificationStatus, includedInLastEvaluation]
+              properties:
+                records: {type: integer}
+                verificationStatus: {type: string, enum: [unverified]}
+                includedInLastEvaluation: {type: array, items: {type: string, format: uuid}}
+            foundation: {$ref: "#/components/schemas/WebinarApiFoundationStatus"}
+            evaluation:
+              type: object
+              required: [applicable, passed, coverage, missingEvaluatorCoverage, lastEvaluationId]
+              properties:
+                applicable: {type: integer}
+                passed: {type: integer}
+                coverage:
+                  anyOf:
+                    - {$ref: "#/components/schemas/WebinarApiCoverage"}
+                    - {type: "null"}
+                missingEvaluatorCoverage: {type: array, items: {type: string}}
+                lastEvaluationId: {type: [string, "null"]}
+            readinessStages: {type: array, items: {$ref: "#/components/schemas/WebinarApiStage"}}
+            completion:
+              anyOf:
+                - {$ref: "#/components/schemas/WebinarApiCompletionResult"}
+                - {type: "null"}
+            missingInputData: {type: array, items: {$ref: "#/components/schemas/WebinarApiMissingInput"}}
+            unavailableExternalObservations: {type: array, items: {$ref: "#/components/schemas/WebinarApiMissingInput"}}
+            unresolvedBlockingFailures: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+            nonblockingFailures: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+            resolvedBlockers: {type: array, items: {$ref: "#/components/schemas/WebinarApiResolvedBlocker"}}
+            links:
+              type: object
+              required: [evaluations, readiness, completion, evidence, exceptions, history]
+              properties:
+                evaluations: {type: string}
+                readiness: {type: string}
+                completion: {type: string}
+                evidence: {type: string}
+                exceptions: {type: string}
+                history: {type: string}
+    WebinarApiEvaluations:
+      allOf:
+        - {$ref: "#/components/schemas/WebinarApiIdentity"}
+        - type: object
+          required: [results, evaluatorCoverage, missingInputData, unavailableExternalObservations, sourceReferences]
+          properties:
+            results: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+            evaluatorCoverage:
+              anyOf:
+                - {$ref: "#/components/schemas/WebinarApiCoverage"}
+                - {type: "null"}
+            missingInputData: {type: array, items: {$ref: "#/components/schemas/WebinarApiMissingInput"}}
+            unavailableExternalObservations: {type: array, items: {$ref: "#/components/schemas/WebinarApiMissingInput"}}
+            sourceReferences: {type: array, items: {$ref: "#/components/schemas/WebinarApiSourceReference"}}
+    WebinarApiReadiness:
+      allOf:
+        - {$ref: "#/components/schemas/WebinarApiIdentity"}
+        - type: object
+          required: [stages, issues, evaluatorCoverage]
+          properties:
+            stages: {type: array, items: {$ref: "#/components/schemas/WebinarApiReadinessStage"}}
+            issues: {type: array, items: {$ref: "#/components/schemas/WebinarApiReadinessIssue"}}
+            evaluatorCoverage:
+              anyOf:
+                - {$ref: "#/components/schemas/WebinarApiCoverage"}
+                - {type: "null"}
+    WebinarApiCompletion:
+      allOf:
+        - {$ref: "#/components/schemas/WebinarApiIdentity"}
+        - type: object
+          required: [result, evidenceReferences, exceptionReferences, missingInputData, obligations, measurementObligations, operationalObservations]
+          properties:
+            result:
+              anyOf:
+                - {$ref: "#/components/schemas/WebinarApiCompletionResult"}
+                - {type: "null"}
+            evidenceReferences: {type: array, items: {type: string, format: uuid}}
+            exceptionReferences: {type: array, items: {type: string, format: uuid}}
+            missingInputData: {type: array, items: {$ref: "#/components/schemas/WebinarApiMissingInput"}}
+            obligations: {$ref: "#/components/schemas/WebinarApiCompletionObligations"}
+            measurementObligations: {$ref: "#/components/schemas/WebinarApiMeasurementObligations"}
+            operationalObservations: {type: string, enum: [unavailable]}
+    WebinarApiEvaluationResult:
+      allOf:
+        - {$ref: "#/components/schemas/DevelopmentSimulationResult"}
+        - type: object
+          required: [engineReleaseFingerprint, engineRelease, status, snapshotId, revision, diagnostics, simulation, operationalReadiness, unverified, authoritative, activityId, occurrenceId, standard, calculationAt, evaluationContextFingerprint, inputFingerprint, sourceReferences, applicableRules, passedRules, results, unresolvedBlockingFailures, blockersResolvedByExceptions, nonblockingFailures, warnings, missingInputData, unavailableExternalObservations, mappingErrors, evaluatorCoverage, readinessStages, readinessIssues, completionResult, operationalStatus]
+          properties:
+            engineReleaseFingerprint: {type: string}
+            engineRelease: {$ref: "#/components/schemas/WebinarApiEngineRelease"}
+            status: {type: string, enum: [available-synthetic]}
+            snapshotId: {type: string, format: uuid}
+            revision: {type: integer}
+            diagnostics: {type: object, additionalProperties: true, description: "Request-local diagnostics; not shared authoritative state."}
+            simulation: {type: boolean, enum: [true]}
+            operationalReadiness: {type: boolean, enum: [false]}
+            unverified: {type: boolean, enum: [true]}
+            authoritative: {type: boolean, enum: [false]}
+            activityId: {type: string, format: uuid}
+            occurrenceId: {type: string, format: uuid}
+            standard: {$ref: "#/components/schemas/WebinarApiStandard"}
+            calculationAt: {type: string, format: date-time}
+            evaluationContextFingerprint: {type: string, description: "Legacy as-of evaluation context fingerprint, not the engine identity; renamed from the internal snapshot releaseFingerprint."}
+            inputFingerprint: {type: string}
+            sourceReferences: {type: array, items: {$ref: "#/components/schemas/WebinarApiSourceReference"}}
+            applicableRules: {type: array, items: {type: string}}
+            passedRules: {type: array, items: {type: string}}
+            results: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}, description: "All applicable canonical evaluator results in deterministic rule-ID order; 106/106 evaluator implementation is not readiness."}
+            unresolvedBlockingFailures: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+            blockersResolvedByExceptions: {type: array, items: {$ref: "#/components/schemas/WebinarApiResolvedBlocker"}}
+            nonblockingFailures: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+            warnings: {type: array, items: {$ref: "#/components/schemas/WebinarApiFinding"}}
+            missingInputData: {type: array, items: {$ref: "#/components/schemas/WebinarApiMissingInput"}}
+            unavailableExternalObservations: {type: array, items: {$ref: "#/components/schemas/WebinarApiMissingInput"}}
+            mappingErrors:
+              type: array
+              items:
+                type: object
+                required: [code, field, message, sourceReference]
+                properties:
+                  code: {type: string}
+                  field: {type: string}
+                  message: {type: string}
+                  sourceReference:
+                    anyOf:
+                      - {$ref: "#/components/schemas/WebinarApiSourceReference"}
+                      - {type: "null"}
+            evaluatorCoverage: {$ref: "#/components/schemas/WebinarApiCoverage"}
+            readinessStages: {type: array, items: {$ref: "#/components/schemas/WebinarApiStage"}}
+            readinessIssues: {type: array, items: {$ref: "#/components/schemas/WebinarApiReadinessIssue"}}
+            completionResult: {$ref: "#/components/schemas/WebinarApiCompletionResult"}
+            operationalStatus: {type: string, enum: [simulation-only]}
+    WebinarApiEvidenceRecord:
+      type: object
+      required: [id, revision, sourceId, sourceType, sourceVersion, sourceHash, type, result, recordedAt, authenticated, unverified]
+      properties:
+        id: {type: string, format: uuid}
+        revision: {type: integer}
+        sourceId: {type: string, format: uuid}
+        sourceType: {type: [string, "null"], enum: [occurrence, content, foundation, delivery, measurement, null], description: "Null only if historical parent source reference is missing."}
+        sourceVersion: {type: [string, "null"]}
+        sourceHash: {type: [string, "null"]}
+        type: {type: string, enum: [qa, manual-review, source-observation]}
+        result: {type: string, enum: [unknown]}
+        recordedAt: {type: string, format: date-time}
+        authenticated: {type: boolean, enum: [false]}
+        unverified: {type: boolean, enum: [true]}
+    WebinarApiEvidenceList:
+      type: object
+      required: [campaignId, activityId, occurrenceId, retrievedAt, revision, simulationOnly, records]
+      properties:
+        campaignId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        occurrenceId: {type: string, format: uuid}
+        retrievedAt: {type: string, format: date-time}
+        revision: {type: integer}
+        simulationOnly: {type: boolean, enum: [true]}
+        records: {type: array, items: {$ref: "#/components/schemas/WebinarApiEvidenceRecord"}}
+    WebinarApiEvidenceCreated:
+      type: object
+      required: [id, revision, sourceId, sourceType, sourceVersion, sourceHash, evidenceType, result, authenticated, unverified, operational, replayed, recordedAt]
+      properties:
+        id: {type: string, format: uuid}
+        revision: {type: integer}
+        sourceId: {type: string, format: uuid}
+        sourceType: {type: string, enum: [occurrence, content, foundation, delivery, measurement]}
+        sourceVersion: {type: string}
+        sourceHash: {type: string}
+        evidenceType: {type: string, enum: [qa, manual-review, source-observation]}
+        result: {type: string, enum: [unknown]}
+        authenticated: {type: boolean, enum: [false]}
+        unverified: {type: boolean, enum: [true]}
+        operational: {type: boolean, enum: [false]}
+        replayed: {type: boolean}
+        recordedAt: {type: string, format: date-time}
+    WebinarApiExceptionRecord:
+      type: object
+      required: [id, revision, ruleId, evidenceId, reasonCode, recordedAt, requestedExpiresAt, status, resolvesBlocker]
+      properties:
+        id: {type: string, format: uuid}
+        revision: {type: integer}
+        ruleId: {type: string}
+        evidenceId: {type: string, format: uuid}
+        reasonCode: {type: string}
+        recordedAt: {type: string, format: date-time}
+        requestedExpiresAt: {type: [string, "null"], format: date-time}
+        status: {type: string, enum: [draft-unverified]}
+        resolvesBlocker: {type: boolean, enum: [false]}
+    WebinarApiExceptionList:
+      type: object
+      required: [campaignId, activityId, occurrenceId, retrievedAt, simulationOnly, reviewAvailable, records]
+      properties:
+        campaignId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        occurrenceId: {type: string, format: uuid}
+        retrievedAt: {type: string, format: date-time}
+        simulationOnly: {type: boolean, enum: [true]}
+        reviewAvailable: {type: boolean, enum: [false]}
+        records: {type: array, items: {$ref: "#/components/schemas/WebinarApiExceptionRecord"}}
+    WebinarApiExceptionCreated:
+      type: object
+      required: [id, revision, ruleId, evidenceId, reasonCode, expiryRequested, authenticated, status, reviewAvailable, resolvesBlocker, operational, replayed]
+      properties:
+        id: {type: string, format: uuid}
+        revision: {type: integer}
+        ruleId: {type: string}
+        evidenceId: {type: string, format: uuid}
+        reasonCode: {type: string}
+        expiryRequested: {type: string, format: date-time}
+        authenticated: {type: boolean, enum: [false]}
+        status: {type: string, enum: [draft-unverified]}
+        reviewAvailable: {type: boolean, enum: [false]}
+        resolvesBlocker: {type: boolean, enum: [false]}
+        operational: {type: boolean, enum: [false]}
+        replayed: {type: boolean}
+    WebinarApiHistoryRecord:
+      type: object
+      required: [id, revision, kind, parentId, releaseId, calculationAt, createdAt, inputFingerprint, payload]
+      properties:
+        id: {type: string, format: uuid}
+        revision: {type: integer}
+        kind: {type: string, enum: [source, plan, evidence, exception-request, exception-disposition, release, readiness, completion, legal-hold]}
+        parentId: {type: [string, "null"], format: uuid}
+        releaseId: {type: [string, "null"], format: uuid}
+        calculationAt: {type: string, format: date-time}
+        createdAt: {type: string, format: date-time}
+        inputFingerprint: {type: string}
+        payload: {type: object, additionalProperties: true, description: "For source/release/readiness records only safe references or metadata; other immutable persisted payloads are returned directly."}
+    WebinarApiHistory:
+      type: object
+      required: [campaignId, activityId, occurrenceId, retrievedAt, total, returned, nextRevision, records, simulationOnly, unverified]
+      properties:
+        campaignId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        occurrenceId: {type: string, format: uuid}
+        retrievedAt: {type: string, format: date-time}
+        total: {type: integer}
+        returned: {type: integer}
+        nextRevision: {type: [integer, "null"]}
+        records: {type: array, items: {$ref: "#/components/schemas/WebinarApiHistoryRecord"}}
+        simulationOnly: {type: boolean, enum: [true]}
+        unverified: {type: boolean, enum: [true]}
     DevelopmentFoundationRefreshResult:
       type: object
       required: [inspection, simulation]
@@ -1724,15 +2633,19 @@ components:
         authoritative: {type: boolean}
         observations:
           type: array
+          minItems: 6
+          description: "Includes all six governed output types, plus additional scoped UTM observations. Only taxonomy is available from the synthetic fixture; unsupported output rows remain explicit."
           items: {$ref: "#/components/schemas/DevelopmentFoundationObservation"}
     DevelopmentFoundationObservation:
       type: object
-      required: [type, requestReference, inputFingerprint, status, error, source, output, serviceId, serviceVersion, taxonomyVersion, provenance, receivedAt, respondedAt, expiresAt, simulationOnly, retryCount, affectedRules]
+      required: [type, requestReference, inputFingerprint, status, error, source, output, serviceId, serviceVersion, taxonomyVersion, provenance, receivedAt, respondedAt, expiresAt, simulationOnly, retryCount, affectedRules, supportedByFixture, providerConfigured, providerKind, environment, observationId, observationCreatedAt, supersedesId, supersessionState, receipt, validity, effectiveVersion, providerIdentity, validFrom]
       properties:
         type: {type: string, enum: [taxonomy, internal_title, campaign_code, utm, objective_membership, campaign_exclusion]}
-        requestReference: {type: string}
-        inputFingerprint: {type: string}
-        status: {type: string, enum: [available, unavailable, stale, expired, deprecated]}
+        requestReference: {type: [string, "null"], description: "Null for an unsupported type with no constructed request."}
+        inputFingerprint: {type: [string, "null"]}
+        status: {type: string, enum: [available, unavailable, stale, expired, deprecated, unsupported]}
+        observationState: {type: string, enum: [available, unavailable, stale, expired, deprecated], description: "Optional original transport result state for a built request; never overrides unsupported fixture capability."}
+        availability: {type: string, enum: [unsupported], description: "Present for unrequested unsupported output rows."}
         error: {type: string, nullable: true}
         source: {type: string, enum: [synthetic-provider, immutable-history, none]}
         output: {type: object, nullable: true, additionalProperties: true}
@@ -1746,6 +2659,30 @@ components:
         simulationOnly: {type: boolean}
         retryCount: {type: integer}
         affectedRules: {type: array, items: {type: string}}
+        supportedByFixture: {type: boolean, description: "Only taxonomy is supplied by the synthetic contract fixture."}
+        providerConfigured: {type: boolean}
+        providerKind: {type: string, enum: [synthetic-contract-only, unconfigured]}
+        environment: {type: string, enum: [synthetic, synthetic-only]}
+        observationId: {type: [string, "null"], format: uuid}
+        observationCreatedAt: {type: [string, "null"], format: date-time}
+        supersedesId: {type: [string, "null"], format: uuid}
+        supersessionState: {type: string, enum: [superseded, latest-for-input, no-matching-receipt]}
+        validity: {type: string, enum: [available, unavailable, stale, expired, deprecated, unsupported]}
+        effectiveVersion: {type: [string, "null"]}
+        providerIdentity: {type: [string, "null"]}
+        validFrom: {type: [string, "null"], format: date-time}
+        receipt:
+          anyOf:
+            - {$ref: "#/components/schemas/DevelopmentFoundationReceipt"}
+            - {type: "null"}
+    DevelopmentFoundationReceipt:
+      type: object
+      required: [id, createdAt, supersedesId, receivedAt]
+      properties:
+        id: {type: string, format: uuid}
+        createdAt: {type: string, format: date-time}
+        supersedesId: {type: [string, "null"], format: uuid}
+        receivedAt: {type: [string, "null"], format: date-time}
     SyntheticScope:
       type: object
       required: [campaignId, activityId, sessionId]

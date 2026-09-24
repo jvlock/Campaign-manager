@@ -20,5 +20,9 @@ export interface DevelopmentFoundationInspection {
   operationalStatus: DevelopmentFoundationInspectionOperationalStatus;
   unverified: boolean;
   authoritative: boolean;
+  /**
+     * Includes all six governed output types, plus additional scoped UTM observations. Only taxonomy is available from the synthetic fixture; unsupported output rows remain explicit.
+     * @minItems 6
+     */
   observations: DevelopmentFoundationObservation[];
 }

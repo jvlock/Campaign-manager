@@ -14,6 +14,7 @@ import { fixture as governedFixture, now as governedFixtureTime } from "./evalua
 import { loadOccurrenceSources, occurrenceAssemblySource } from "../src/lib/webinar-evaluation-sources";
 import { persistencePayload, PersistenceConflict, WebinarPersistence } from "../src/lib/webinar-persistence";
 import { captureWebinarRelease } from "../src/lib/webinar-release-provenance";
+import { simulationSnapshotSchema } from "../src/lib/webinar-simulation-snapshot";
 import { SyntheticContractAdapter, knownSyntheticFixtureProvider } from "../src/lib/webinar-foundation";
 import { inspectFoundationObservations } from "../src/lib/webinar-foundation-service";
 
@@ -69,6 +70,8 @@ test("all 106 evaluators, canonical readiness/completion, provenance and source 
   assert.ok(result.missingInputData.some(gap => gap.field === "participant"));
   assert.ok(result.unavailableExternalObservations.some(gap => /Foundation/.test(gap.reason)));
   assert.equal(result.releaseFingerprint, (await captureWebinarRelease(Date.parse(calculationAt))).digest);
+  assert.deepEqual(result.engineRelease, (await captureWebinarRelease(Date.parse(calculationAt))).engineRelease);
+  assert.equal(result.engineReleaseFingerprint, result.engineRelease?.digest);
   assert.equal(result.inputFingerprint, sourceInputFingerprint(before, calculationAt));
   assert.deepEqual(result.results.map(r => r.ruleId), [...result.results.map(r => r.ruleId)].sort());
   const saved = (await pool.query("SELECT * FROM webinar_persistence_records WHERE id=$1", [result.snapshotId])).rows[0];
@@ -79,6 +82,14 @@ test("all 106 evaluators, canonical readiness/completion, provenance and source 
   assert.deepEqual(saved.payload.simulation.results, result.results);
   assert.deepEqual(saved.payload.simulation.nonblockingFailures, result.nonblockingFailures);
   assert.deepEqual(saved.payload.simulation.sourceReferences, result.sourceReferences);
+  assert.deepEqual(saved.payload.simulation.engineRelease, result.engineRelease);
+  assert.equal(saved.payload.simulation.engineReleaseFingerprint, result.engineReleaseFingerprint);
+  const { engineRelease: _engine, engineReleaseFingerprint: _engineDigest, ...historicalSnapshot } = saved.payload.simulation;
+  assert.deepEqual(simulationSnapshotSchema.parse(historicalSnapshot), historicalSnapshot,
+    "older immutable snapshots are read without inventing a new engine identity");
+  const savedRelease = (await pool.query("SELECT payload FROM webinar_persistence_records WHERE id=$1", [saved.release_id])).rows[0];
+  assert.deepEqual(savedRelease.payload.engineRelease, result.engineRelease);
+  assert.equal(savedRelease.payload.engineReleaseFingerprint, result.engineReleaseFingerprint);
   assert.equal(saved.payload.resultFingerprint, simulationFingerprint(saved.payload.simulation));
   await assert.rejects(pool.query("UPDATE webinar_persistence_records SET payload='{}' WHERE id=$1", [result.snapshotId]));
   const final = await pool.connect();
@@ -107,10 +118,14 @@ test("synthetic provider persists immutable scoped receipts before evaluation; c
   const input = exactCommand(scope);
   const [first, replay] = await Promise.all([simulateWebinarOccurrence(input, provider), simulateWebinarOccurrence(input, provider)]);
   assert.equal(first.snapshotId, replay.snapshotId);
+  // A concurrent retry can win the connection pool race; neither promise's
+  // position establishes which request actually invoked the synthetic fixture.
+  const fresh = [first, replay].find(result => result.diagnostics.foundation?.connectorReachable);
+  assert.ok(fresh);
   assert.equal(first.results.length, 106);
-  assert.equal(first.diagnostics.foundation?.connectorReachable, true);
-  assert.equal(first.diagnostics.foundation?.liveProductionConnection, false);
-  assert.equal(first.diagnostics.foundation?.observations.filter(o => o.status === "available").length, 3);
+  assert.equal(fresh.diagnostics.foundation?.connectorReachable, true);
+  assert.equal(fresh.diagnostics.foundation?.liveProductionConnection, false);
+  assert.equal(fresh.diagnostics.foundation?.observations.filter(o => o.status === "available").length, 3);
   assert.ok(first.sourceReferences.some(r => r.sourceType === "foundation:internal_title"));
   const records = (await pool.query(`SELECT id,revision,payload FROM webinar_persistence_records
     WHERE session_id=$1 ORDER BY revision`, [scope.sessionId])).rows;

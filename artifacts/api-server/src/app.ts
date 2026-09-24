@@ -37,8 +37,27 @@ export function createApp(options: { authenticate?: Authenticate; mode?: "restri
     }),
   );
   app.use(cors());
+  const webinarPath = /^\/api\/(?:campaigns\/[^/]+\/webinars\/[^/]+\/standard(?:\/|$)|development\/foundation\/observations(?:\/refresh)?\/?$)/;
+  // This parser must run before the general parser: oversized webinar payloads must
+  // never be allocated and parsed under Express's larger default limit.
+  app.use((req, res, next) => {
+    if (mode !== "open-development" || !webinarPath.test(req.path)) { next(); return; }
+    express.json({ limit: "16kb", strict: true })(req, res, error => {
+      if (error) { next(error); return; }
+      express.urlencoded({ limit: "16kb", extended: false })(req, res, next);
+    });
+  });
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  app.use((error: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (mode === "open-development" && webinarPath.test(req.path)) {
+      const tooLarge = (error as { type?: string }).type === "entity.too.large";
+      res.status(tooLarge ? 413 : 400).json({ error: { code: "VALIDATION_ERROR",
+        message: tooLarge ? "Request exceeds webinar API payload limit" : "Invalid webinar API request body" } });
+      return;
+    }
+    next(error);
+  });
 
   app.use("/api", healthRouter);
   app.get("/api/development/status", async (_req, res) => {

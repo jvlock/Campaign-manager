@@ -5,17 +5,33 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { DevelopmentFoundationObservationAvailability } from './developmentFoundationObservationAvailability';
+import type { DevelopmentFoundationObservationEnvironment } from './developmentFoundationObservationEnvironment';
+import type { DevelopmentFoundationObservationObservationState } from './developmentFoundationObservationObservationState';
 import type { DevelopmentFoundationObservationOutput } from './developmentFoundationObservationOutput';
 import type { DevelopmentFoundationObservationProvenance } from './developmentFoundationObservationProvenance';
+import type { DevelopmentFoundationObservationProviderKind } from './developmentFoundationObservationProviderKind';
 import type { DevelopmentFoundationObservationSource } from './developmentFoundationObservationSource';
 import type { DevelopmentFoundationObservationStatus } from './developmentFoundationObservationStatus';
+import type { DevelopmentFoundationObservationSupersessionState } from './developmentFoundationObservationSupersessionState';
 import type { DevelopmentFoundationObservationType } from './developmentFoundationObservationType';
+import type { DevelopmentFoundationObservationValidity } from './developmentFoundationObservationValidity';
+import type { DevelopmentFoundationReceipt } from './developmentFoundationReceipt';
 
 export interface DevelopmentFoundationObservation {
   type: DevelopmentFoundationObservationType;
-  requestReference: string;
-  inputFingerprint: string;
+  /**
+     * Null for an unsupported type with no constructed request.
+     * @nullable
+     */
+  requestReference: string | null;
+  /** @nullable */
+  inputFingerprint: string | null;
   status: DevelopmentFoundationObservationStatus;
+  /** Optional original transport result state for a built request; never overrides unsupported fixture capability. */
+  observationState?: DevelopmentFoundationObservationObservationState;
+  /** Present for unrequested unsupported output rows. */
+  availability?: DevelopmentFoundationObservationAvailability;
   error: string | null;
   source: DevelopmentFoundationObservationSource;
   output: DevelopmentFoundationObservationOutput;
@@ -29,4 +45,24 @@ export interface DevelopmentFoundationObservation {
   simulationOnly: boolean;
   retryCount: number;
   affectedRules: string[];
+  /** Only taxonomy is supplied by the synthetic contract fixture. */
+  supportedByFixture: boolean;
+  providerConfigured: boolean;
+  providerKind: DevelopmentFoundationObservationProviderKind;
+  environment: DevelopmentFoundationObservationEnvironment;
+  /** @nullable */
+  observationId: string | null;
+  /** @nullable */
+  observationCreatedAt: Date | null;
+  /** @nullable */
+  supersedesId: string | null;
+  supersessionState: DevelopmentFoundationObservationSupersessionState;
+  validity: DevelopmentFoundationObservationValidity;
+  /** @nullable */
+  effectiveVersion: string | null;
+  /** @nullable */
+  providerIdentity: string | null;
+  /** @nullable */
+  validFrom: Date | null;
+  receipt: DevelopmentFoundationReceipt | null;
 }

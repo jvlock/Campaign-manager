@@ -72,6 +72,7 @@ import type {
   GetPortfolioParams,
   GetSyntheticParticipantContextParams,
   GetSyntheticParticipantHistoryParams,
+  GetWebinarStandardHistoryParams,
   Governance,
   GovernanceActorReason,
   GovernanceApproval,
@@ -137,6 +138,26 @@ import type {
   UtmGenerationError,
   UtmGenerationResponse,
   UtmInput,
+  WebinarApiCompletion,
+  WebinarApiConflictResponse,
+  WebinarApiEmptyReview,
+  WebinarApiEvaluationInput,
+  WebinarApiEvaluationResult,
+  WebinarApiEvaluations,
+  WebinarApiEvidenceCreated,
+  WebinarApiEvidenceInput,
+  WebinarApiEvidenceList,
+  WebinarApiExceptionCreated,
+  WebinarApiExceptionInput,
+  WebinarApiExceptionList,
+  WebinarApiHistory,
+  WebinarApiIncompleteResponse,
+  WebinarApiNotFoundResponse,
+  WebinarApiReadiness,
+  WebinarApiSummary,
+  WebinarApiUnauthorizedResponse,
+  WebinarApiUnavailableResponse,
+  WebinarApiValidationErrorResponse,
   WebinarEvaluation,
   WebinarInput,
   WebinarPerson,
@@ -176,6 +197,925 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetWebinarStandardSummaryUrl = (campaignId: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/summary`
+}
+
+/**
+ * Development-only isolated synthetic webinar summary. A complete evaluator registry is not operational readiness. Source revision and fingerprint determine staleness; the Foundation is not connected to production.
+ */
+export const getWebinarStandardSummary = async (campaignId: string,
+    sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<WebinarApiSummary> => {
+
+  return customFetch<WebinarApiSummary>(getGetWebinarStandardSummaryUrl(campaignId,sessionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWebinarStandardSummaryQueryKey = (campaignId: string,
+    sessionId: string,) => {
+    return [
+    `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/summary`
+    ] as const;
+    }
+
+
+export const getGetWebinarStandardSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getWebinarStandardSummary>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(campaignId: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWebinarStandardSummaryQueryKey(campaignId,sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWebinarStandardSummary>>> = ({ signal }) => getWebinarStandardSummary(campaignId,sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: campaignId !== null && campaignId !== undefined && sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWebinarStandardSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getWebinarStandardSummary>>>
+export type GetWebinarStandardSummaryQueryError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>
+
+
+
+export function useGetWebinarStandardSummary<TData = Awaited<ReturnType<typeof getWebinarStandardSummary>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(
+ campaignId: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWebinarStandardSummaryQueryOptions(campaignId,sessionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWebinarStandardEvaluationsUrl = (campaignId: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/evaluations`
+}
+
+/**
+ * Development-only read of the last immutable synthetic evaluation; never runs an evaluator.
+ */
+export const getWebinarStandardEvaluations = async (campaignId: string,
+    sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<WebinarApiEvaluations> => {
+
+  return customFetch<WebinarApiEvaluations>(getGetWebinarStandardEvaluationsUrl(campaignId,sessionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWebinarStandardEvaluationsQueryKey = (campaignId: string,
+    sessionId: string,) => {
+    return [
+    `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/evaluations`
+    ] as const;
+    }
+
+
+export const getGetWebinarStandardEvaluationsQueryOptions = <TData = Awaited<ReturnType<typeof getWebinarStandardEvaluations>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(campaignId: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardEvaluations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWebinarStandardEvaluationsQueryKey(campaignId,sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWebinarStandardEvaluations>>> = ({ signal }) => getWebinarStandardEvaluations(campaignId,sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: campaignId !== null && campaignId !== undefined && sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardEvaluations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWebinarStandardEvaluationsQueryResult = NonNullable<Awaited<ReturnType<typeof getWebinarStandardEvaluations>>>
+export type GetWebinarStandardEvaluationsQueryError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>
+
+
+
+export function useGetWebinarStandardEvaluations<TData = Awaited<ReturnType<typeof getWebinarStandardEvaluations>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(
+ campaignId: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardEvaluations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWebinarStandardEvaluationsQueryOptions(campaignId,sessionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getEvaluateWebinarStandardUrl = (campaignId: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/evaluations`
+}
+
+/**
+ * Isolated development diagnostic simulation. Fixed calculationAt/expectedRevision/idempotencyKey tuple must be reused unchanged on retry. The sole orchestration evaluates all 106 canonical rules and persists an immutable snapshot; not operational approval.
+ */
+export const evaluateWebinarStandard = async (campaignId: string,
+    sessionId: string,
+    webinarApiEvaluationInput: WebinarApiEvaluationInput, options?: Parameters<typeof customFetch>[1]): Promise<WebinarApiEvaluationResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<WebinarApiEvaluationResult>(getEvaluateWebinarStandardUrl(campaignId,sessionId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(webinarApiEvaluationInput)
+  }
+);}
+
+
+
+
+
+export const getEvaluateWebinarStandardMutationKey = () => ['evaluateWebinarStandard'] as const;
+
+export const getEvaluateWebinarStandardMutationOptions = <TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse | WebinarApiUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof evaluateWebinarStandard>>, TError,EvaluateWebinarStandardMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof evaluateWebinarStandard>>, TError,EvaluateWebinarStandardMutationVariables, TContext> => {
+
+const mutationKey = getEvaluateWebinarStandardMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof evaluateWebinarStandard>>, EvaluateWebinarStandardMutationVariables> = (props) => {
+          const {campaignId,sessionId,data} = props ?? {};
+
+          return  evaluateWebinarStandard(campaignId,sessionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EvaluateWebinarStandardMutationResult = NonNullable<Awaited<ReturnType<typeof evaluateWebinarStandard>>>
+    export type EvaluateWebinarStandardMutationBody = BodyType<WebinarApiEvaluationInput>
+    export type EvaluateWebinarStandardMutationError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse | WebinarApiUnavailableResponse>
+    export type EvaluateWebinarStandardMutationVariables = {campaignId: string;sessionId: string;data: BodyType<WebinarApiEvaluationInput>}
+
+    export const useEvaluateWebinarStandard = <TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse | WebinarApiUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof evaluateWebinarStandard>>, TError,EvaluateWebinarStandardMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof evaluateWebinarStandard>>,
+        TError,
+        EvaluateWebinarStandardMutationVariables,
+        TContext
+      > => {
+      return useMutation(getEvaluateWebinarStandardMutationOptions(options));
+    }
+
+export const getGetWebinarStandardReadinessUrl = (campaignId: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/readiness`
+}
+
+/**
+ * Development-only last snapshot. Stages are independent per canonical dependencies; ready-to-run does not inherit ready-to-recruit. Incomplete inputs, failed blockers and advisories remain visible.
+ */
+export const getWebinarStandardReadiness = async (campaignId: string,
+    sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<WebinarApiReadiness> => {
+
+  return customFetch<WebinarApiReadiness>(getGetWebinarStandardReadinessUrl(campaignId,sessionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWebinarStandardReadinessQueryKey = (campaignId: string,
+    sessionId: string,) => {
+    return [
+    `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/readiness`
+    ] as const;
+    }
+
+
+export const getGetWebinarStandardReadinessQueryOptions = <TData = Awaited<ReturnType<typeof getWebinarStandardReadiness>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(campaignId: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardReadiness>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWebinarStandardReadinessQueryKey(campaignId,sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWebinarStandardReadiness>>> = ({ signal }) => getWebinarStandardReadiness(campaignId,sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: campaignId !== null && campaignId !== undefined && sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardReadiness>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWebinarStandardReadinessQueryResult = NonNullable<Awaited<ReturnType<typeof getWebinarStandardReadiness>>>
+export type GetWebinarStandardReadinessQueryError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>
+
+
+
+export function useGetWebinarStandardReadiness<TData = Awaited<ReturnType<typeof getWebinarStandardReadiness>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(
+ campaignId: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardReadiness>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWebinarStandardReadinessQueryOptions(campaignId,sessionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWebinarStandardCompletionUrl = (campaignId: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/completion`
+}
+
+/**
+ * Development-only last immutable completion result; planning and complete evaluator coverage are not operational evidence.
+ */
+export const getWebinarStandardCompletion = async (campaignId: string,
+    sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<WebinarApiCompletion> => {
+
+  return customFetch<WebinarApiCompletion>(getGetWebinarStandardCompletionUrl(campaignId,sessionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWebinarStandardCompletionQueryKey = (campaignId: string,
+    sessionId: string,) => {
+    return [
+    `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/completion`
+    ] as const;
+    }
+
+
+export const getGetWebinarStandardCompletionQueryOptions = <TData = Awaited<ReturnType<typeof getWebinarStandardCompletion>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(campaignId: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardCompletion>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWebinarStandardCompletionQueryKey(campaignId,sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWebinarStandardCompletion>>> = ({ signal }) => getWebinarStandardCompletion(campaignId,sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: campaignId !== null && campaignId !== undefined && sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardCompletion>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWebinarStandardCompletionQueryResult = NonNullable<Awaited<ReturnType<typeof getWebinarStandardCompletion>>>
+export type GetWebinarStandardCompletionQueryError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>
+
+
+
+export function useGetWebinarStandardCompletion<TData = Awaited<ReturnType<typeof getWebinarStandardCompletion>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(
+ campaignId: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardCompletion>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWebinarStandardCompletionQueryOptions(campaignId,sessionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWebinarStandardEvidenceUrl = (campaignId: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/evidence`
+}
+
+/**
+ * Development-only immutable evidence references, not approved proof of execution.
+ */
+export const getWebinarStandardEvidence = async (campaignId: string,
+    sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<WebinarApiEvidenceList> => {
+
+  return customFetch<WebinarApiEvidenceList>(getGetWebinarStandardEvidenceUrl(campaignId,sessionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWebinarStandardEvidenceQueryKey = (campaignId: string,
+    sessionId: string,) => {
+    return [
+    `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/evidence`
+    ] as const;
+    }
+
+
+export const getGetWebinarStandardEvidenceQueryOptions = <TData = Awaited<ReturnType<typeof getWebinarStandardEvidence>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(campaignId: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardEvidence>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWebinarStandardEvidenceQueryKey(campaignId,sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWebinarStandardEvidence>>> = ({ signal }) => getWebinarStandardEvidence(campaignId,sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: campaignId !== null && campaignId !== undefined && sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardEvidence>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWebinarStandardEvidenceQueryResult = NonNullable<Awaited<ReturnType<typeof getWebinarStandardEvidence>>>
+export type GetWebinarStandardEvidenceQueryError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>
+
+
+
+export function useGetWebinarStandardEvidence<TData = Awaited<ReturnType<typeof getWebinarStandardEvidence>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(
+ campaignId: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardEvidence>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWebinarStandardEvidenceQueryOptions(campaignId,sessionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSubmitWebinarStandardEvidenceUrl = (campaignId: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/evidence`
+}
+
+/**
+ * Development-only immutable unverified source reference. Caller supplies exact sourceType/sourceVersion/sourceHash of the available scoped immutable source, not just its ID. Mismatch or later observations fail closed as STALE_INPUT. Governed source receipts must remain valid. Result is always unknown. Same scoped idempotency key and request replays; different input conflicts. Does not pass rules or create exceptions.
+ */
+export const submitWebinarStandardEvidence = async (campaignId: string,
+    sessionId: string,
+    webinarApiEvidenceInput: WebinarApiEvidenceInput, options?: Parameters<typeof customFetch>[1]): Promise<WebinarApiEvidenceCreated> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<WebinarApiEvidenceCreated>(getSubmitWebinarStandardEvidenceUrl(campaignId,sessionId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(webinarApiEvidenceInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitWebinarStandardEvidenceMutationKey = () => ['submitWebinarStandardEvidence'] as const;
+
+export const getSubmitWebinarStandardEvidenceMutationOptions = <TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse | WebinarApiIncompleteResponse | WebinarApiUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitWebinarStandardEvidence>>, TError,SubmitWebinarStandardEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitWebinarStandardEvidence>>, TError,SubmitWebinarStandardEvidenceMutationVariables, TContext> => {
+
+const mutationKey = getSubmitWebinarStandardEvidenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitWebinarStandardEvidence>>, SubmitWebinarStandardEvidenceMutationVariables> = (props) => {
+          const {campaignId,sessionId,data} = props ?? {};
+
+          return  submitWebinarStandardEvidence(campaignId,sessionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitWebinarStandardEvidenceMutationResult = NonNullable<Awaited<ReturnType<typeof submitWebinarStandardEvidence>>>
+    export type SubmitWebinarStandardEvidenceMutationBody = BodyType<WebinarApiEvidenceInput>
+    export type SubmitWebinarStandardEvidenceMutationError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse | WebinarApiIncompleteResponse | WebinarApiUnavailableResponse>
+    export type SubmitWebinarStandardEvidenceMutationVariables = {campaignId: string;sessionId: string;data: BodyType<WebinarApiEvidenceInput>}
+
+    export const useSubmitWebinarStandardEvidence = <TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse | WebinarApiIncompleteResponse | WebinarApiUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitWebinarStandardEvidence>>, TError,SubmitWebinarStandardEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitWebinarStandardEvidence>>,
+        TError,
+        SubmitWebinarStandardEvidenceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSubmitWebinarStandardEvidenceMutationOptions(options));
+    }
+
+export const getGetWebinarStandardExceptionsUrl = (campaignId: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/exceptions`
+}
+
+/**
+ * Development-only requests remain unverified drafts; no exception decision is available.
+ */
+export const getWebinarStandardExceptions = async (campaignId: string,
+    sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<WebinarApiExceptionList> => {
+
+  return customFetch<WebinarApiExceptionList>(getGetWebinarStandardExceptionsUrl(campaignId,sessionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWebinarStandardExceptionsQueryKey = (campaignId: string,
+    sessionId: string,) => {
+    return [
+    `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/exceptions`
+    ] as const;
+    }
+
+
+export const getGetWebinarStandardExceptionsQueryOptions = <TData = Awaited<ReturnType<typeof getWebinarStandardExceptions>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(campaignId: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardExceptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWebinarStandardExceptionsQueryKey(campaignId,sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWebinarStandardExceptions>>> = ({ signal }) => getWebinarStandardExceptions(campaignId,sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: campaignId !== null && campaignId !== undefined && sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardExceptions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWebinarStandardExceptionsQueryResult = NonNullable<Awaited<ReturnType<typeof getWebinarStandardExceptions>>>
+export type GetWebinarStandardExceptionsQueryError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>
+
+
+
+export function useGetWebinarStandardExceptions<TData = Awaited<ReturnType<typeof getWebinarStandardExceptions>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(
+ campaignId: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardExceptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWebinarStandardExceptionsQueryOptions(campaignId,sessionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRequestWebinarStandardExceptionUrl = (campaignId: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/exceptions`
+}
+
+/**
+ * Development-only draft. Requires a failed blocking exception-eligible rule and evidence included in current snapshot. WEB-EXC-001 cannot exempt itself. Advisory lock/revision and scoped idempotency protect concurrent requests. No approval or readiness override.
+ */
+export const requestWebinarStandardException = async (campaignId: string,
+    sessionId: string,
+    webinarApiExceptionInput: WebinarApiExceptionInput, options?: Parameters<typeof customFetch>[1]): Promise<WebinarApiExceptionCreated> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<WebinarApiExceptionCreated>(getRequestWebinarStandardExceptionUrl(campaignId,sessionId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(webinarApiExceptionInput)
+  }
+);}
+
+
+
+
+
+export const getRequestWebinarStandardExceptionMutationKey = () => ['requestWebinarStandardException'] as const;
+
+export const getRequestWebinarStandardExceptionMutationOptions = <TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse | WebinarApiIncompleteResponse | WebinarApiUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestWebinarStandardException>>, TError,RequestWebinarStandardExceptionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestWebinarStandardException>>, TError,RequestWebinarStandardExceptionMutationVariables, TContext> => {
+
+const mutationKey = getRequestWebinarStandardExceptionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestWebinarStandardException>>, RequestWebinarStandardExceptionMutationVariables> = (props) => {
+          const {campaignId,sessionId,data} = props ?? {};
+
+          return  requestWebinarStandardException(campaignId,sessionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestWebinarStandardExceptionMutationResult = NonNullable<Awaited<ReturnType<typeof requestWebinarStandardException>>>
+    export type RequestWebinarStandardExceptionMutationBody = BodyType<WebinarApiExceptionInput>
+    export type RequestWebinarStandardExceptionMutationError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse | WebinarApiIncompleteResponse | WebinarApiUnavailableResponse>
+    export type RequestWebinarStandardExceptionMutationVariables = {campaignId: string;sessionId: string;data: BodyType<WebinarApiExceptionInput>}
+
+    export const useRequestWebinarStandardException = <TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse | WebinarApiIncompleteResponse | WebinarApiUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestWebinarStandardException>>, TError,RequestWebinarStandardExceptionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestWebinarStandardException>>,
+        TError,
+        RequestWebinarStandardExceptionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestWebinarStandardExceptionMutationOptions(options));
+    }
+
+export const getReviewWebinarStandardExceptionUrl = (campaignId: string,
+    sessionId: string,
+    exceptionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/exceptions/${exceptionId}/review`
+}
+
+/**
+ * Development-only stable denial contract. Trusted reviewer identity/authorization unavailable. Never approves, denies, revokes or mutates; client-supplied name, header, email and role are not authentication.
+ */
+export const reviewWebinarStandardException = async (campaignId: string,
+    sessionId: string,
+    exceptionId: string,
+    webinarApiEmptyReview?: WebinarApiEmptyReview, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<unknown>(getReviewWebinarStandardExceptionUrl(campaignId,sessionId,exceptionId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(webinarApiEmptyReview)
+  }
+);}
+
+
+
+
+
+export const getReviewWebinarStandardExceptionMutationKey = () => ['reviewWebinarStandardException'] as const;
+
+export const getReviewWebinarStandardExceptionMutationOptions = <TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiUnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewWebinarStandardException>>, TError,ReviewWebinarStandardExceptionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewWebinarStandardException>>, TError,ReviewWebinarStandardExceptionMutationVariables, TContext> => {
+
+const mutationKey = getReviewWebinarStandardExceptionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewWebinarStandardException>>, ReviewWebinarStandardExceptionMutationVariables> = (props) => {
+          const {campaignId,sessionId,exceptionId,data} = props ?? {};
+
+          return  reviewWebinarStandardException(campaignId,sessionId,exceptionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewWebinarStandardExceptionMutationResult = NonNullable<Awaited<ReturnType<typeof reviewWebinarStandardException>>>
+    export type ReviewWebinarStandardExceptionMutationBody = BodyType<WebinarApiEmptyReview> | undefined
+    export type ReviewWebinarStandardExceptionMutationError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiUnauthorizedResponse>
+    export type ReviewWebinarStandardExceptionMutationVariables = {campaignId: string;sessionId: string;exceptionId: string;data?: BodyType<WebinarApiEmptyReview>}
+
+    export const useReviewWebinarStandardException = <TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiUnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewWebinarStandardException>>, TError,ReviewWebinarStandardExceptionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewWebinarStandardException>>,
+        TError,
+        ReviewWebinarStandardExceptionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewWebinarStandardExceptionMutationOptions(options));
+    }
+
+export const getGetWebinarStandardHistoryUrl = (campaignId: string,
+    sessionId: string,
+    params?: GetWebinarStandardHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/history?${stringifiedParams}` : `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/history`
+}
+
+/**
+ * Development-only immutable occurrence history ordered by revision; keyset pagination. Only simulation-safe source metadata, no stored provider payloads. Historical snapshots may have no stable engine release identity.
+ */
+export const getWebinarStandardHistory = async (campaignId: string,
+    sessionId: string,
+    params?: GetWebinarStandardHistoryParams, options?: Parameters<typeof customFetch>[1]): Promise<WebinarApiHistory> => {
+
+  return customFetch<WebinarApiHistory>(getGetWebinarStandardHistoryUrl(campaignId,sessionId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWebinarStandardHistoryQueryKey = (campaignId: string,
+    sessionId: string,
+    params?: GetWebinarStandardHistoryParams,) => {
+    return [
+    `/api/campaigns/${campaignId}/webinars/${sessionId}/standard/history`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetWebinarStandardHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getWebinarStandardHistory>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(campaignId: string,
+    sessionId: string,
+    params?: GetWebinarStandardHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWebinarStandardHistoryQueryKey(campaignId,sessionId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWebinarStandardHistory>>> = ({ signal }) => getWebinarStandardHistory(campaignId,sessionId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: campaignId !== null && campaignId !== undefined && sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWebinarStandardHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getWebinarStandardHistory>>>
+export type GetWebinarStandardHistoryQueryError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>
+
+
+
+export function useGetWebinarStandardHistory<TData = Awaited<ReturnType<typeof getWebinarStandardHistory>>, TError = ErrorType<WebinarApiValidationErrorResponse | WebinarApiNotFoundResponse | WebinarApiConflictResponse>>(
+ campaignId: string,
+    sessionId: string,
+    params?: GetWebinarStandardHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebinarStandardHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWebinarStandardHistoryQueryOptions(campaignId,sessionId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetDevelopmentStatusUrl = () => {
 

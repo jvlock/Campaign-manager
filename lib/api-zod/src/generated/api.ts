@@ -8,6 +8,2141 @@
 import * as zod from 'zod';
 
 
+/**
+ * Development-only isolated synthetic webinar summary. A complete evaluator registry is not operational readiness. Source revision and fingerprint determine staleness; the Foundation is not connected to production.
+ */
+export const GetWebinarStandardSummaryParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const getWebinarStandardSummaryResponseOneEngineReleaseOneDigestRegExp = new RegExp('^[a-f0-9]{64}$');
+export const getWebinarStandardSummaryResponseOneEngineReleaseOneProvenanceCanonicalDocumentsRegExpOne = new RegExp('^[a-f0-9]{64}$');
+export const getWebinarStandardSummaryResponseTwoFoundationOutputsMin = 6;
+export const getWebinarStandardSummaryResponseTwoFoundationOutputsMax = 6;
+
+
+
+export const GetWebinarStandardSummaryResponse = zod.object({
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "occurrenceId": zod.string().uuid(),
+  "standard": zod.object({
+  "id": zod.enum(['WEB-STANDARD-001']),
+  "version": zod.string()
+}),
+  "retrievedAt": zod.coerce.date(),
+  "calculationAt": zod.coerce.date().nullable(),
+  "engineReleaseFingerprint": zod.string().nullable().describe('Stable engine release digest, null before first evaluation or for historical legacy snapshots; never use calculation time as release identity.'),
+  "engineRelease": zod.union([zod.object({
+  "digest": zod.string().regex(getWebinarStandardSummaryResponseOneEngineReleaseOneDigestRegExp),
+  "provenance": zod.object({
+  "schemaVersion": zod.literal(1),
+  "mode": zod.enum(['open-development']),
+  "operational": zod.literal(false),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "canonicalDocuments": zod.record(zod.string(), zod.string().regex(getWebinarStandardSummaryResponseOneEngineReleaseOneProvenanceCanonicalDocumentsRegExpOne)),
+  "evaluatorRegistry": zod.object({
+  "digest": zod.string(),
+  "implementationHashes": zod.record(zod.string(), zod.string()),
+  "coverage": zod.object({
+  "implemented": zod.literal(106),
+  "total": zod.literal(106),
+  "implementedRuleIds": zod.array(zod.string()),
+  "unimplementedRuleIds": zod.array(zod.string())
+})
+}),
+  "applicationRelease": zod.string().nullable().describe('Actual 40-character Git commit, or null if unavailable; never fabricated.'),
+  "dependencies": zod.record(zod.string(), zod.string())
+})
+}),zod.null()]),
+  "releaseIdentityStatus": zod.enum(['recorded', 'unavailable-historical', 'not_evaluated']).describe('Historical snapshots without recorded stable engine release are unavailable-historical, never silently relabeled.'),
+  "evaluationContextFingerprint": zod.string().nullable().describe('Legacy calculation-as-of-dependent digest; never use as engine release identity.'),
+  "inputFingerprint": zod.string().nullable(),
+  "snapshotId": zod.string().uuid().nullable(),
+  "snapshotRevision": zod.number().int().nullable(),
+  "staleness": zod.enum(['current', 'stale', 'not_evaluated']),
+  "operationalStatus": zod.enum(['simulation-only']),
+  "unverified": zod.literal(true),
+  "authoritative": zod.literal(false),
+  "operationalReadiness": zod.literal(false),
+  "capabilities": zod.object({
+  "view": zod.literal(true),
+  "evaluateSynthetic": zod.literal(true),
+  "submitUnverifiedEvidence": zod.literal(true),
+  "requestDraftException": zod.literal(true),
+  "reviewException": zod.literal(false),
+  "send": zod.literal(false),
+  "publish": zod.literal(false)
+}),
+  "status": zod.enum(['available-synthetic', 'not_evaluated'])
+}).and(zod.object({
+  "eventStatus": zod.string(),
+  "population": zod.object({
+  "total": zod.number().int(),
+  "registration": zod.record(zod.string(), zod.number().int()),
+  "attendance": zod.record(zod.string(), zod.number().int()),
+  "lifecycle": zod.record(zod.string(), zod.number().int()),
+  "remaining": zod.number().int()
+}),
+  "registrationSummary": zod.object({
+  "status": zod.enum(['synthetic-recorded', 'not_recorded']),
+  "registered": zod.number().int(),
+  "cancelled": zod.number().int(),
+  "waitlisted": zod.number().int(),
+  "notRegistered": zod.number().int()
+}),
+  "attendanceSummary": zod.object({
+  "status": zod.enum(['synthetic-recorded', 'not_recorded']),
+  "attended": zod.number().int(),
+  "noShow": zod.number().int(),
+  "operationallyVerified": zod.literal(false)
+}),
+  "communications": zod.object({
+  "configured": zod.number().int(),
+  "applicationRecords": zod.number().int(),
+  "planStatus": zod.enum(['configured-synthetic', 'not_configured']),
+  "executionStatus": zod.enum(['unavailable'])
+}),
+  "suppression": zod.object({
+  "recordedObligations": zod.number().int(),
+  "operational": zod.literal(false)
+}),
+  "evidence": zod.object({
+  "records": zod.number().int(),
+  "verificationStatus": zod.enum(['unverified']),
+  "includedInLastEvaluation": zod.array(zod.string().uuid())
+}),
+  "foundation": zod.object({
+  "evaluatorImplemented": zod.boolean(),
+  "connectorConfigured": zod.boolean(),
+  "connectorReachable": zod.boolean().describe('Validated provider response during THIS request; a valid persisted receipt may be available without a new provider call.'),
+  "liveProductionConnection": zod.literal(false),
+  "environment": zod.enum(['synthetic-contract-only']),
+  "observationAvailable": zod.boolean(),
+  "capabilities": zod.object({
+  "taxonomy": zod.enum(['not_configured', 'configured_but_unavailable', 'available-synthetic', 'stale', 'failed', 'unsupported']),
+  "internalTitle": zod.enum(['unsupported']),
+  "campaignCode": zod.enum(['unsupported']),
+  "utm": zod.enum(['unsupported']).describe('All unsupported UTM scopes remain visible individually in observations; no governed URL is inferred.'),
+  "objective": zod.enum(['unsupported']),
+  "exclusion": zod.enum(['unsupported'])
+}),
+  "observations": zod.array(zod.object({
+  "type": zod.enum(['taxonomy', 'internal_title', 'campaign_code', 'utm', 'objective_membership', 'campaign_exclusion']),
+  "status": zod.enum(['available', 'unavailable', 'stale', 'expired', 'deprecated']),
+  "providerSource": zod.enum(['synthetic-provider', 'immutable-history', 'none']),
+  "error": zod.string().nullable(),
+  "requestReference": zod.string(),
+  "inputFingerprint": zod.string(),
+  "serviceVersion": zod.string().nullable(),
+  "taxonomyVersion": zod.string().nullable(),
+  "supportedByFixture": zod.boolean(),
+  "validity": zod.enum(['available', 'unavailable', 'stale', 'expired', 'deprecated']),
+  "effectiveVersion": zod.string().nullable(),
+  "provenance": zod.record(zod.string(), zod.unknown()).nullable(),
+  "providerIdentity": zod.string().nullable(),
+  "observationId": zod.string().uuid().nullable(),
+  "createdAt": zod.coerce.date().nullable(),
+  "supersessionState": zod.enum(['superseded', 'latest-for-input', 'no-matching-receipt']),
+  "receipt": zod.union([zod.object({
+  "id": zod.string().uuid(),
+  "createdAt": zod.coerce.date(),
+  "supersedesId": zod.string().uuid().nullable()
+}),zod.null()])
+})),
+  "outputs": zod.array(zod.object({
+  "type": zod.enum(['taxonomy', 'internal_title', 'campaign_code', 'utm', 'objective_membership', 'campaign_exclusion']),
+  "status": zod.enum(['not_configured', 'configured_but_unavailable', 'available-synthetic', 'stale', 'failed', 'unsupported']),
+  "supportedByFixture": zod.boolean(),
+  "configured": zod.boolean(),
+  "environment": zod.enum(['synthetic-contract-only']),
+  "availableFromRealProvider": zod.literal(false),
+  "validity": zod.enum(['available', 'unavailable', 'stale', 'expired', 'deprecated', 'unsupported']),
+  "error": zod.string().nullable(),
+  "providerSource": zod.enum(['synthetic-provider', 'immutable-history', 'none']),
+  "requestReference": zod.string().nullable(),
+  "inputFingerprint": zod.string().nullable(),
+  "serviceVersion": zod.string().nullable(),
+  "taxonomyVersion": zod.string().nullable(),
+  "effectiveVersion": zod.string().nullable(),
+  "provenance": zod.record(zod.string(), zod.unknown()).nullable(),
+  "providerIdentity": zod.string().nullable(),
+  "observationId": zod.string().uuid().nullable(),
+  "createdAt": zod.coerce.date().nullable(),
+  "supersessionState": zod.enum(['superseded', 'latest-for-input', 'no-matching-receipt']),
+  "receipt": zod.union([zod.object({
+  "id": zod.string().uuid(),
+  "createdAt": zod.coerce.date(),
+  "supersedesId": zod.string().uuid().nullable()
+}),zod.null()])
+})).min(getWebinarStandardSummaryResponseTwoFoundationOutputsMin).max(getWebinarStandardSummaryResponseTwoFoundationOutputsMax).describe('Exactly one item per governed output type; unsupported outputs stay explicit rather than disappearing when no request is built.'),
+  "inspection": zod.string()
+}),
+  "evaluation": zod.object({
+  "applicable": zod.number().int(),
+  "passed": zod.number().int(),
+  "coverage": zod.union([zod.object({
+  "totalRuleCount": zod.number().int(),
+  "implementedRuleCount": zod.number().int(),
+  "missingEvaluatorCount": zod.number().int(),
+  "implementedRuleIds": zod.array(zod.string()),
+  "missingEvaluatorRuleIds": zod.array(zod.string())
+}),zod.null()]),
+  "missingEvaluatorCoverage": zod.array(zod.string()),
+  "lastEvaluationId": zod.string().nullable()
+}),
+  "readinessStages": zod.array(zod.object({
+  "stage": zod.enum(['Ready to recruit', 'Ready to run', 'Ready to follow up', 'Complete']),
+  "status": zod.enum(['ready', 'blocked', 'incomplete']),
+  "fullyEvaluated": zod.boolean(),
+  "assignedRuleIds": zod.array(zod.string()),
+  "applicableRuleIds": zod.array(zod.string()),
+  "evaluatedRuleIds": zod.array(zod.string()),
+  "missingRuleIds": zod.array(zod.string()),
+  "passes": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "notApplicable": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "failedBlockers": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "unassessedBlockers": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "unassessedAdvisories": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "failedNonBlocking": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "warnings": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "exceptionResolvedBlockers": zod.array(zod.object({
+  "ruleId": zod.string(),
+  "classification": zod.enum(['resolvedByException']),
+  "originalFailure": zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+}),
+  "exception": zod.record(zod.string(), zod.unknown()).describe('Exact exception disposition snapshot, not evidence or a planning draft.')
+})),
+  "unresolvedRuleIds": zod.array(zod.string()),
+  "diagnosticCoveragePercent": zod.number(),
+  "issues": zod.array(zod.object({
+  "code": zod.string(),
+  "ruleId": zod.string().nullable(),
+  "stage": zod.string().nullable(),
+  "message": zod.string()
+})),
+  "prerequisiteIssues": zod.array(zod.object({
+  "prerequisite": zod.enum(['Ready to run', 'attendanceReconciliation', 'requiredFollowUpCompletion', 'exceptionRecording', 'measurementCapture']),
+  "status": zod.enum(['blocked', 'incomplete']),
+  "message": zod.string()
+}))
+})),
+  "completion": zod.union([zod.object({
+  "outcome": zod.enum(['complete', 'incomplete_blocker', 'incomplete_evidence', 'incomplete_operational', 'incomplete_invalid_context', 'incomplete_evaluator_unavailable', 'resolvedByException', 'advisory']),
+  "complete": zod.boolean(),
+  "blockers": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "evidenceUnavailable": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "operationalGaps": zod.array(zod.string()),
+  "resolvedByException": zod.array(zod.string()),
+  "advisories": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "issues": zod.array(zod.string())
+}),zod.null()]),
+  "missingInputData": zod.array(zod.object({
+  "field": zod.string(),
+  "reason": zod.string(),
+  "sourceReference": zod.union([zod.object({
+  "sourceType": zod.string(),
+  "sourceId": zod.string(),
+  "sourceHash": zod.string().optional(),
+  "sourceVersion": zod.string().optional()
+}),zod.null()])
+})),
+  "unavailableExternalObservations": zod.array(zod.object({
+  "field": zod.string(),
+  "reason": zod.string(),
+  "sourceReference": zod.union([zod.object({
+  "sourceType": zod.string(),
+  "sourceId": zod.string(),
+  "sourceHash": zod.string().optional(),
+  "sourceVersion": zod.string().optional()
+}),zod.null()])
+})),
+  "unresolvedBlockingFailures": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "nonblockingFailures": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "resolvedBlockers": zod.array(zod.object({
+  "ruleId": zod.string(),
+  "classification": zod.enum(['resolvedByException']),
+  "originalFailure": zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+}),
+  "exception": zod.record(zod.string(), zod.unknown()).describe('Exact exception disposition snapshot, not evidence or a planning draft.')
+})),
+  "links": zod.object({
+  "evaluations": zod.string(),
+  "readiness": zod.string(),
+  "completion": zod.string(),
+  "evidence": zod.string(),
+  "exceptions": zod.string(),
+  "history": zod.string()
+})
+}))
+
+
+/**
+ * Development-only read of the last immutable synthetic evaluation; never runs an evaluator.
+ */
+export const GetWebinarStandardEvaluationsParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const getWebinarStandardEvaluationsResponseOneEngineReleaseOneDigestRegExp = new RegExp('^[a-f0-9]{64}$');
+export const getWebinarStandardEvaluationsResponseOneEngineReleaseOneProvenanceCanonicalDocumentsRegExpOne = new RegExp('^[a-f0-9]{64}$');
+
+
+export const GetWebinarStandardEvaluationsResponse = zod.object({
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "occurrenceId": zod.string().uuid(),
+  "standard": zod.object({
+  "id": zod.enum(['WEB-STANDARD-001']),
+  "version": zod.string()
+}),
+  "retrievedAt": zod.coerce.date(),
+  "calculationAt": zod.coerce.date().nullable(),
+  "engineReleaseFingerprint": zod.string().nullable().describe('Stable engine release digest, null before first evaluation or for historical legacy snapshots; never use calculation time as release identity.'),
+  "engineRelease": zod.union([zod.object({
+  "digest": zod.string().regex(getWebinarStandardEvaluationsResponseOneEngineReleaseOneDigestRegExp),
+  "provenance": zod.object({
+  "schemaVersion": zod.literal(1),
+  "mode": zod.enum(['open-development']),
+  "operational": zod.literal(false),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "canonicalDocuments": zod.record(zod.string(), zod.string().regex(getWebinarStandardEvaluationsResponseOneEngineReleaseOneProvenanceCanonicalDocumentsRegExpOne)),
+  "evaluatorRegistry": zod.object({
+  "digest": zod.string(),
+  "implementationHashes": zod.record(zod.string(), zod.string()),
+  "coverage": zod.object({
+  "implemented": zod.literal(106),
+  "total": zod.literal(106),
+  "implementedRuleIds": zod.array(zod.string()),
+  "unimplementedRuleIds": zod.array(zod.string())
+})
+}),
+  "applicationRelease": zod.string().nullable().describe('Actual 40-character Git commit, or null if unavailable; never fabricated.'),
+  "dependencies": zod.record(zod.string(), zod.string())
+})
+}),zod.null()]),
+  "releaseIdentityStatus": zod.enum(['recorded', 'unavailable-historical', 'not_evaluated']).describe('Historical snapshots without recorded stable engine release are unavailable-historical, never silently relabeled.'),
+  "evaluationContextFingerprint": zod.string().nullable().describe('Legacy calculation-as-of-dependent digest; never use as engine release identity.'),
+  "inputFingerprint": zod.string().nullable(),
+  "snapshotId": zod.string().uuid().nullable(),
+  "snapshotRevision": zod.number().int().nullable(),
+  "staleness": zod.enum(['current', 'stale', 'not_evaluated']),
+  "operationalStatus": zod.enum(['simulation-only']),
+  "unverified": zod.literal(true),
+  "authoritative": zod.literal(false),
+  "operationalReadiness": zod.literal(false),
+  "capabilities": zod.object({
+  "view": zod.literal(true),
+  "evaluateSynthetic": zod.literal(true),
+  "submitUnverifiedEvidence": zod.literal(true),
+  "requestDraftException": zod.literal(true),
+  "reviewException": zod.literal(false),
+  "send": zod.literal(false),
+  "publish": zod.literal(false)
+}),
+  "status": zod.enum(['available-synthetic', 'not_evaluated'])
+}).and(zod.object({
+  "results": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "evaluatorCoverage": zod.union([zod.object({
+  "totalRuleCount": zod.number().int(),
+  "implementedRuleCount": zod.number().int(),
+  "missingEvaluatorCount": zod.number().int(),
+  "implementedRuleIds": zod.array(zod.string()),
+  "missingEvaluatorRuleIds": zod.array(zod.string())
+}),zod.null()]),
+  "missingInputData": zod.array(zod.object({
+  "field": zod.string(),
+  "reason": zod.string(),
+  "sourceReference": zod.union([zod.object({
+  "sourceType": zod.string(),
+  "sourceId": zod.string(),
+  "sourceHash": zod.string().optional(),
+  "sourceVersion": zod.string().optional()
+}),zod.null()])
+})),
+  "unavailableExternalObservations": zod.array(zod.object({
+  "field": zod.string(),
+  "reason": zod.string(),
+  "sourceReference": zod.union([zod.object({
+  "sourceType": zod.string(),
+  "sourceId": zod.string(),
+  "sourceHash": zod.string().optional(),
+  "sourceVersion": zod.string().optional()
+}),zod.null()])
+})),
+  "sourceReferences": zod.array(zod.object({
+  "sourceType": zod.string(),
+  "sourceId": zod.string(),
+  "sourceHash": zod.string().optional(),
+  "sourceVersion": zod.string().optional()
+}))
+}))
+
+
+/**
+ * Isolated development diagnostic simulation. Fixed calculationAt/expectedRevision/idempotencyKey tuple must be reused unchanged on retry. The sole orchestration evaluates all 106 canonical rules and persists an immutable snapshot; not operational approval.
+ */
+export const EvaluateWebinarStandardParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const evaluateWebinarStandardBodyExpectedRevisionMin = 0;
+
+
+
+export const EvaluateWebinarStandardBody = zod.object({
+  "expectedRevision": zod.number().int().min(evaluateWebinarStandardBodyExpectedRevisionMin).describe('Current scoped source revision, not a rule result.'),
+  "idempotencyKey": zod.string().uuid().describe('Scoped to occurrence and evaluation; exact key and body must be reused on retry.'),
+  "calculationAt": zod.coerce.date().describe('Fixed diagnostic instant accepted only on this isolated development route.')
+})
+
+export const evaluateWebinarStandardResponseTwoEngineReleaseDigestRegExp = new RegExp('^[a-f0-9]{64}$');
+export const evaluateWebinarStandardResponseTwoEngineReleaseProvenanceCanonicalDocumentsRegExpOne = new RegExp('^[a-f0-9]{64}$');
+
+
+export const EvaluateWebinarStandardResponse = zod.object({
+  "simulation": zod.boolean(),
+  "unverified": zod.boolean(),
+  "authoritative": zod.boolean(),
+  "operationalReadiness": zod.boolean(),
+  "operationalStatus": zod.enum(['simulation-only']),
+  "message": zod.string().optional(),
+  "activityId": zod.string().uuid(),
+  "occurrenceId": zod.string().uuid(),
+  "standard": zod.object({
+  "id": zod.string(),
+  "version": zod.string()
+}),
+  "calculationAt": zod.coerce.date(),
+  "releaseFingerprint": zod.string().optional(),
+  "inputFingerprint": zod.string(),
+  "snapshotId": zod.string().uuid(),
+  "revision": zod.number().int(),
+  "sourceReferences": zod.array(zod.unknown()),
+  "applicableRules": zod.array(zod.string()),
+  "passedRules": zod.array(zod.string()),
+  "unresolvedBlockingFailures": zod.array(zod.unknown()),
+  "blockersResolvedByExceptions": zod.array(zod.unknown()),
+  "nonblockingFailures": zod.array(zod.unknown()),
+  "warnings": zod.array(zod.unknown()),
+  "missingInputData": zod.array(zod.unknown()),
+  "unavailableExternalObservations": zod.array(zod.unknown()),
+  "mappingErrors": zod.array(zod.unknown()),
+  "evaluatorCoverage": zod.record(zod.string(), zod.unknown()),
+  "readinessStages": zod.array(zod.unknown()),
+  "completionResult": zod.record(zod.string(), zod.unknown()),
+  "diagnostics": zod.record(zod.string(), zod.unknown())
+}).and(zod.object({
+  "engineReleaseFingerprint": zod.string(),
+  "engineRelease": zod.object({
+  "digest": zod.string().regex(evaluateWebinarStandardResponseTwoEngineReleaseDigestRegExp),
+  "provenance": zod.object({
+  "schemaVersion": zod.literal(1),
+  "mode": zod.enum(['open-development']),
+  "operational": zod.literal(false),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "canonicalDocuments": zod.record(zod.string(), zod.string().regex(evaluateWebinarStandardResponseTwoEngineReleaseProvenanceCanonicalDocumentsRegExpOne)),
+  "evaluatorRegistry": zod.object({
+  "digest": zod.string(),
+  "implementationHashes": zod.record(zod.string(), zod.string()),
+  "coverage": zod.object({
+  "implemented": zod.literal(106),
+  "total": zod.literal(106),
+  "implementedRuleIds": zod.array(zod.string()),
+  "unimplementedRuleIds": zod.array(zod.string())
+})
+}),
+  "applicationRelease": zod.string().nullable().describe('Actual 40-character Git commit, or null if unavailable; never fabricated.'),
+  "dependencies": zod.record(zod.string(), zod.string())
+})
+}),
+  "status": zod.enum(['available-synthetic']),
+  "snapshotId": zod.string().uuid(),
+  "revision": zod.number().int(),
+  "diagnostics": zod.record(zod.string(), zod.unknown()).describe('Request-local diagnostics; not shared authoritative state.'),
+  "simulation": zod.literal(true),
+  "operationalReadiness": zod.literal(false),
+  "unverified": zod.literal(true),
+  "authoritative": zod.literal(false),
+  "activityId": zod.string().uuid(),
+  "occurrenceId": zod.string().uuid(),
+  "standard": zod.object({
+  "id": zod.enum(['WEB-STANDARD-001']),
+  "version": zod.string()
+}),
+  "calculationAt": zod.coerce.date(),
+  "evaluationContextFingerprint": zod.string().describe('Legacy as-of evaluation context fingerprint, not the engine identity; renamed from the internal snapshot releaseFingerprint.'),
+  "inputFingerprint": zod.string(),
+  "sourceReferences": zod.array(zod.object({
+  "sourceType": zod.string(),
+  "sourceId": zod.string(),
+  "sourceHash": zod.string().optional(),
+  "sourceVersion": zod.string().optional()
+})),
+  "applicableRules": zod.array(zod.string()),
+  "passedRules": zod.array(zod.string()),
+  "results": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})).describe('All applicable canonical evaluator results in deterministic rule-ID order; 106/106 evaluator implementation is not readiness.'),
+  "unresolvedBlockingFailures": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "blockersResolvedByExceptions": zod.array(zod.object({
+  "ruleId": zod.string(),
+  "classification": zod.enum(['resolvedByException']),
+  "originalFailure": zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+}),
+  "exception": zod.record(zod.string(), zod.unknown()).describe('Exact exception disposition snapshot, not evidence or a planning draft.')
+})),
+  "nonblockingFailures": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "warnings": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "missingInputData": zod.array(zod.object({
+  "field": zod.string(),
+  "reason": zod.string(),
+  "sourceReference": zod.union([zod.object({
+  "sourceType": zod.string(),
+  "sourceId": zod.string(),
+  "sourceHash": zod.string().optional(),
+  "sourceVersion": zod.string().optional()
+}),zod.null()])
+})),
+  "unavailableExternalObservations": zod.array(zod.object({
+  "field": zod.string(),
+  "reason": zod.string(),
+  "sourceReference": zod.union([zod.object({
+  "sourceType": zod.string(),
+  "sourceId": zod.string(),
+  "sourceHash": zod.string().optional(),
+  "sourceVersion": zod.string().optional()
+}),zod.null()])
+})),
+  "mappingErrors": zod.array(zod.object({
+  "code": zod.string(),
+  "field": zod.string(),
+  "message": zod.string(),
+  "sourceReference": zod.union([zod.object({
+  "sourceType": zod.string(),
+  "sourceId": zod.string(),
+  "sourceHash": zod.string().optional(),
+  "sourceVersion": zod.string().optional()
+}),zod.null()])
+})),
+  "evaluatorCoverage": zod.object({
+  "totalRuleCount": zod.number().int(),
+  "implementedRuleCount": zod.number().int(),
+  "missingEvaluatorCount": zod.number().int(),
+  "implementedRuleIds": zod.array(zod.string()),
+  "missingEvaluatorRuleIds": zod.array(zod.string())
+}),
+  "readinessStages": zod.array(zod.object({
+  "stage": zod.enum(['Ready to recruit', 'Ready to run', 'Ready to follow up', 'Complete']),
+  "status": zod.enum(['ready', 'blocked', 'incomplete']),
+  "fullyEvaluated": zod.boolean(),
+  "assignedRuleIds": zod.array(zod.string()),
+  "applicableRuleIds": zod.array(zod.string()),
+  "evaluatedRuleIds": zod.array(zod.string()),
+  "missingRuleIds": zod.array(zod.string()),
+  "passes": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "notApplicable": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "failedBlockers": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "unassessedBlockers": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "unassessedAdvisories": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "failedNonBlocking": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "warnings": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "exceptionResolvedBlockers": zod.array(zod.object({
+  "ruleId": zod.string(),
+  "classification": zod.enum(['resolvedByException']),
+  "originalFailure": zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+}),
+  "exception": zod.record(zod.string(), zod.unknown()).describe('Exact exception disposition snapshot, not evidence or a planning draft.')
+})),
+  "unresolvedRuleIds": zod.array(zod.string()),
+  "diagnosticCoveragePercent": zod.number(),
+  "issues": zod.array(zod.object({
+  "code": zod.string(),
+  "ruleId": zod.string().nullable(),
+  "stage": zod.string().nullable(),
+  "message": zod.string()
+})),
+  "prerequisiteIssues": zod.array(zod.object({
+  "prerequisite": zod.enum(['Ready to run', 'attendanceReconciliation', 'requiredFollowUpCompletion', 'exceptionRecording', 'measurementCapture']),
+  "status": zod.enum(['blocked', 'incomplete']),
+  "message": zod.string()
+}))
+})),
+  "readinessIssues": zod.array(zod.object({
+  "code": zod.string(),
+  "ruleId": zod.string().nullable(),
+  "stage": zod.string().nullable(),
+  "message": zod.string()
+})),
+  "completionResult": zod.object({
+  "outcome": zod.enum(['complete', 'incomplete_blocker', 'incomplete_evidence', 'incomplete_operational', 'incomplete_invalid_context', 'incomplete_evaluator_unavailable', 'resolvedByException', 'advisory']),
+  "complete": zod.boolean(),
+  "blockers": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "evidenceUnavailable": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "operationalGaps": zod.array(zod.string()),
+  "resolvedByException": zod.array(zod.string()),
+  "advisories": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "issues": zod.array(zod.string())
+}),
+  "operationalStatus": zod.enum(['simulation-only'])
+}))
+
+
+/**
+ * Development-only last snapshot. Stages are independent per canonical dependencies; ready-to-run does not inherit ready-to-recruit. Incomplete inputs, failed blockers and advisories remain visible.
+ */
+export const GetWebinarStandardReadinessParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const getWebinarStandardReadinessResponseOneEngineReleaseOneDigestRegExp = new RegExp('^[a-f0-9]{64}$');
+export const getWebinarStandardReadinessResponseOneEngineReleaseOneProvenanceCanonicalDocumentsRegExpOne = new RegExp('^[a-f0-9]{64}$');
+
+
+export const GetWebinarStandardReadinessResponse = zod.object({
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "occurrenceId": zod.string().uuid(),
+  "standard": zod.object({
+  "id": zod.enum(['WEB-STANDARD-001']),
+  "version": zod.string()
+}),
+  "retrievedAt": zod.coerce.date(),
+  "calculationAt": zod.coerce.date().nullable(),
+  "engineReleaseFingerprint": zod.string().nullable().describe('Stable engine release digest, null before first evaluation or for historical legacy snapshots; never use calculation time as release identity.'),
+  "engineRelease": zod.union([zod.object({
+  "digest": zod.string().regex(getWebinarStandardReadinessResponseOneEngineReleaseOneDigestRegExp),
+  "provenance": zod.object({
+  "schemaVersion": zod.literal(1),
+  "mode": zod.enum(['open-development']),
+  "operational": zod.literal(false),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "canonicalDocuments": zod.record(zod.string(), zod.string().regex(getWebinarStandardReadinessResponseOneEngineReleaseOneProvenanceCanonicalDocumentsRegExpOne)),
+  "evaluatorRegistry": zod.object({
+  "digest": zod.string(),
+  "implementationHashes": zod.record(zod.string(), zod.string()),
+  "coverage": zod.object({
+  "implemented": zod.literal(106),
+  "total": zod.literal(106),
+  "implementedRuleIds": zod.array(zod.string()),
+  "unimplementedRuleIds": zod.array(zod.string())
+})
+}),
+  "applicationRelease": zod.string().nullable().describe('Actual 40-character Git commit, or null if unavailable; never fabricated.'),
+  "dependencies": zod.record(zod.string(), zod.string())
+})
+}),zod.null()]),
+  "releaseIdentityStatus": zod.enum(['recorded', 'unavailable-historical', 'not_evaluated']).describe('Historical snapshots without recorded stable engine release are unavailable-historical, never silently relabeled.'),
+  "evaluationContextFingerprint": zod.string().nullable().describe('Legacy calculation-as-of-dependent digest; never use as engine release identity.'),
+  "inputFingerprint": zod.string().nullable(),
+  "snapshotId": zod.string().uuid().nullable(),
+  "snapshotRevision": zod.number().int().nullable(),
+  "staleness": zod.enum(['current', 'stale', 'not_evaluated']),
+  "operationalStatus": zod.enum(['simulation-only']),
+  "unverified": zod.literal(true),
+  "authoritative": zod.literal(false),
+  "operationalReadiness": zod.literal(false),
+  "capabilities": zod.object({
+  "view": zod.literal(true),
+  "evaluateSynthetic": zod.literal(true),
+  "submitUnverifiedEvidence": zod.literal(true),
+  "requestDraftException": zod.literal(true),
+  "reviewException": zod.literal(false),
+  "send": zod.literal(false),
+  "publish": zod.literal(false)
+}),
+  "status": zod.enum(['available-synthetic', 'not_evaluated'])
+}).and(zod.object({
+  "stages": zod.array(zod.object({
+  "stage": zod.enum(['Ready to recruit', 'Ready to run', 'Ready to follow up', 'Complete']),
+  "status": zod.enum(['ready', 'blocked', 'incomplete']),
+  "fullyEvaluated": zod.boolean(),
+  "assignedRuleIds": zod.array(zod.string()),
+  "applicableRuleIds": zod.array(zod.string()),
+  "evaluatedRuleIds": zod.array(zod.string()),
+  "missingRuleIds": zod.array(zod.string()),
+  "passes": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "notApplicable": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "failedBlockers": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "unassessedBlockers": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "unassessedAdvisories": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "failedNonBlocking": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "warnings": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "exceptionResolvedBlockers": zod.array(zod.object({
+  "ruleId": zod.string(),
+  "classification": zod.enum(['resolvedByException']),
+  "originalFailure": zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+}),
+  "exception": zod.record(zod.string(), zod.unknown()).describe('Exact exception disposition snapshot, not evidence or a planning draft.')
+})),
+  "unresolvedRuleIds": zod.array(zod.string()),
+  "diagnosticCoveragePercent": zod.number(),
+  "issues": zod.array(zod.object({
+  "code": zod.string(),
+  "ruleId": zod.string().nullable(),
+  "stage": zod.string().nullable(),
+  "message": zod.string()
+})),
+  "prerequisiteIssues": zod.array(zod.object({
+  "prerequisite": zod.enum(['Ready to run', 'attendanceReconciliation', 'requiredFollowUpCompletion', 'exceptionRecording', 'measurementCapture']),
+  "status": zod.enum(['blocked', 'incomplete']),
+  "message": zod.string()
+}))
+}).and(zod.object({
+  "calculationAt": zod.coerce.date(),
+  "applicableRuleCount": zod.number().int(),
+  "passedRules": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "unresolvedBlockingFailures": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "resolvedBlockingFailures": zod.array(zod.object({
+  "ruleId": zod.string(),
+  "classification": zod.enum(['resolvedByException']),
+  "originalFailure": zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+}),
+  "exception": zod.record(zod.string(), zod.unknown()).describe('Exact exception disposition snapshot, not evidence or a planning draft.')
+})),
+  "nonblockingFailures": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "missingInputs": zod.array(zod.object({
+  "field": zod.string(),
+  "reason": zod.string(),
+  "sourceReference": zod.union([zod.object({
+  "sourceType": zod.string(),
+  "sourceId": zod.string(),
+  "sourceHash": zod.string().optional(),
+  "sourceVersion": zod.string().optional()
+}),zod.null()])
+})),
+  "missingEvaluatorCoverage": zod.array(zod.string()),
+  "evidenceReferences": zod.array(zod.string().uuid()),
+  "exceptionReferences": zod.array(zod.string().uuid()),
+  "staleness": zod.enum(['current', 'stale', 'not_evaluated'])
+}))),
+  "issues": zod.array(zod.object({
+  "code": zod.string(),
+  "ruleId": zod.string().nullable(),
+  "stage": zod.string().nullable(),
+  "message": zod.string()
+})),
+  "evaluatorCoverage": zod.union([zod.object({
+  "totalRuleCount": zod.number().int(),
+  "implementedRuleCount": zod.number().int(),
+  "missingEvaluatorCount": zod.number().int(),
+  "implementedRuleIds": zod.array(zod.string()),
+  "missingEvaluatorRuleIds": zod.array(zod.string())
+}),zod.null()])
+}))
+
+
+/**
+ * Development-only last immutable completion result; planning and complete evaluator coverage are not operational evidence.
+ */
+export const GetWebinarStandardCompletionParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const getWebinarStandardCompletionResponseOneEngineReleaseOneDigestRegExp = new RegExp('^[a-f0-9]{64}$');
+export const getWebinarStandardCompletionResponseOneEngineReleaseOneProvenanceCanonicalDocumentsRegExpOne = new RegExp('^[a-f0-9]{64}$');
+
+
+export const GetWebinarStandardCompletionResponse = zod.object({
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "occurrenceId": zod.string().uuid(),
+  "standard": zod.object({
+  "id": zod.enum(['WEB-STANDARD-001']),
+  "version": zod.string()
+}),
+  "retrievedAt": zod.coerce.date(),
+  "calculationAt": zod.coerce.date().nullable(),
+  "engineReleaseFingerprint": zod.string().nullable().describe('Stable engine release digest, null before first evaluation or for historical legacy snapshots; never use calculation time as release identity.'),
+  "engineRelease": zod.union([zod.object({
+  "digest": zod.string().regex(getWebinarStandardCompletionResponseOneEngineReleaseOneDigestRegExp),
+  "provenance": zod.object({
+  "schemaVersion": zod.literal(1),
+  "mode": zod.enum(['open-development']),
+  "operational": zod.literal(false),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "canonicalDocuments": zod.record(zod.string(), zod.string().regex(getWebinarStandardCompletionResponseOneEngineReleaseOneProvenanceCanonicalDocumentsRegExpOne)),
+  "evaluatorRegistry": zod.object({
+  "digest": zod.string(),
+  "implementationHashes": zod.record(zod.string(), zod.string()),
+  "coverage": zod.object({
+  "implemented": zod.literal(106),
+  "total": zod.literal(106),
+  "implementedRuleIds": zod.array(zod.string()),
+  "unimplementedRuleIds": zod.array(zod.string())
+})
+}),
+  "applicationRelease": zod.string().nullable().describe('Actual 40-character Git commit, or null if unavailable; never fabricated.'),
+  "dependencies": zod.record(zod.string(), zod.string())
+})
+}),zod.null()]),
+  "releaseIdentityStatus": zod.enum(['recorded', 'unavailable-historical', 'not_evaluated']).describe('Historical snapshots without recorded stable engine release are unavailable-historical, never silently relabeled.'),
+  "evaluationContextFingerprint": zod.string().nullable().describe('Legacy calculation-as-of-dependent digest; never use as engine release identity.'),
+  "inputFingerprint": zod.string().nullable(),
+  "snapshotId": zod.string().uuid().nullable(),
+  "snapshotRevision": zod.number().int().nullable(),
+  "staleness": zod.enum(['current', 'stale', 'not_evaluated']),
+  "operationalStatus": zod.enum(['simulation-only']),
+  "unverified": zod.literal(true),
+  "authoritative": zod.literal(false),
+  "operationalReadiness": zod.literal(false),
+  "capabilities": zod.object({
+  "view": zod.literal(true),
+  "evaluateSynthetic": zod.literal(true),
+  "submitUnverifiedEvidence": zod.literal(true),
+  "requestDraftException": zod.literal(true),
+  "reviewException": zod.literal(false),
+  "send": zod.literal(false),
+  "publish": zod.literal(false)
+}),
+  "status": zod.enum(['available-synthetic', 'not_evaluated'])
+}).and(zod.object({
+  "result": zod.union([zod.object({
+  "outcome": zod.enum(['complete', 'incomplete_blocker', 'incomplete_evidence', 'incomplete_operational', 'incomplete_invalid_context', 'incomplete_evaluator_unavailable', 'resolvedByException', 'advisory']),
+  "complete": zod.boolean(),
+  "blockers": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "evidenceUnavailable": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "operationalGaps": zod.array(zod.string()),
+  "resolvedByException": zod.array(zod.string()),
+  "advisories": zod.array(zod.object({
+  "mode": zod.enum(['descriptive_only']),
+  "standardId": zod.enum(['WEB-STANDARD-001']),
+  "standardVersion": zod.string(),
+  "ruleId": zod.string(),
+  "rule": zod.object({
+  "ruleId": zod.string(),
+  "ruleName": zod.string(),
+  "hierarchyLevel": zod.string(),
+  "trigger": zod.string(),
+  "expectedBehavior": zod.string(),
+  "primaryRuleType": zod.string(),
+  "evidenceBasis": zod.string(),
+  "readinessStage": zod.string(),
+  "validationMethod": zod.string(),
+  "exceptionEligible": zod.boolean(),
+  "exceptionEligibleNote": zod.string().nullable(),
+  "failureMessage": zod.string(),
+  "resolutionGuidance": zod.string()
+}),
+  "status": zod.enum(['pass', 'fail', 'not_applicable', 'evidence_unavailable', 'unimplemented']),
+  "reason": zod.enum(['satisfied', 'violation', 'condition_not_met', 'missing_evidence', 'invalid_context', 'not_implemented']),
+  "participantId": zod.string().nullable(),
+  "evidence": zod.array(zod.string())
+})),
+  "issues": zod.array(zod.string())
+}),zod.null()]),
+  "evidenceReferences": zod.array(zod.string().uuid()),
+  "exceptionReferences": zod.array(zod.string().uuid()),
+  "missingInputData": zod.array(zod.object({
+  "field": zod.string(),
+  "reason": zod.string(),
+  "sourceReference": zod.union([zod.object({
+  "sourceType": zod.string(),
+  "sourceId": zod.string(),
+  "sourceHash": zod.string().optional(),
+  "sourceVersion": zod.string().optional()
+}),zod.null()])
+})),
+  "obligations": zod.object({
+  "required": zod.array(zod.enum(['attendanceReconciliation', 'requiredFollowUpCompletion', 'exceptionRecording', 'measurementCapture'])),
+  "satisfiedOperational": zod.array(zod.string()).describe('Always empty absent independently verified operational observations.'),
+  "unsatisfiedOperational": zod.array(zod.enum(['attendanceReconciliation', 'requiredFollowUpCompletion', 'exceptionRecording', 'measurementCapture'])).describe('Only canonical names explicitly present in the completion result\'s operationalGaps; no snapshot means empty.'),
+  "unknownOperational": zod.array(zod.enum(['attendanceReconciliation', 'requiredFollowUpCompletion', 'exceptionRecording', 'measurementCapture'])).describe('Canonical names not explicitly present in operationalGaps; absence is not proof of satisfaction.'),
+  "diagnosticOperationalGaps": zod.array(zod.string())
+}).describe('The required set is the canonical COMPLETE_OBLIGATIONS constant. Only names in the last completionResult.operationalGaps are classified unsatisfied; all remaining names are unknown, never inferred satisfied from absence. Without a snapshot every required obligation is unknown.'),
+  "measurementObligations": zod.object({
+  "status": zod.enum(['unavailable']),
+  "operationalEvidence": zod.literal(false)
+}),
+  "operationalObservations": zod.enum(['unavailable'])
+}))
+
+
+/**
+ * Development-only immutable evidence references, not approved proof of execution.
+ */
+export const GetWebinarStandardEvidenceParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const GetWebinarStandardEvidenceResponse = zod.object({
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "occurrenceId": zod.string().uuid(),
+  "retrievedAt": zod.coerce.date(),
+  "revision": zod.number().int(),
+  "simulationOnly": zod.literal(true),
+  "records": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "revision": zod.number().int(),
+  "sourceId": zod.string().uuid(),
+  "sourceType": zod.union([zod.literal('occurrence'),zod.literal('content'),zod.literal('foundation'),zod.literal('delivery'),zod.literal('measurement'),zod.literal(null)]).nullable().describe('Null only if historical parent source reference is missing.'),
+  "sourceVersion": zod.string().nullable(),
+  "sourceHash": zod.string().nullable(),
+  "type": zod.enum(['qa', 'manual-review', 'source-observation']),
+  "result": zod.enum(['unknown']),
+  "recordedAt": zod.coerce.date(),
+  "authenticated": zod.literal(false),
+  "unverified": zod.literal(true)
+}))
+})
+
+
+/**
+ * Development-only immutable unverified source reference. Caller supplies exact sourceType/sourceVersion/sourceHash of the available scoped immutable source, not just its ID. Mismatch or later observations fail closed as STALE_INPUT. Governed source receipts must remain valid. Result is always unknown. Same scoped idempotency key and request replays; different input conflicts. Does not pass rules or create exceptions.
+ */
+export const SubmitWebinarStandardEvidenceParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const submitWebinarStandardEvidenceBodySourceVersionRegExp = new RegExp('^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$');
+export const submitWebinarStandardEvidenceBodySourceHashRegExp = new RegExp('^[a-f0-9]{64}$');
+export const submitWebinarStandardEvidenceBodyExpectedRevisionMin = 0;
+
+
+
+export const SubmitWebinarStandardEvidenceBody = zod.object({
+  "sourceId": zod.string().uuid(),
+  "evidenceType": zod.enum(['qa', 'manual-review', 'source-observation']),
+  "sourceType": zod.enum(['occurrence', 'content', 'foundation', 'delivery', 'measurement']).describe('Exact type of scoped persisted available source; qa requires content or occurrence; manual-review requires content.'),
+  "sourceVersion": zod.string().regex(submitWebinarStandardEvidenceBodySourceVersionRegExp).describe('Exact immutable source version; a changed version is STALE_INPUT.'),
+  "sourceHash": zod.string().regex(submitWebinarStandardEvidenceBodySourceHashRegExp).describe('Exact immutable source content hash; changed hash is STALE_INPUT.'),
+  "expectedRevision": zod.number().int().min(submitWebinarStandardEvidenceBodyExpectedRevisionMin),
+  "idempotencyKey": zod.string().uuid(),
+  "calculationAt": zod.coerce.date()
+})
+
+export const SubmitWebinarStandardEvidenceResponse = zod.object({
+  "id": zod.string().uuid(),
+  "revision": zod.number().int(),
+  "sourceId": zod.string().uuid(),
+  "sourceType": zod.enum(['occurrence', 'content', 'foundation', 'delivery', 'measurement']),
+  "sourceVersion": zod.string(),
+  "sourceHash": zod.string(),
+  "evidenceType": zod.enum(['qa', 'manual-review', 'source-observation']),
+  "result": zod.enum(['unknown']),
+  "authenticated": zod.literal(false),
+  "unverified": zod.literal(true),
+  "operational": zod.literal(false),
+  "replayed": zod.boolean(),
+  "recordedAt": zod.coerce.date()
+})
+
+
+/**
+ * Development-only requests remain unverified drafts; no exception decision is available.
+ */
+export const GetWebinarStandardExceptionsParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const GetWebinarStandardExceptionsResponse = zod.object({
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "occurrenceId": zod.string().uuid(),
+  "retrievedAt": zod.coerce.date(),
+  "simulationOnly": zod.literal(true),
+  "reviewAvailable": zod.literal(false),
+  "records": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "revision": zod.number().int(),
+  "ruleId": zod.string(),
+  "evidenceId": zod.string().uuid(),
+  "reasonCode": zod.string(),
+  "recordedAt": zod.coerce.date(),
+  "requestedExpiresAt": zod.coerce.date().nullable(),
+  "status": zod.enum(['draft-unverified']),
+  "resolvesBlocker": zod.literal(false)
+}))
+})
+
+
+/**
+ * Development-only draft. Requires a failed blocking exception-eligible rule and evidence included in current snapshot. WEB-EXC-001 cannot exempt itself. Advisory lock/revision and scoped idempotency protect concurrent requests. No approval or readiness override.
+ */
+export const RequestWebinarStandardExceptionParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const requestWebinarStandardExceptionBodyRuleIdRegExp = new RegExp('^WEB-[A-Z0-9-]+$');
+export const requestWebinarStandardExceptionBodyReasonCodeRegExp = new RegExp('^[A-Za-z0-9][A-Za-z0-9_.:-]{0,119}$');
+export const requestWebinarStandardExceptionBodyExpectedRevisionMin = 0;
+
+
+
+export const RequestWebinarStandardExceptionBody = zod.object({
+  "ruleId": zod.string().regex(requestWebinarStandardExceptionBodyRuleIdRegExp).describe('Must belong to canonical RULE_IDS; a currently failed blocking, exception-eligible rule. WEB-EXC-001 cannot exempt itself.'),
+  "evidenceId": zod.string().uuid(),
+  "reasonCode": zod.string().regex(requestWebinarStandardExceptionBodyReasonCodeRegExp),
+  "expectedRevision": zod.number().int().min(requestWebinarStandardExceptionBodyExpectedRevisionMin),
+  "idempotencyKey": zod.string().uuid(),
+  "calculationAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date().describe('Must be after calculationAt.')
+})
+
+export const RequestWebinarStandardExceptionResponse = zod.object({
+  "id": zod.string().uuid(),
+  "revision": zod.number().int(),
+  "ruleId": zod.string(),
+  "evidenceId": zod.string().uuid(),
+  "reasonCode": zod.string(),
+  "expiryRequested": zod.coerce.date(),
+  "authenticated": zod.literal(false),
+  "status": zod.enum(['draft-unverified']),
+  "reviewAvailable": zod.literal(false),
+  "resolvesBlocker": zod.literal(false),
+  "operational": zod.literal(false),
+  "replayed": zod.boolean()
+})
+
+
+/**
+ * Development-only stable denial contract. Trusted reviewer identity/authorization unavailable. Never approves, denies, revokes or mutates; client-supplied name, header, email and role are not authentication.
+ */
+export const ReviewWebinarStandardExceptionParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid(),
+  "exceptionId": zod.coerce.string().uuid()
+})
+
+export const ReviewWebinarStandardExceptionBody = zod.object({
+
+}).describe('Review has no available action; empty body only.')
+
+export const ReviewWebinarStandardExceptionResponse = zod.void()
+
+
+/**
+ * Development-only immutable occurrence history ordered by revision; keyset pagination. Only simulation-safe source metadata, no stored provider payloads. Historical snapshots may have no stable engine release identity.
+ */
+export const GetWebinarStandardHistoryParams = zod.object({
+  "campaignId": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const getWebinarStandardHistoryQueryAfterRevisionDefault = 0;
+export const getWebinarStandardHistoryQueryAfterRevisionMin = 0;
+
+export const getWebinarStandardHistoryQueryLimitDefault = 50;
+export const getWebinarStandardHistoryQueryLimitMax = 100;
+
+
+
+export const GetWebinarStandardHistoryQueryParams = zod.object({
+  "afterRevision": zod.coerce.number().int().min(getWebinarStandardHistoryQueryAfterRevisionMin).default(getWebinarStandardHistoryQueryAfterRevisionDefault),
+  "limit": zod.coerce.number().int().min(1).max(getWebinarStandardHistoryQueryLimitMax).default(getWebinarStandardHistoryQueryLimitDefault)
+})
+
+export const GetWebinarStandardHistoryResponse = zod.object({
+  "campaignId": zod.string().uuid(),
+  "activityId": zod.string().uuid(),
+  "occurrenceId": zod.string().uuid(),
+  "retrievedAt": zod.coerce.date(),
+  "total": zod.number().int(),
+  "returned": zod.number().int(),
+  "nextRevision": zod.number().int().nullable(),
+  "records": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "revision": zod.number().int(),
+  "kind": zod.enum(['source', 'plan', 'evidence', 'exception-request', 'exception-disposition', 'release', 'readiness', 'completion', 'legal-hold']),
+  "parentId": zod.string().uuid().nullable(),
+  "releaseId": zod.string().uuid().nullable(),
+  "calculationAt": zod.coerce.date(),
+  "createdAt": zod.coerce.date(),
+  "inputFingerprint": zod.string(),
+  "payload": zod.record(zod.string(), zod.unknown()).describe('For source/release/readiness records only safe references or metadata; other immutable persisted payloads are returned directly.')
+})),
+  "simulationOnly": zod.literal(true),
+  "unverified": zod.literal(true)
+})
+
+
 export const GetDevelopmentStatusResponse = zod.object({
   "mode": zod.enum(['restricted', 'open-development']),
   "planningAccess": zod.boolean(),
@@ -103,6 +2238,10 @@ export const InspectDevelopmentFoundationObservationsQueryParams = zod.object({
   "occurrenceId": zod.coerce.string().uuid()
 })
 
+export const inspectDevelopmentFoundationObservationsResponseObservationsMin = 6;
+
+
+
 export const InspectDevelopmentFoundationObservationsResponse = zod.object({
   "contractLabel": zod.enum(['synthetic-contract-only']),
   "evaluatorImplemented": zod.boolean(),
@@ -116,9 +2255,11 @@ export const InspectDevelopmentFoundationObservationsResponse = zod.object({
   "authoritative": zod.boolean(),
   "observations": zod.array(zod.object({
   "type": zod.enum(['taxonomy', 'internal_title', 'campaign_code', 'utm', 'objective_membership', 'campaign_exclusion']),
-  "requestReference": zod.string(),
-  "inputFingerprint": zod.string(),
-  "status": zod.enum(['available', 'unavailable', 'stale', 'expired', 'deprecated']),
+  "requestReference": zod.string().nullable().describe('Null for an unsupported type with no constructed request.'),
+  "inputFingerprint": zod.string().nullable(),
+  "status": zod.enum(['available', 'unavailable', 'stale', 'expired', 'deprecated', 'unsupported']),
+  "observationState": zod.enum(['available', 'unavailable', 'stale', 'expired', 'deprecated']).optional().describe('Optional original transport result state for a built request; never overrides unsupported fixture capability.'),
+  "availability": zod.enum(['unsupported']).optional().describe('Present for unrequested unsupported output rows.'),
   "error": zod.string().nullable(),
   "source": zod.enum(['synthetic-provider', 'immutable-history', 'none']),
   "output": zod.record(zod.string(), zod.unknown()).nullable(),
@@ -131,8 +2272,26 @@ export const InspectDevelopmentFoundationObservationsResponse = zod.object({
   "expiresAt": zod.coerce.date().nullable(),
   "simulationOnly": zod.boolean(),
   "retryCount": zod.number().int(),
-  "affectedRules": zod.array(zod.string())
-}))
+  "affectedRules": zod.array(zod.string()),
+  "supportedByFixture": zod.boolean().describe('Only taxonomy is supplied by the synthetic contract fixture.'),
+  "providerConfigured": zod.boolean(),
+  "providerKind": zod.enum(['synthetic-contract-only', 'unconfigured']),
+  "environment": zod.enum(['synthetic', 'synthetic-only']),
+  "observationId": zod.string().uuid().nullable(),
+  "observationCreatedAt": zod.coerce.date().nullable(),
+  "supersedesId": zod.string().uuid().nullable(),
+  "supersessionState": zod.enum(['superseded', 'latest-for-input', 'no-matching-receipt']),
+  "validity": zod.enum(['available', 'unavailable', 'stale', 'expired', 'deprecated', 'unsupported']),
+  "effectiveVersion": zod.string().nullable(),
+  "providerIdentity": zod.string().nullable(),
+  "validFrom": zod.coerce.date().nullable(),
+  "receipt": zod.union([zod.object({
+  "id": zod.string().uuid(),
+  "createdAt": zod.coerce.date(),
+  "supersedesId": zod.string().uuid().nullable(),
+  "receivedAt": zod.coerce.date().nullable()
+}),zod.null()])
+})).min(inspectDevelopmentFoundationObservationsResponseObservationsMin).describe('Includes all six governed output types, plus additional scoped UTM observations. Only taxonomy is available from the synthetic fixture; unsupported output rows remain explicit.')
 })
 
 
@@ -152,6 +2311,10 @@ export const RefreshDevelopmentFoundationObservationsBody = zod.object({
   "expectedRevision": zod.number().int().min(refreshDevelopmentFoundationObservationsBodyExpectedRevisionMin)
 })
 
+export const refreshDevelopmentFoundationObservationsResponseInspectionObservationsMin = 6;
+
+
+
 export const RefreshDevelopmentFoundationObservationsResponse = zod.object({
   "inspection": zod.object({
   "contractLabel": zod.enum(['synthetic-contract-only']),
@@ -166,9 +2329,11 @@ export const RefreshDevelopmentFoundationObservationsResponse = zod.object({
   "authoritative": zod.boolean(),
   "observations": zod.array(zod.object({
   "type": zod.enum(['taxonomy', 'internal_title', 'campaign_code', 'utm', 'objective_membership', 'campaign_exclusion']),
-  "requestReference": zod.string(),
-  "inputFingerprint": zod.string(),
-  "status": zod.enum(['available', 'unavailable', 'stale', 'expired', 'deprecated']),
+  "requestReference": zod.string().nullable().describe('Null for an unsupported type with no constructed request.'),
+  "inputFingerprint": zod.string().nullable(),
+  "status": zod.enum(['available', 'unavailable', 'stale', 'expired', 'deprecated', 'unsupported']),
+  "observationState": zod.enum(['available', 'unavailable', 'stale', 'expired', 'deprecated']).optional().describe('Optional original transport result state for a built request; never overrides unsupported fixture capability.'),
+  "availability": zod.enum(['unsupported']).optional().describe('Present for unrequested unsupported output rows.'),
   "error": zod.string().nullable(),
   "source": zod.enum(['synthetic-provider', 'immutable-history', 'none']),
   "output": zod.record(zod.string(), zod.unknown()).nullable(),
@@ -181,8 +2346,26 @@ export const RefreshDevelopmentFoundationObservationsResponse = zod.object({
   "expiresAt": zod.coerce.date().nullable(),
   "simulationOnly": zod.boolean(),
   "retryCount": zod.number().int(),
-  "affectedRules": zod.array(zod.string())
-}))
+  "affectedRules": zod.array(zod.string()),
+  "supportedByFixture": zod.boolean().describe('Only taxonomy is supplied by the synthetic contract fixture.'),
+  "providerConfigured": zod.boolean(),
+  "providerKind": zod.enum(['synthetic-contract-only', 'unconfigured']),
+  "environment": zod.enum(['synthetic', 'synthetic-only']),
+  "observationId": zod.string().uuid().nullable(),
+  "observationCreatedAt": zod.coerce.date().nullable(),
+  "supersedesId": zod.string().uuid().nullable(),
+  "supersessionState": zod.enum(['superseded', 'latest-for-input', 'no-matching-receipt']),
+  "validity": zod.enum(['available', 'unavailable', 'stale', 'expired', 'deprecated', 'unsupported']),
+  "effectiveVersion": zod.string().nullable(),
+  "providerIdentity": zod.string().nullable(),
+  "validFrom": zod.coerce.date().nullable(),
+  "receipt": zod.union([zod.object({
+  "id": zod.string().uuid(),
+  "createdAt": zod.coerce.date(),
+  "supersedesId": zod.string().uuid().nullable(),
+  "receivedAt": zod.coerce.date().nullable()
+}),zod.null()])
+})).min(refreshDevelopmentFoundationObservationsResponseInspectionObservationsMin).describe('Includes all six governed output types, plus additional scoped UTM observations. Only taxonomy is available from the synthetic fixture; unsupported output rows remain explicit.')
 }),
   "simulation": zod.object({
   "simulation": zod.boolean(),

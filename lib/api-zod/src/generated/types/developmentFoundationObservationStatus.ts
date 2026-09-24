@@ -15,4 +15,5 @@ export const DevelopmentFoundationObservationStatus = {
   stale: 'stale',
   expired: 'expired',
   deprecated: 'deprecated',
+  unsupported: 'unsupported',
 } as const;

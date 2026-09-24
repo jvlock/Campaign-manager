@@ -11,7 +11,7 @@ import type { EvaluationContext, EventOperationalStatus, RuleEvaluationResult, P
 import { COMPLETION_DEPENDENCY_GRAPH, COMPLETION_DONE_RULE_ID, deriveCompletionRegistryFingerprint, evaluateCompletionDoneWithDiagnostics } from "./webinar-standard-evaluation/completion-done";
 import { aggregateWebinarReadiness, COMPLETE_OBLIGATIONS } from "./webinar-standard-readiness";
 import type { ExceptionResolutionClaim } from "./webinar-standard-readiness/types";
-import { captureWebinarRelease, resolveWebinarRepositoryRoot } from "./webinar-release-provenance";
+import { captureWebinarRelease, resolveWebinarRepositoryRoot, type engineReleaseIdentity } from "./webinar-release-provenance";
 import { WebinarPersistence, PersistenceConflict, type WebinarTransactionClient } from "./webinar-persistence";
 import { simulationFindingSchema, simulationSnapshotSchema, type SimulationSnapshot } from "./webinar-simulation-snapshot";
 import { assertOccurrenceEligibility, loadOccurrenceSources, lockEvaluationSources, occurrenceAssemblySource, type OccurrenceSources } from "./webinar-evaluation-sources";
@@ -122,6 +122,7 @@ function evaluationOrder(catalog: WebinarStandardCatalog): RuleId[] {
 export function evaluateCanonicalAssembly(input: {
   assembly: AssemblyResult; catalog: WebinarStandardCatalog; activityId: string; occurrenceId: string;
   calculationAt: string; releaseFingerprint: string; inputFingerprint: string;
+  engineRelease?: ReturnType<typeof engineReleaseIdentity>;
   sourceReferences?: readonly SourceReference[]; exceptions?: readonly unknown[];
   exceptionClaims?: readonly ExceptionResolutionClaim[];
   /** Internal test/integration dependency only; never sourced from HTTP input. */
@@ -219,6 +220,7 @@ export function evaluateCanonicalAssembly(input: {
     activityId: input.activityId, occurrenceId: input.occurrenceId,
     standard: { id: catalog.standardId, version: catalog.standardVersion }, calculationAt: input.calculationAt,
     releaseFingerprint: input.releaseFingerprint, inputFingerprint: input.inputFingerprint, sourceReferences, results,
+    ...(input.engineRelease ? { engineReleaseFingerprint: input.engineRelease.digest, engineRelease: input.engineRelease } : {}),
     applicableRules: results.filter(r => r.status !== "not_applicable").map(r => r.ruleId),
     passedRules: results.filter(r => r.status === "pass").map(r => r.ruleId),
     unresolvedBlockingFailures: readiness.stages.flatMap(s => s.failedBlockers).filter(r => !resolvedIds.has(r.ruleId)),
@@ -316,7 +318,8 @@ export async function simulateWebinarInTransaction(input: WebinarSimulationInput
         }))] });
     const evaluated = evaluateCanonicalAssembly({ assembly: mapped, catalog, activityId: sources.activity.id,
       occurrenceId: input.sessionId, calculationAt: input.calculationAt, releaseFingerprint: release.digest,
-      inputFingerprint, sourceReferences: [...sourceReferences(resolvedSources), ...governed.receipts.map(r => ({
+      engineRelease: release.engineRelease, inputFingerprint,
+      sourceReferences: [...sourceReferences(resolvedSources), ...governed.receipts.map(r => ({
         sourceType: `foundation:${r.request.type}`, sourceId: r.request.requestReference,
         sourceHash: simulationFingerprint(r.response), sourceVersion: `${r.response.serviceVersion}:${r.response.taxonomyVersion}`,
       }))], exceptions: incompleteExceptions, exceptionClaims });
@@ -329,6 +332,9 @@ export async function simulateWebinarInTransaction(input: WebinarSimulationInput
     const releaseRecord = await transaction.append({ ...command, expectedRevision: governed.revision,
       idempotencyKey: `${input.idempotencyKey}:release`, payload: { kind: "release" } });
     if (releaseRecord.payload.digest !== release.digest) throw new PersistenceConflict("Application release changed during evaluation");
+    if (releaseRecord.payload.engineReleaseFingerprint !== release.engineReleaseFingerprint
+      || releaseRecord.payload.engineRelease?.digest !== release.engineRelease.digest)
+      throw new PersistenceConflict("Engine release changed during evaluation");
     const snapshot = evaluated.snapshot;
     const row = await transaction.append({ ...command, expectedRevision: governed.revision + 1,
       releaseId: releaseRecord.id, payload: { kind: "readiness", stage: "completion",

@@ -176,6 +176,7 @@ test("trusted release capture is deterministic, versioned, nonoperational and re
   assert.equal(first.provenance.evaluatorRegistry.coverage.implemented, 106);
   assert.equal(first.provenance.dependencies["@js-temporal/polyfill"], "0.5.1");
   assert.equal(Object.keys(first.provenance.canonicalDocuments).length, 5);
+  assert.ok(first.provenance.applicationRelease);
   assert.match(first.provenance.applicationRelease, /^[a-f0-9]{40}$/);
   assert.ok(Object.isFrozen(first.provenance.evaluatorRegistry.implementationHashes));
   for (const source of ["webinar-release-provenance.ts", "webinar-persistence.ts", "webinar-standard-catalog/loader.ts", "webinar-standard-evaluation/registry.ts"]) {
@@ -184,6 +185,27 @@ test("trusted release capture is deterministic, versioned, nonoperational and re
   for (const forged of [{ digest: hash }, { provenance: first.provenance }, { fingerprint: hash }, { foundationVersion: "claimed-v1" }]) {
     await assert.rejects(repository.append(command({ kind: "release", ...forged } as PersistenceMutation["payload"])));
   }
+});
+
+test("engine identity is stable across calculations; missing Git commit is explicit, never fabricated", async () => {
+  const early = await captureWebinarRelease(Date.parse(calculationAt));
+  const later = await captureWebinarRelease(Date.parse(calculationAt) + 60000);
+  assert.notEqual(early.digest, later.digest, "accepted as-of release/context digest remains calculation-specific");
+  assert.deepEqual(early.engineRelease, later.engineRelease, "stable engine identity excludes calculation time");
+  assert.equal(early.engineReleaseFingerprint, early.engineRelease.digest);
+  assert.equal(early.engineRelease.provenance.applicationRelease, early.provenance.applicationRelease);
+  assert.equal(early.engineRelease.provenance.evaluatorRegistry.digest, early.provenance.evaluatorRegistry.digest);
+  assert.equal(early.engineRelease.provenance.dependencies["@js-temporal/polyfill"], "0.5.1");
+  const unavailable = await captureWebinarRelease(Date.parse(calculationAt), async () => {
+    throw new Error("Git unavailable in test");
+  });
+  assert.equal(unavailable.provenance.schemaVersion, 2);
+  assert.equal(unavailable.provenance.applicationRelease, null);
+  assert.equal(unavailable.engineRelease.provenance.applicationRelease, null);
+  assert.notEqual(unavailable.digest, early.digest, "v2 unavailable-commit context cannot impersonate historical v1");
+  assert.notEqual(unavailable.engineRelease.digest, early.engineRelease.digest);
+  assert.deepEqual(unavailable.engineRelease,
+    (await captureWebinarRelease(Date.parse(calculationAt) + 60000, async () => "")).engineRelease);
 });
 
 test("direct SQL with matching audits cannot bypass typed graph, exact release or revision ordering", async () => {
