@@ -1,0 +1,1109 @@
+Phase 2B-5 is accepted as complete within its stated boundary: synthetic, development-only API contracts. It does not establish operational readiness, trusted approvals, customer-data processing, or live Foundation connectivity.
+
+The next increment should build only the Setup and Recruitment experience, using the APIs just completed.
+
+⸻
+
+Phase 2B-6 — Webinar Setup and Recruitment UI
+
+Implement the guided Setup and Recruitment user experience for webinar Activities using the accepted Phase 2B-5 API contracts.
+
+This phase must turn the underlying webinar standard into a clear, visual workflow that tells users:
+
+* What is happening.
+* What information is needed.
+* What has been completed.
+* What needs attention.
+* What is blocking progress.
+* What the system recommends next.
+
+The experience must be understandable without a training manual.
+
+Do not build the Follow-up or full Readiness screens in this phase. Do not introduce external sending, publishing, customer-data processing, production Foundation connectivity, deployment, or operational approval.
+
+1. Expected starting state
+
+Expected branch:
+
+feature/webinar-standard-engine
+
+Expected implementation HEAD:
+
+d6cf60de4e7ad790c30e0f75055208b34b2df2d9
+
+Expected title:
+
+Expose webinar standard API contracts
+
+Reported direct parent:
+
+db7ad781595ad31718ce0b8ac26b436e2fbf82f3
+
+Expected verification evidence:
+
+docs/verification/phase-2b-5-webinar-api-contracts.md
+
+Before editing, report:
+
+* Current branch and HEAD.
+* Direct parent.
+* Tracked and untracked working-tree state.
+* Every intervening commit if HEAD has moved.
+* Files changed by the Phase 2B-5 commit.
+* Existing application navigation and routing.
+* Existing campaign, journey, activity, calendar, and webinar components.
+* Current design tokens, colors, typography, spacing, icons, form controls, cards, notifications, modals, tooltips, and responsive breakpoints.
+* Existing frontend data-fetching and mutation conventions.
+* Existing loading, error, empty-state, and optimistic-update patterns.
+* Existing accessibility testing.
+* Existing browser or end-to-end test framework.
+* Whether the application already has reusable stepper, timeline, status-chip, progress, accordion, drawer, preview, or checklist components.
+
+Confirm fresh:
+
+* The Phase 2B-5 APIs exist under the reported campaign, webinar-session, and standard resource hierarchy.
+* The OpenAPI contract matches the implemented routes.
+* All webinar-standard routes are development-only.
+* Only eligible synthetic webinar occurrences may use them.
+* Foundation taxonomy alone may be simulated.
+* Naming, campaign code, UTM, objective, and exclusions remain unavailable.
+* Exception review fails closed without trusted reviewer identity.
+* All 25 migrations remain unchanged.
+* Evaluator coverage remains 106/106.
+* Canonical hashes match.
+* Temporal remains pinned to 0.5.1.
+* The accepted test baseline passes.
+
+If any substantive code change occurred after Phase 2B-5, stop and report it before implementing this phase.
+
+Do not rewrite history.
+
+2. Authoritative sources
+
+Use:
+
+* All five canonical webinar-standard files.
+* The Phase 2B-0 integration assessment and accepted decisions.
+* Phase 2B-1 through Phase 2B-5 verification reports.
+* The Phase 2B-5 OpenAPI contract.
+* Existing design-system components and frontend conventions.
+* Existing campaign, activity, webinar, communication, deliverable, evidence, exception, readiness, and Foundation services.
+* Existing UI principles already established for Campaign Manager.
+
+Do not use uploaded prompts, .agents/memory/, placeholder UI copy, or synthetic observations as authoritative product data.
+
+Do not modify canonical standards.
+
+3. Governing user-experience principles
+
+The UI must follow these principles.
+
+3.1 Clear without training
+
+A user should immediately understand:
+
+* Where they are.
+* What they are creating.
+* Their current step.
+* What has already been completed.
+* What the system needs next.
+* Why information is required.
+* What will happen after they continue.
+
+Do not require users to read large blocks of instructional text.
+
+3.2 Guided choices over open text
+
+Use structured controls wherever the system has a governed or finite choice:
+
+* Radio groups.
+* Selectors.
+* Searchable dropdowns.
+* Date and time controls.
+* Status choices.
+* Reusable content or destination selectors.
+* Checklists.
+* Preset cadence options.
+* Recommended defaults.
+
+Use open text only when the answer is genuinely unstructured.
+
+Never turn canonical enumerations into free-text fields.
+
+3.3 Simple with depth
+
+Show the minimum needed for the current decision while keeping detail accessible through:
+
+* Expandable guidance.
+* Tooltips.
+* “Why this matters” explanations.
+* Optional advanced settings.
+* Evidence details.
+* Rule findings.
+* History drawers.
+
+Do not display every rule, field, and diagnostic at once.
+
+3.4 Visual hierarchy
+
+Webinars should use the application’s approved webinar color family. If no approved activity-color system exists, use green as the provisional webinar family:
+
+* Primary webinar activity: core green.
+* Recruitment communications: progressively differentiated green shades.
+* Informational states: neutral blue or established application token.
+* Warnings: amber.
+* Blocking issues: red.
+* Completed items: success green with a distinct icon.
+* Unavailable external capabilities: neutral gray.
+* Synthetic or simulated capabilities: clearly labeled purple or another distinct non-production token.
+
+Do not rely on color alone. Every state must also use text and an accessible icon.
+
+3.5 Familiar icons
+
+Use the existing icon library and familiar meanings:
+
+* Calendar for date and time.
+* Clock for cadence and deadlines.
+* People for audience.
+* Envelope for communications.
+* Link for destination.
+* Shield or check badge for governance.
+* Warning triangle for issues.
+* Lock for unavailable restricted actions.
+* History for audit records.
+* Sparkle or flask only for clearly identified simulation.
+* Check circle for completed work.
+
+Do not introduce decorative icons that make actions ambiguous.
+
+3.6 Immediate status and next action
+
+Every major screen must show:
+
+* Overall step status.
+* Completion percentage or completed-item count where meaningful.
+* Highest-priority unresolved item.
+* Recommended next action.
+* Saved or unsaved state.
+* Last evaluation time.
+* Whether results may be stale.
+
+3.7 Honest operational boundaries
+
+The UI must never imply that:
+
+* A synthetic result is live Foundation output.
+* Planned communications have been sent.
+* A configured provider is connected.
+* A rule has passed because evidence was merely submitted.
+* Evaluator coverage means the webinar is ready.
+* An unauthenticated user is an authenticated reviewer.
+* An exception has been approved when review is unavailable.
+* A successful API call means external execution occurred.
+
+4. Preserve the application hierarchy
+
+Preserve:
+
+Campaign
+  → optional Journey
+    → Activity
+      → Communication/Touch
+        → Deliverable
+
+A webinar must remain an Activity.
+
+The interface should display this context with breadcrumbs or an equivalent concise hierarchy:
+
+Campaign / Journey if applicable / Webinar activity
+
+Do not create a separate webinar application or parallel navigation system.
+
+5. Entry point and webinar workspace
+
+Add the webinar-standard workspace to the existing webinar Activity experience.
+
+Use the application’s existing activity route and layout conventions. Do not create a competing root-level application unless the repository architecture requires it and the need is documented first.
+
+The workspace must provide four visible workflow areas:
+
+1. Setup
+2. Recruitment
+3. Follow-up
+4. Readiness
+
+In this phase:
+
+* Setup is active.
+* Recruitment is active.
+* Follow-up is visible but labeled as coming in the next authorized phase.
+* Readiness may show a concise current status summary, but its full workflow is not implemented.
+* Disabled areas must explain why they are unavailable.
+* Do not create dead controls that appear actionable.
+
+Provide:
+
+* Activity title.
+* Campaign and optional Journey context.
+* Event date and time.
+* Event status.
+* Overall progress.
+* Current workflow area.
+* Critical issues.
+* Recommended next action.
+* Last saved time.
+* Last evaluated time.
+* Synthetic-development indicator.
+
+6. Setup experience
+
+Design Setup as a guided workflow organized around:
+
+* Why
+* Who
+* What
+* When
+* Where
+* How
+
+Do not force those labels where another existing application term is more precise, but preserve the underlying logic.
+
+6.1 Why — objective and purpose
+
+Display:
+
+* Webinar objective.
+* Intended customer or business outcome.
+* Campaign relationship.
+* Optional Journey relationship.
+* Measurement intent.
+
+Requirements:
+
+* Use governed objective choices when available.
+* Because governed objective output is currently unavailable, show the correct unavailable state.
+* Do not silently fall back to a synthetic or locally invented governed objective.
+* If manual planning input is already authorized, label it “Planning input—not Foundation governed.”
+* Explain what remains required before operational use.
+
+6.2 Who — audience
+
+Display and edit authorized audience-planning information:
+
+* Audience or segment.
+* Geography.
+* Language.
+* Participant or registration summary.
+* Inclusion criteria.
+* Exclusion requirements.
+* Internal/test exclusion.
+* Competitor or governed exclusions where applicable.
+* Waitlist approach.
+
+Requirements:
+
+* Separate planned audience from actual registrants.
+* Separate population summaries from individual customer records.
+* Do not introduce customer-data processing.
+* Because Foundation exclusions are unavailable, show that state explicitly.
+* Do not allow manual input to masquerade as governed exclusion output.
+* Clearly surface registration suppression behavior.
+
+6.3 What — webinar and content
+
+Display:
+
+* Webinar title.
+* Internal working title.
+* Webinar type.
+* Topic.
+* Speakers or hosts where supported by the existing model.
+* Description.
+* Primary CTA.
+* Supporting asset or deliverable.
+* Landing-page or registration destination.
+* Follow-up-content readiness summary.
+
+Requirements:
+
+* Reuse existing content, asset, destination, and deliverable selectors.
+* Every communication requiring a destination must reference an existing destination or create a properly scoped draft through an already authorized workflow.
+* Do not build a separate asset-management system.
+* Do not generate customer-facing copy in this phase.
+* Clearly distinguish internal planning titles from governed naming output.
+* Governed standardized naming remains unavailable until Foundation supplies it.
+
+6.4 When — occurrence and timing
+
+Display and edit authorized scheduling facts:
+
+* Event date.
+* Start time.
+* End time or duration.
+* Time zone.
+* Registration opening and closing times where supported.
+* Recruitment-window status.
+* Shortened-window warnings.
+* Relevant deadlines.
+
+Requirements:
+
+* Use exact instants and the accepted Temporal implementation.
+* Never infer time zone silently.
+* Display a readable local time and the stored time zone.
+* Warn before a date change that affects planned communications.
+* Show which recruitment communications would become overdue or invalid.
+* Do not schedule or send externally.
+
+6.5 Where — delivery location
+
+Display:
+
+* Virtual, in-person, or hybrid status where supported.
+* Webinar or venue provider.
+* Registration destination.
+* Join destination status.
+* Provider-connection status.
+
+Requirements:
+
+* Distinguish configured from connected.
+* Distinguish planned destinations from verified operational destinations.
+* Do not claim ON24, MCA, Teams, or another provider is connected unless repository evidence proves it.
+* Do not expose secrets or provider configuration details.
+
+6.6 How — operating plan
+
+Display:
+
+* Recruitment cadence.
+* Reminder plan summary.
+* Follow-up obligation summary.
+* Registration and suppression behavior.
+* Evidence requirements.
+* Governance status.
+* Foundation-observation status.
+* Readiness summary.
+
+The system should explain what it will plan, not claim what it has executed.
+
+7. Setup workflow behavior
+
+The Setup workflow should use:
+
+* A left-side or top-level stepper consistent with the existing responsive design.
+* One primary decision area at a time.
+* A persistent task/status panel on larger screens.
+* A collapsible task drawer on smaller screens.
+* Save-and-continue behavior.
+* Back navigation that preserves valid work.
+* Clear validation at field and section levels.
+* A final Setup review page.
+
+The Setup review must group findings into:
+
+* Complete.
+* Recommended improvements.
+* Warnings.
+* Blocking issues.
+* Unavailable governed capabilities.
+* Missing evidence.
+* Stale results.
+
+Allow the user to navigate directly from a finding to the relevant Setup section.
+
+Do not use one long, undifferentiated form.
+
+8. Recruitment experience
+
+The Recruitment area must present communications as a visual sequence anchored to the webinar date.
+
+8.1 Recruitment timeline
+
+Show the approved recruitment communications visually, including the standard cadence where applicable:
+
+* Approximately 21 days before.
+* Approximately 14 days before.
+* Approximately 7 days before.
+* Approximately 1 day before.
+
+The actual engine output remains authoritative. The UI must not hardcode these intervals in a way that overrides scheduling rules, shortened-window logic, applicability, or canonical requirements.
+
+For each touch show:
+
+* Touch name.
+* Relative timing.
+* Calculated scheduled instant.
+* Status.
+* Audience state.
+* Registration-suppression behavior.
+* Destination.
+* Content or deliverable status.
+* Evidence status.
+* Warnings.
+* Blocking issues.
+* Whether the touch is planned, suppressed, overdue, cancelled, or historically executed.
+
+Use progressively differentiated shades from the webinar color family.
+
+8.2 Communication cards
+
+Each communication card should use progressive disclosure.
+
+Collapsed state:
+
+* Name.
+* Timing.
+* Status.
+* Primary issue.
+* Destination status.
+* CTA status.
+* Registration-suppression status.
+
+Expanded state:
+
+* Subject or content reference where available.
+* Audience and exclusions.
+* Scheduled instant.
+* Dependency information.
+* Destination.
+* Evidence.
+* Rule findings.
+* History.
+* Edit action where authorized.
+
+Do not display a send button.
+
+8.3 Visual scheduling
+
+Show:
+
+* Webinar date as the timeline anchor.
+* Past, current, and future communications.
+* Overdue items.
+* Shortened-window changes.
+* Suppressed items.
+* Cancelled items.
+* Historical execution separately from future plans.
+
+Do not use drag-and-drop if moving a card would violate calculated scheduling or imply unsanctioned execution.
+
+If drag-and-drop already exists, restrict it to authorized planning adjustments and show the resulting rule impact before saving.
+
+8.4 Registration suppression
+
+Make registration suppression visible and understandable:
+
+* “Registered participants are removed from future recruitment.”
+* Suppressed communications remain visible.
+* Suppression reason is shown.
+* Historical executed communications remain visible.
+* Cancellation does not silently restore recruitment eligibility.
+* Internal/test records remain excluded.
+* Governed exclusions cannot be bypassed.
+
+Because no customer-data processing is authorized, use synthetic population summaries and existing test fixtures only.
+
+8.5 Recruitment status
+
+Provide a concise status panel showing:
+
+* Planned touches.
+* Complete plans.
+* Missing destinations.
+* Missing content references.
+* Missing evidence.
+* Suppressed touches.
+* Overdue touches.
+* Blocking findings.
+* Nonblocking warnings.
+* Readiness-to-recruit status.
+* Last calculation time.
+* Staleness status.
+
+“Ready to recruit” must come from the engine. The UI must not calculate it independently.
+
+9. Foundation state presentation
+
+Create a reusable governed-capability status component.
+
+For each governed output display one of:
+
+* Available—synthetic.
+* Available—live provider.
+* Configured but unavailable.
+* Provider not configured.
+* Unsupported.
+* Invalid response.
+* Stale.
+* Refresh in progress.
+* Refresh failed.
+
+Current expected states:
+
+Governed output	Expected development state
+Taxonomy	May be available through synthetic simulation
+Standardized naming	Unavailable or unsupported
+Campaign code	Unavailable or unsupported
+UTM output	Unavailable or unsupported
+Objective	Unavailable or unsupported
+Exclusions	Unavailable or unsupported
+
+Requirements:
+
+* Synthetic results must carry a visible “Simulation” label.
+* Simulation styling must not resemble approved production styling.
+* A tooltip must explain that simulation validates the workflow but is not authoritative live Foundation output.
+* Do not expose synthetic refresh in production-mode UI.
+* Do not show unavailable output as blank success.
+* Do not allow manual values to inherit a Foundation-governed badge.
+
+10. Evidence and exception presentation
+
+Setup and Recruitment may show evidence and exception state, but must preserve current controls.
+
+Evidence UI may allow authorized development submission through the Phase 2B-5 API.
+
+It must show:
+
+* Evidence type.
+* Source reference.
+* Applicable scope.
+* Submission time.
+* Actor identity state.
+* Verification status.
+* Related rule.
+* Validity or staleness.
+
+It must state that submission does not automatically satisfy a rule.
+
+Exception UI may show:
+
+* Requested exception.
+* Referenced blocker.
+* Eligibility.
+* Status.
+* Expiration.
+* Evidence.
+* Reviewer status.
+
+Requirements:
+
+* Do not enable exception approval without trusted reviewer identity.
+* Do not accept a typed name or email as trusted identity.
+* Explain why review is unavailable.
+* Do not show a disabled approval button without explanatory guidance.
+* A creator cannot review their own exception.
+* Nonblocking findings do not need exceptions.
+* Ineligible blockers must not offer an exception action.
+
+11. Status language
+
+Use plain, consistent status language.
+
+Approved display concepts should include:
+
+* Complete
+* Needs attention
+* Blocked
+* Incomplete
+* Ready
+* Not ready
+* Planned
+* Suppressed
+* Overdue
+* Cancelled
+* Executed
+* Unavailable
+* Unsupported
+* Simulation
+* Stale
+* Review required
+
+Avoid ambiguous labels such as:
+
+* Good
+* Fine
+* Active
+* Done
+* Connected
+
+unless the underlying state genuinely supports that meaning.
+
+Provide short explanations for technical concepts such as:
+
+* Evaluator coverage.
+* Evidence.
+* Exception.
+* Governed observation.
+* Synthetic provider.
+* Release fingerprint.
+* Stale evaluation.
+
+Do not expose internal implementation terminology when a user-facing term is clearer.
+
+12. Loading, errors, and recovery
+
+Every data region must have designed states for:
+
+* Initial loading.
+* Background refresh.
+* Empty data.
+* Validation error.
+* Not found.
+* Conflict.
+* Idempotency conflict.
+* Capability unavailable.
+* Provider not configured.
+* Provider unavailable.
+* Unsupported governed output.
+* Stale input.
+* Evaluation incomplete.
+* Authorization unavailable.
+* Unexpected error.
+
+Requirements:
+
+* Preserve valid user input after recoverable failures.
+* Provide retry only when retry is safe.
+* Do not retry invalid input automatically.
+* Do not loop provider refreshes.
+* Do not convert partial data into a blank screen.
+* Present the specific area affected.
+* Keep unaffected areas usable.
+* Provide an accessible error summary for form submissions.
+
+13. Unsaved changes and date-impact protection
+
+Protect users from losing work.
+
+Requirements:
+
+* Track meaningful unsaved changes.
+* Warn before leaving a changed section.
+* Do not warn for untouched or already-saved forms.
+* Prevent duplicate submissions.
+* Disable a primary action only while its identical request is active.
+* Provide visible save confirmation.
+* Detect server conflicts.
+* Never silently overwrite a newer server version.
+
+When the webinar date or time changes:
+
+* Show affected recruitment touches.
+* Show which scheduled instants change.
+* Show which touches become overdue.
+* Show shortened-window impacts.
+* Require confirmation before saving.
+* Re-evaluate after the change.
+* Mark prior results stale until recalculation completes.
+
+14. Accessibility requirements
+
+Meet WCAG 2.2 AA for the implemented experience.
+
+At minimum:
+
+* Full keyboard navigation.
+* Logical focus order.
+* Visible focus.
+* Proper headings and landmarks.
+* Accessible names for icons and controls.
+* Status communicated without color alone.
+* Sufficient contrast.
+* Error summary linked to fields.
+* Screen-reader announcements for saves, errors, refreshes, and evaluation completion.
+* Accessible tooltips.
+* Accessible dialogs.
+* Touch targets suitable for mobile use.
+* Reduced-motion support.
+* No essential information available only on hover.
+* Timeline content available in a semantic list or equivalent accessible structure.
+
+Do not mark accessibility complete based only on automated scanning.
+
+15. Responsive behavior
+
+Support the application’s existing responsive breakpoints.
+
+At minimum verify:
+
+* Desktop.
+* Standard laptop.
+* Tablet portrait and landscape.
+* Mobile-width layout.
+
+Expected behavior:
+
+* Persistent side task panel may become a drawer.
+* Horizontal recruitment timeline may become a vertical sequence.
+* Tables may become stacked cards when necessary.
+* Primary action remains easy to find.
+* No horizontal page overflow.
+* Status labels remain readable.
+* Tooltips have touch-accessible equivalents.
+* Modals fit within the viewport.
+
+Do not create a separate mobile application.
+
+16. Analytics and usability instrumentation
+
+Use existing application instrumentation if available.
+
+Record only non-sensitive product-usage events such as:
+
+* Setup started.
+* Setup section completed.
+* Setup validation failed.
+* Recruitment viewed.
+* Communication card expanded.
+* Guidance opened.
+* Evidence workflow started.
+* Evaluation requested.
+* Error encountered.
+* Workflow abandoned with unsaved changes.
+
+Do not add a new analytics vendor.
+
+Do not include customer data, free-text content, attendee data, secrets, or evidence payloads in analytics.
+
+If no approved instrumentation exists, document the proposed events without implementing them.
+
+17. Scope boundaries
+
+This phase may include:
+
+* Existing application navigation updates.
+* Setup UI.
+* Recruitment UI.
+* Shared webinar-standard UI components.
+* Frontend API adapters and hooks.
+* UI-focused validation.
+* Development-only synthetic states.
+* Accessibility improvements directly required by these screens.
+* Tests and verification evidence.
+
+This phase must not include:
+
+* Follow-up workflow implementation.
+* Full Readiness workflow implementation.
+* Customer-facing copy generation.
+* External provider sending.
+* Publishing.
+* Deployment.
+* Live Foundation connection.
+* Real customer-data processing.
+* Authentication redesign.
+* Role-administration UI.
+* Exception approval without trusted authentication.
+* New database schema.
+* New migrations.
+* Changes to canonical standards.
+* Changes to evaluator logic.
+* Changes to readiness semantics.
+* Changes to scheduling semantics.
+* Changes to suppression semantics.
+* Legacy-session migration.
+
+If the UI reveals a backend defect, document it and stop before changing backend semantics unless the correction is necessary for safe UI operation and fits the accepted contract. Report any such correction separately.
+
+18. Required tests
+
+Add component, integration, accessibility, responsive, and browser tests.
+
+At minimum test:
+
+1. Eligible synthetic webinar opens the workspace.
+2. Ineligible or non-webinar activity is handled explicitly.
+3. Campaign and optional Journey context display correctly.
+4. Setup and Recruitment are active.
+5. Follow-up is visible but unavailable.
+6. Full Readiness workflow is not implemented.
+7. Current workflow step is clear.
+8. Recommended next action is visible.
+9. Setup uses structured controls for governed choices.
+10. Open text is limited to authorized unstructured input.
+11. Saving a Setup section persists through the existing API.
+12. Recoverable save failure preserves input.
+13. Duplicate submission is prevented.
+14. Server conflict does not silently overwrite data.
+15. Unsaved-change warning works.
+16. Untouched forms do not produce warnings.
+17. Date change shows affected communications.
+18. Date change identifies newly overdue touches.
+19. Date change marks prior evaluation stale.
+20. Recruitment cadence comes from engine or API output.
+21. Timeline ordering is deterministic.
+22. Suppressed communications remain visible.
+23. Suppression reasons display.
+24. Historical execution is not represented as a future plan.
+25. Planned communication is not represented as sent.
+26. Registration suppression is explained.
+27. Cancellation does not silently restore eligibility.
+28. Internal/test exclusions remain visible.
+29. Recruitment readiness comes from the API.
+30. A warning is not displayed as a blocker.
+31. A resolved blocker retains the underlying failed finding.
+32. Missing coverage displays as incomplete.
+33. Synthetic taxonomy is visibly labeled.
+34. Naming remains unavailable.
+35. Campaign code remains unavailable.
+36. UTM output remains unavailable.
+37. Objective remains unavailable.
+38. Exclusions remain unavailable.
+39. Provider-not-configured differs from provider-unavailable.
+40. Unsupported differs from blank or successful.
+41. Synthetic refresh is unavailable in production mode.
+42. Evidence submission does not show a rule as automatically passed.
+43. Evidence actor remains unverified where appropriate.
+44. Exception review remains unavailable without trusted identity.
+45. Typed identity cannot activate exception review.
+46. Ineligible rules do not offer exception requests.
+47. API validation errors map to fields.
+48. Global errors use an accessible summary.
+49. Keyboard navigation covers both workflows.
+50. Focus moves correctly after validation errors.
+51. Status does not rely on color alone.
+52. Automated accessibility scan reports no serious or critical issues.
+53. Manual keyboard QA passes.
+54. Desktop layout passes.
+55. Tablet layout passes.
+56. Mobile layout passes.
+57. Horizontal page overflow does not occur.
+58. Recruitment timeline has an accessible alternative structure.
+59. Loading skeleton does not cause material layout instability.
+60. Partial API failure does not blank unaffected sections.
+61. Stale state is visible.
+62. Last-saved and last-evaluated times are distinct.
+63. Existing Campaign Manager routes remain functional.
+64. Existing non-webinar activity UI remains unchanged.
+65. Existing webinar behavior outside this workspace remains unchanged.
+66. All Phase 2B-5 API tests remain passing.
+67. Evaluator coverage remains 106/106.
+68. All 25 migrations remain unchanged.
+
+Do not weaken existing tests or snapshot incorrect behavior merely to obtain a pass.
+
+19. Browser verification scenarios
+
+Complete browser verification using synthetic, non-customer data.
+
+Scenario A — Standard setup
+
+* Open an eligible webinar Activity.
+* Complete each Setup section.
+* Save and navigate backward and forward.
+* Confirm status updates.
+* Confirm the Setup review groups findings correctly.
+
+Scenario B — Recruitment planning
+
+* Open Recruitment.
+* Inspect the timeline.
+* Expand each communication.
+* Verify destinations, cadence, suppression, warnings, and evidence status.
+* Confirm no send action exists.
+
+Scenario C — Shortened window
+
+* Use an occurrence inside the standard recruitment window.
+* Verify recalculated timing.
+* Verify overdue or omitted-touch behavior.
+* Verify warnings and rule findings.
+
+Scenario D — Registration suppression
+
+* Use synthetic registration data.
+* Confirm future recruitment suppression.
+* Confirm historical communication visibility.
+* Confirm the suppression reason.
+
+Scenario E — Foundation simulation
+
+* Inspect synthetic taxonomy.
+* Confirm its Simulation label.
+* Confirm all unsupported governed outputs remain unavailable.
+* Confirm no live-connection claim appears.
+
+Scenario F — Evidence and exceptions
+
+* Submit permitted synthetic evidence.
+* Confirm it remains unverified and does not automatically pass a rule.
+* View an exception.
+* Confirm review remains blocked without trusted identity.
+
+Scenario G — Failure recovery
+
+* Simulate a recoverable API failure.
+* Confirm user input is preserved.
+* Confirm safe retry.
+* Confirm unaffected UI remains usable.
+
+Scenario H — Accessibility and responsiveness
+
+* Complete keyboard-only navigation.
+* Inspect screen-reader labels and announcements.
+* Test desktop, tablet, and mobile layouts.
+* Confirm reduced-motion behavior.
+
+Capture concise evidence without committing large screenshots or transient browser artifacts unless existing repository policy requires them.
+
+20. Verification gate
+
+Run fresh:
+
+1. Focused Setup component tests.
+2. Focused Recruitment component tests.
+3. Frontend API-adapter tests.
+4. Form-validation tests.
+5. Unsaved-change and conflict tests.
+6. Date-impact tests.
+7. Foundation-state presentation tests.
+8. Evidence and exception presentation tests.
+9. Accessibility tests.
+10. Responsive-layout tests.
+11. Browser workflow tests.
+12. Phase 2B-5 API-contract tests.
+13. Authorization-boundary tests.
+14. Idempotency and concurrency tests.
+15. Foundation-observation tests.
+16. Registration, attendance, cancellation, and suppression tests.
+17. Full evaluator suite.
+18. Readiness and completion suites.
+19. Scheduling and audience suites.
+20. Catalog-integrity and containment tests.
+21. Rule-ID drift check.
+22. Direct 106/106 registry check.
+23. Nonincremental server typecheck.
+24. Nonincremental frontend typecheck.
+25. Complete API suite against a fresh disposable database.
+26. All 25 migrations in order.
+27. Upgrade-preservation tests.
+28. Database shutdown and cleanup verification.
+29. Complete frontend regression suite.
+30. All five canonical hash checks.
+31. Temporal 0.5.1 pin check.
+32. OpenAPI validation.
+33. Manual browser verification.
+
+Report separately:
+
+* Test files.
+* Top-level records.
+* Nested records.
+* Leaf tests.
+* TAP grouping records.
+* Failures.
+* Skips.
+* Cancellations.
+* TODOs.
+* Setup and teardown failures.
+* Type errors.
+* Migration failures.
+* Upgrade-preservation failures.
+* Cleanup failures.
+* Automated accessibility violations.
+* Manual accessibility failures.
+* Browser failures.
+
+Do not combine unlike runner units into one total.
+
+21. Verification evidence
+
+Create:
+
+docs/verification/phase-2b-6-webinar-setup-recruitment-ui.md
+
+Include:
+
+* Starting repository state.
+* Moving-baseline assessment.
+* Existing frontend inventory.
+* Information architecture.
+* Component map.
+* Route and API mapping.
+* Setup workflow.
+* Recruitment workflow.
+* Status and color system.
+* Foundation-state behavior.
+* Evidence and exception behavior.
+* Loading, error, conflict, and recovery behavior.
+* Accessibility results.
+* Responsive results.
+* Browser-verification scenarios.
+* Changed-file inventory.
+* Complete test results.
+* Migration confirmation.
+* Known limitations.
+* Remaining blockers.
+* Explicit exclusions.
+
+State clearly:
+
+* The UI is development-only.
+* All data used for verification is synthetic.
+* Foundation taxonomy simulation is not a live connection.
+* No communications can be sent.
+* No exception can be approved without trusted identity.
+* The full Follow-up and Readiness workflows remain unimplemented.
+* UI completion does not mean the webinar pilot is operationally ready.
+
+22. Commit policy
+
+Commit only files required for the bounded Setup and Recruitment UI and its verification evidence.
+
+Exclude:
+
+* Instruction uploads.
+* Unrelated attached_assets/.
+* Unrelated .agents/memory/.
+* Temporary screenshots.
+* Browser recordings.
+* Disposable databases.
+* Generated logs.
+* Secrets.
+* Provider credentials.
+* Unrelated formatting changes.
+
+Do not rewrite history.
+
+Suggested commit title:
+
+Build webinar setup and recruitment UI
+
+A platform-generated commit remains provisional until the complete verification gate passes.
+
+23. Completion report
+
+Report:
+
+* Accepted starting commit.
+* Ending commit.
+* Direct parent.
+* Every changed file.
+* Navigation and routes added or changed.
+* Components added or changed.
+* Setup capabilities delivered.
+* Recruitment capabilities delivered.
+* Structured-choice versus open-text behavior.
+* Status and color behavior.
+* Foundation capability presentation.
+* Evidence and exception presentation.
+* Accessibility results.
+* Responsive results.
+* Browser-scenario results.
+* Complete verification counts by runner unit.
+* Migration count and unchanged status.
+* Upgrade, shutdown, and cleanup results.
+* Evaluator coverage.
+* Canonical hashes.
+* Temporal pin.
+* OpenAPI validation.
+* Known limitations.
+* Remaining blockers.
+* Confirmation that no real customer data was processed.
+* Confirmation that no sending, publishing, production Foundation connection, deployment, or trusted exception approval was introduced.
+* Confirmation that Phase 2B-7 did not begin.
+
+Stop after the completion report. Do not begin Follow-up or the full Readiness workflow.
