@@ -112,6 +112,23 @@ test("actual open app allows synthetic planning but not operational authority", 
     const sessions = await (await fetch(`${base}/campaigns/${campaign.id}/webinars`)).json();
     const occurrence = sessions.find((session: { activityId: string }) => session.activityId === webinar.id);
     assert.ok(occurrence, "new webinar activity has an explicit occurrence");
+    const sessionPath = `/campaigns/${campaign.id}/webinars/${occurrence.id}`;
+    const originalSession = await (await fetch(`${base}${sessionPath}`)).json();
+    const oversizedSessionPatch = await send(sessionPath, { platform: "x".repeat(17_000) }, "PATCH");
+    assert.equal(oversizedSessionPatch.status, 413);
+    assert.deepEqual(await oversizedSessionPatch.json(), {
+      error: { code: "VALIDATION_ERROR", message: "Request exceeds webinar API payload limit" },
+    });
+    const malformedSessionPatch = await fetch(`${base}${sessionPath}`, {
+      method: "PATCH", headers: { "content-type": "application/json" }, body: "{",
+    });
+    assert.equal(malformedSessionPatch.status, 400);
+    assert.deepEqual(await malformedSessionPatch.json(), {
+      error: { code: "VALIDATION_ERROR", message: "Invalid webinar API request body" },
+    });
+    const afterRejectedPatches = await (await fetch(`${base}${sessionPath}`)).json();
+    assert.equal(afterRejectedPatches.editVersion, originalSession.editVersion);
+    assert.equal(afterRejectedPatches.platform, originalSession.platform);
     const preflightUnavailable = await fetch(`${base}/development/simulations/context?campaignId=${campaign.id}&activityId=${webinar.id}&occurrenceId=${occurrence.id}`);
     assert.equal(preflightUnavailable.status, 409);
     const incompleteTuple = await send("/development/simulations", { campaignId: campaign.id, activityId: webinar.id, occurrenceId: occurrence.id });

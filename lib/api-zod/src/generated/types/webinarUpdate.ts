@@ -10,9 +10,11 @@ import type { RegistrationRule } from './registrationRule';
 import type { Speaker } from './speaker';
 
 /**
- * Partial update; every property is optional.
+ * Partial update. Send expectedVersion from GET or date-impact-preview to prevent overwriting newer data. Omission remains supported for legacy callers only; the guided UI must send it.
  */
 export interface WebinarUpdate {
+  /** @pattern ^[0-9a-f]{64}$ */
+  expectedVersion?: string;
   activityId?: string;
   /** @minLength 1 */
   name?: string;

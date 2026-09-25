@@ -30,6 +30,7 @@ import {
 } from "@workspace/db";
 import { GOVERNED_CHANNELS } from "./activity-model";
 import { canonicalCtasForCommunication, communicationReadinessFor } from "./deliverables";
+import { expectedWebinarVersion, webinarEditVersion, WebinarEditConflict } from "./webinar-edit-version";
 
 export const standardKeys = STANDARD_WEBINAR_KEYS;
 
@@ -154,6 +155,7 @@ const contentPatchSchema = z.object({
 });
 
 export const standardPatchSchema = z.object({
+  expectedVersion: z.string().regex(expectedWebinarVersion).optional(),
   launchAt: z.string().datetime({ offset: true }).optional(),
   templateConfig: z.object({
     pilotLimits: z.record(z.enum(contentFields), z.number().int().positive()).optional(),
@@ -350,6 +352,34 @@ function launchDate(session: WebinarSession) {
       : null;
 }
 
+/** Shared scheduling decision for saved rows and read-only previews. */
+function scheduleDecision(
+  session: WebinarSession,
+  definition: StandardDefinition,
+  previous?: { status: string; originalCalculatedAt: Date; calculatedAt: Date; adjustedAt: Date | null },
+  previousReason: string | null = null,
+) {
+  let calculated = scheduleForDefinition(session, definition);
+  const launch = launchDate(session);
+  const skipped = definition.kind === "calendar" && definition.direction === "before" && launch && calculated.effective.getTime() < launch.getTime();
+  const terminalSkipped = previous?.status === "skipped";
+  const status = terminalSkipped || skipped ? "skipped" : "scheduled";
+  if (terminalSkipped && previous) {
+    calculated = {
+      original: previous.originalCalculatedAt,
+      calculated: previous.calculatedAt,
+      effective: previous.adjustedAt ?? previous.calculatedAt,
+      localDate: null,
+    };
+  }
+  const skipReason = terminalSkipped
+    ? previousReason
+    : skipped
+      ? `Adjusted recruitment date ${calculated.effective.toISOString()} is before webinar campaign launch ${launch!.toISOString()}`
+      : null;
+  return { calculated, status, skipReason };
+}
+
 function dateValue(value: Date | null) {
   return value?.toISOString() ?? null;
 }
@@ -415,24 +445,7 @@ async function createOrUpdateSchedule(
   }
 
   const existing = (await executor.select().from(scheduledInstances).where(eq(scheduledInstances.ruleId, rule.id)))[0];
-  let calculated = scheduleForDefinition(session, definition);
-  const launch = launchDate(session);
-  const skipped = definition.kind === "calendar" && definition.direction === "before" && launch && calculated.effective.getTime() < launch.getTime();
-  const terminalSkipped = existing?.status === "skipped";
-  const status = terminalSkipped ? "skipped" : skipped ? "skipped" : "scheduled";
-  if (terminalSkipped) {
-    calculated = {
-      original: existing.originalCalculatedAt,
-      calculated: existing.calculatedAt,
-      effective: existing.adjustedAt ?? existing.calculatedAt,
-      localDate: null,
-    };
-  }
-  const skipReason = terminalSkipped
-    ? row.skipReason
-    : skipped
-      ? `Adjusted recruitment date ${calculated.effective.toISOString()} is before webinar campaign launch ${launch!.toISOString()}`
-      : null;
+  const { calculated, status, skipReason } = scheduleDecision(session, definition, existing, row.skipReason);
   let instance;
   if (!existing) {
     [instance] = await executor.insert(scheduledInstances).values({
@@ -696,7 +709,83 @@ export async function standardForSession(campaignId: string, sessionId: string, 
     });
   }
   response.communications = projectedCommunications;
-  return response;
+  return { ...response, editVersion: await webinarEditVersion(campaignId, sessionId, executor) };
+}
+
+/**
+ * Read-only dry run. Uses precisely the decision used by createOrUpdateSchedule,
+ * including terminal skipped instances. The preview never initializes a
+ * standard, a schedule rule, history, or a configured communication.
+ */
+export async function previewWebinarDateImpact(
+  campaignId: string,
+  sessionId: string,
+  proposed: Pick<WebinarSession, "sessionDate" | "startTime" | "timezone" | "durationMinutes"> & {
+    recruitmentLaunchAt: Date | null;
+  },
+  expectedVersion: string,
+  executor: any = db,
+) {
+  const [session] = await executor.select().from(webinarSessions).where(and(
+    eq(webinarSessions.id, sessionId), eq(webinarSessions.campaignId, campaignId),
+  ));
+  if (!session) throw new WebinarStandardValidationError("Webinar session not found", 404);
+  const editVersion = await webinarEditVersion(campaignId, sessionId, executor);
+  if (expectedVersion !== editVersion) throw new WebinarEditConflict();
+  const definitions = definitionsForTemplate(session.templateVersion);
+  const rows: Array<typeof webinarStandardCommunications.$inferSelect> = await executor.select().from(webinarStandardCommunications)
+    .where(eq(webinarStandardCommunications.sessionId, sessionId))
+    .orderBy(asc(webinarStandardCommunications.sortOrder));
+  if (rows.length !== definitions.length) throw new WebinarStandardValidationError("Webinar schedule is not initialized", 409);
+  const ruleIds = rows.flatMap((row: typeof webinarStandardCommunications.$inferSelect) => row.scheduleRuleId ? [row.scheduleRuleId] : []);
+  const instances: Array<typeof scheduledInstances.$inferSelect> = ruleIds.length
+    ? await executor.select().from(scheduledInstances).where(inArray(scheduledInstances.ruleId, ruleIds))
+    : [];
+  const instancesByRule = new Map<string, typeof scheduledInstances.$inferSelect>(
+    instances.map((instance) => [instance.ruleId, instance]),
+  );
+  const next = { ...session, ...proposed };
+  const asOf = new Date();
+  const touches = rows.map((row: typeof webinarStandardCommunications.$inferSelect) => {
+    const definition = definitions.find((candidate) => candidate.key === row.key);
+    if (!definition) throw new WebinarStandardValidationError(`Unknown standard key ${row.key}`, 500);
+    if (definition.kind === "trigger") {
+      return {
+        key: row.key, name: row.name, timing: "trigger" as const,
+        previous: { status: row.scheduleStatus, scheduledAt: null, skipReason: row.skipReason, overdue: false },
+        proposed: { status: row.scheduleStatus, scheduledAt: null, skipReason: row.skipReason, overdue: false },
+        changed: false, shortenedWindow: false,
+      };
+    }
+    const oldAt = row.effectiveScheduledAt?.toISOString() ?? null;
+    const oldStatus = row.scheduleStatus;
+    const previous = row.scheduleRuleId ? instancesByRule.get(row.scheduleRuleId) : undefined;
+    const decision = scheduleDecision(next, definition, previous, row.skipReason);
+    const newAt = decision.calculated.effective.toISOString();
+    const previousOverdue = oldStatus === "scheduled" && !!oldAt && new Date(oldAt).getTime() < asOf.getTime();
+    const proposedOverdue = decision.status === "scheduled" && new Date(newAt).getTime() < asOf.getTime();
+    return {
+      key: row.key, name: row.name, timing: definition.kind,
+      previous: { status: oldStatus, scheduledAt: oldAt, skipReason: row.skipReason, overdue: previousOverdue },
+      proposed: { status: decision.status, scheduledAt: newAt, skipReason: decision.skipReason, overdue: proposedOverdue },
+      changed: oldAt !== newAt || oldStatus !== decision.status || row.skipReason !== decision.skipReason,
+      shortenedWindow: oldStatus !== "skipped" && decision.status === "skipped",
+    };
+  });
+  return {
+    campaignId, sessionId, editVersion, calculatedAt: asOf.toISOString(), timezone: next.timezone,
+    currentEvent: { sessionDate: session.sessionDate, startTime: session.startTime, timezone: session.timezone,
+      recruitmentLaunchAt: session.recruitmentLaunchAt?.toISOString() ?? null },
+    proposedEvent: { sessionDate: next.sessionDate, startTime: next.startTime, timezone: next.timezone,
+      recruitmentLaunchAt: next.recruitmentLaunchAt?.toISOString() ?? null },
+    touches,
+    changedCount: touches.filter((touch) => touch.changed).length,
+    newlyOverdueCount: touches.filter((touch) => !touch.previous.overdue && touch.proposed.overdue).length,
+    shortenedWindowCount: touches.filter((touch) => touch.shortenedWindow).length,
+    warnings: touches.filter((touch) => touch.shortenedWindow || (!touch.previous.overdue && touch.proposed.overdue))
+      .map((touch) => `${touch.name}: ${touch.proposed.skipReason ?? "Proposed schedule is overdue"}`),
+    blockers: [] as string[], // The scheduling decision has no independent blocking classification.
+  };
 }
 
 export async function patchStandard(campaignId: string, sessionId: string, input: unknown, executor: any = db): Promise<any> {
@@ -723,6 +812,9 @@ export async function patchStandard(campaignId: string, sessionId: string, input
     .where(eq(webinarStandardConfigs.sessionId, sessionId))
     .for("update");
   if (!config) throw new WebinarStandardValidationError("Webinar standard configuration not found", 500);
+  if (parsed.data.expectedVersion && parsed.data.expectedVersion !== await webinarEditVersion(campaignId, sessionId, executor)) {
+    throw new WebinarEditConflict();
+  }
   await standardForSession(campaignId, sessionId, executor);
   if (parsed.data.launchAt !== undefined) {
     await executor.update(webinarSessions).set({ recruitmentLaunchAt: new Date(parsed.data.launchAt), updatedAt: new Date() }).where(and(eq(webinarSessions.id, sessionId), eq(webinarSessions.campaignId, campaignId)));

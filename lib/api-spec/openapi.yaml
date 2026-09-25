@@ -1237,6 +1237,28 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/WebinarSession"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /campaigns/{id}/webinars/{sessionId}/date-impact-preview:
+    post:
+      operationId: previewWebinarDateImpact
+      tags: [webinars]
+      description: Development-only, read-only preview of the existing fixed scheduling decision. Pass editVersion obtained from GET webinar. Does not persist any changes, send, or imply operational approval. Use the same expectedVersion on PATCH; conflicts require reload and a new preview. Scheduled instants are deterministic for an unchanged version and timing input; overdue indicators are time-relative annotations assessed at calculatedAt, not a frozen promise about their value at save.
+      parameters:
+        - {$ref: "#/components/parameters/Id"}
+        - {$ref: "#/components/parameters/SessionId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/WebinarDateImpactInput"}
+      responses:
+        "200":
+          description: Non-mutating schedule impact; includes all planned touches
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WebinarDateImpact"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "409": {$ref: "#/components/responses/Conflict"}
   /campaigns/{id}/webinars/{sessionId}/people:
     get:
       operationId: listWebinarPeople
@@ -2507,7 +2529,7 @@ components:
         unverified: {type: boolean, enum: [true]}
     WebinarApiEvidenceList:
       type: object
-      required: [campaignId, activityId, occurrenceId, retrievedAt, revision, simulationOnly, records]
+      required: [campaignId, activityId, occurrenceId, retrievedAt, revision, simulationOnly, availableSources, records]
       properties:
         campaignId: {type: string, format: uuid}
         activityId: {type: string, format: uuid}
@@ -2515,6 +2537,19 @@ components:
         retrievedAt: {type: string, format: date-time}
         revision: {type: integer}
         simulationOnly: {type: boolean, enum: [true]}
+        availableSources:
+          type: array
+          description: Stored occurrence-scoped immutable source references, not evaluator sourceReferences or evidence assertions. Usability is assessed at retrievedAt; POST evidence independently revalidates each source.
+          items:
+            type: object
+            required: [sourceId, sourceType, sourceVersion, sourceHash, usable, unavailableReason]
+            properties:
+              sourceId: {type: string, format: uuid}
+              sourceType: {type: string, enum: [occurrence, content, foundation, delivery, measurement]}
+              sourceVersion: {type: string}
+              sourceHash: {type: string, pattern: "^[a-f0-9]{64}$"}
+              usable: {type: boolean}
+              unavailableReason: {type: [string, "null"]}
         records: {type: array, items: {$ref: "#/components/schemas/WebinarApiEvidenceRecord"}}
     WebinarApiEvidenceCreated:
       type: object
@@ -3915,6 +3950,7 @@ components:
         recruitmentLaunchAt: {type: [string, "null"], format: date-time, description: Webinar campaign launch instant}
         createdAt: {type: string, format: date-time}
         updatedAt: {type: string, format: date-time}
+        editVersion: {type: string, pattern: "^[0-9a-f]{64}$", description: Version of current session, standard configuration, and communication state. GET detail and guarded PATCH return it.}
     WebinarInput:
       type: object
       required: [activityId, sessionDate, startTime, durationMinutes, timezone, platform, recruitmentLaunchAt]
@@ -3959,8 +3995,9 @@ components:
           description: Optional explicit canonical channel; omission leaves generated communications unassigned
     WebinarUpdate:
       type: object
-      description: Partial update; every property is optional.
+      description: Partial update. Send expectedVersion from GET or date-impact-preview to prevent overwriting newer data. Omission remains supported for legacy callers only; the guided UI must send it.
       properties:
+        expectedVersion: {type: string, pattern: "^[0-9a-f]{64}$"}
         activityId: {type: string, format: uuid}
         name: {type: string, minLength: 1}
         sessionDate: {type: string, format: date}
@@ -3977,6 +4014,64 @@ components:
           oneOf:
             - {$ref: "#/components/schemas/GovernedChannelId"}
             - type: "null"
+    WebinarDateImpactInput:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion]
+      description: Partial session timing proposal; no provider output or calculated timestamps are accepted.
+      properties:
+        expectedVersion: {type: string, pattern: "^[0-9a-f]{64}$"}
+        sessionDate: {type: string, format: date}
+        startTime: {type: string, pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"}
+        durationMinutes: {type: integer, minimum: 1, maximum: 1440}
+        timezone: {type: string}
+        recruitmentLaunchAt: {type: string, format: date-time}
+    WebinarDateImpactTouchState:
+      type: object
+      required: [status, scheduledAt, skipReason, overdue]
+      properties:
+        status: {type: string}
+        scheduledAt: {type: [string, "null"], format: date-time}
+        skipReason: {type: [string, "null"]}
+        overdue: {type: boolean, description: Ephemeral assessment at the preview calculatedAt wall-clock instant; may change at the due boundary without any persisted schedule change.}
+    WebinarDateImpactTouch:
+      type: object
+      required: [key, name, timing, previous, proposed, changed, shortenedWindow]
+      properties:
+        key: {type: string}
+        name: {type: string}
+        timing: {type: string, enum: [calendar, elapsed, trigger]}
+        previous: {$ref: "#/components/schemas/WebinarDateImpactTouchState"}
+        proposed: {$ref: "#/components/schemas/WebinarDateImpactTouchState"}
+        changed: {type: boolean}
+        shortenedWindow: {type: boolean}
+    WebinarDateImpactEvent:
+      type: object
+      required: [sessionDate, startTime, timezone, recruitmentLaunchAt]
+      properties:
+        sessionDate: {type: string, format: date}
+        startTime: {type: string}
+        timezone: {type: string}
+        recruitmentLaunchAt: {type: [string, "null"], format: date-time}
+    WebinarDateImpact:
+      type: object
+      required: [campaignId, sessionId, editVersion, calculatedAt, timezone, currentEvent, proposedEvent, touches, changedCount, newlyOverdueCount, shortenedWindowCount, warnings, blockers]
+      properties:
+        campaignId: {type: string, format: uuid}
+        sessionId: {type: string, format: uuid}
+        editVersion: {type: string, pattern: "^[0-9a-f]{64}$"}
+        calculatedAt: {type: string, format: date-time, description: Wall-clock as-of for overdue annotations, not an input to scheduling decisions or a frozen save clock.}
+        timezone: {type: string}
+        currentEvent: {$ref: "#/components/schemas/WebinarDateImpactEvent"}
+        proposedEvent: {$ref: "#/components/schemas/WebinarDateImpactEvent"}
+        touches:
+          type: array
+          items: {$ref: "#/components/schemas/WebinarDateImpactTouch"}
+        changedCount: {type: integer}
+        newlyOverdueCount: {type: integer}
+        shortenedWindowCount: {type: integer}
+        warnings: {type: array, items: {type: string}}
+        blockers: {type: array, items: {type: string}, description: Empty when the scheduling engine has no independent blocker classification; never inferred in the browser.}
     WebinarPerson:
       type: object
       required: [id, campaignId, audienceBranchId, name, isSynthetic]
@@ -4142,6 +4237,7 @@ components:
         sessionId: {type: string, format: uuid}
         activityId: {type: string, format: uuid}
         launchAt: {type: [string, "null"], format: date-time}
+        editVersion: {type: string, pattern: "^[0-9a-f]{64}$"}
         templateId:
           type: string
           enum: [webinar_legacy_9, webinar_default_5]
@@ -4166,6 +4262,7 @@ components:
     WebinarStandardPatch:
       type: object
       properties:
+        expectedVersion: {type: string, pattern: "^[0-9a-f]{64}$", description: Required for guarded UI edits; omission retained for legacy callers. Conflicts do not write.}
         launchAt: {type: string, format: date-time}
         templateConfig:
           type: object

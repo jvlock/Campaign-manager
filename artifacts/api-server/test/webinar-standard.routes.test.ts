@@ -24,6 +24,7 @@ import {
   landingPages,
 } from "@workspace/db";
 import { communicationDetails } from "@workspace/db/schema/communication-details";
+import { allowsDevelopmentPlanning } from "../src/lib/development-policy";
 
 let server: Server;
 let baseUrl: string;
@@ -131,6 +132,136 @@ async function linkPublishedCta(campaignId: string, sessionId: string) {
 after(async () => {
   server.close();
   for (const campaignId of campaignIds) await cleanupCampaign(campaignId);
+});
+
+test("guarded webinar edits preview existing scheduling decisions without writes and reject concurrent stale saves", async () => {
+  assert.equal(allowsDevelopmentPlanning("POST", "/campaigns/any/webinars/any/date-impact-preview"), true);
+  assert.equal(allowsDevelopmentPlanning("GET", "/campaigns/any/webinars/any/date-impact-preview"), false);
+  const createdCampaign = await campaign(`Preview route ${randomUUID()}`);
+  const [activity] = await db.insert(activities).values({
+    campaignId: createdCampaign.id,
+    name: `${createdCampaign.name}-webinar-Preview`,
+    generatedName: `${createdCampaign.name}-webinar-Preview`,
+    namingInput: "Preview",
+    type: "webinar",
+    activityTypeId: "webinar",
+    audience: "Route test audience",
+    region: "EMEA",
+    timing: setup.eventDate,
+    status: "Confirmed",
+    owner: "Route test",
+    x: "0", y: "0",
+  }).returning();
+  const created = await fetch(`${baseUrl}/campaigns/${createdCampaign.id}/webinars`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      activityId: activity.id, sessionDate: setup.eventDate, startTime: setup.eventTime,
+      durationMinutes: setup.durationMinutes, timezone: setup.timezone,
+      platform: setup.platform, speakers: setup.speakers,
+      recruitmentLaunchAt: setup.recruitmentLaunchAt,
+    }),
+  });
+  assert.equal(created.status, 201);
+  const { id: sessionId } = await created.json() as { id: string };
+  const sessionUrl = `${baseUrl}/campaigns/${createdCampaign.id}/webinars/${sessionId}`;
+  const standardUrl = `${sessionUrl}/standard`;
+  const fetchSession = async () => (await (await fetch(sessionUrl)).json()) as { sessionDate: string; editVersion: string };
+  const first = await fetchSession();
+  assert.match(first.editVersion, /^[0-9a-f]{64}$/);
+  const missingVersion = await fetch(`${sessionUrl}/date-impact-preview`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ sessionDate: "2027-03-03" }),
+  });
+  assert.equal(missingVersion.status, 400);
+  const injectedCalculatedField = await fetch(`${sessionUrl}/date-impact-preview`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ expectedVersion: first.editVersion, sessionDate: "2027-03-03", scheduledAt: "2027-01-01T00:00:00Z" }),
+  });
+  assert.equal(injectedCalculatedField.status, 400);
+  const priorStandard = await (await fetch(standardUrl)).json() as { editVersion: string; communications: Array<{ key: string; scheduled: { status: string; effectiveAt: string | null } }> };
+  assert.equal(priorStandard.editVersion, first.editVersion, "ordinary standard reads do not change the content revision");
+  const beforeSession = await db.select().from(webinarSessions).where(eq(webinarSessions.id, sessionId));
+  const beforeRows = await db.select().from(webinarStandardCommunications).where(eq(webinarStandardCommunications.sessionId, sessionId));
+  const beforeInstances = await db.select().from(scheduledInstances).where(eq(scheduledInstances.campaignId, createdCampaign.id));
+  const beforeHistory = await db.select().from(scheduledInstanceHistory).where(inArray(scheduledInstanceHistory.scheduledInstanceId, beforeInstances.map((row) => row.id)));
+  const preview = await fetch(`${sessionUrl}/date-impact-preview`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ expectedVersion: first.editVersion, sessionDate: "2027-03-03" }),
+  });
+  assert.equal(preview.status, 200);
+  const impact = await preview.json() as {
+    editVersion: string;
+    changedCount: number;
+    shortenedWindowCount: number;
+    touches: Array<{ key: string; previous: { scheduledAt: string | null }; proposed: { scheduledAt: string | null; status: string; overdue: boolean }; changed: boolean; shortenedWindow: boolean }>;
+  };
+  assert.equal(impact.editVersion, first.editVersion);
+  assert.equal(impact.touches.length, priorStandard.communications.length);
+  assert.ok(impact.changedCount > 0);
+  assert.ok(impact.shortenedWindowCount > 0);
+  assert.deepEqual(await db.select().from(webinarSessions).where(eq(webinarSessions.id, sessionId)), beforeSession);
+  assert.deepEqual(await db.select().from(webinarStandardCommunications).where(eq(webinarStandardCommunications.sessionId, sessionId)), beforeRows);
+  assert.deepEqual(await db.select().from(scheduledInstances).where(eq(scheduledInstances.campaignId, createdCampaign.id)), beforeInstances);
+  assert.deepEqual(await db.select().from(scheduledInstanceHistory).where(inArray(scheduledInstanceHistory.scheduledInstanceId, beforeInstances.map((row) => row.id))), beforeHistory);
+  const saved = await fetch(sessionUrl, {
+    method: "PATCH", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ expectedVersion: impact.editVersion, sessionDate: "2027-03-03" }),
+  });
+  assert.equal(saved.status, 200);
+  const after = await saved.json() as { sessionDate: string; editVersion: string };
+  assert.equal(after.sessionDate, "2027-03-03");
+  assert.notEqual(after.editVersion, first.editVersion);
+  const afterStandard = await (await fetch(standardUrl)).json() as typeof priorStandard;
+  for (const touch of impact.touches) {
+    const savedTouch = afterStandard.communications.find((candidate) => candidate.key === touch.key);
+    assert.ok(savedTouch);
+    assert.equal(savedTouch.scheduled.effectiveAt, touch.proposed.scheduledAt, touch.key);
+    assert.equal(savedTouch.scheduled.status, touch.proposed.status, touch.key);
+  }
+  const [raceA, raceB] = await Promise.all(["2027-03-04", "2027-03-05"].map((sessionDate) =>
+    fetch(sessionUrl, { method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ expectedVersion: after.editVersion, sessionDate }) })));
+  assert.deepEqual([raceA.status, raceB.status].sort(), [200, 409]);
+  const rejected = raceA.status === 409 ? raceA : raceB;
+  assert.equal((await rejected.json() as { error: { code: string } }).error.code, "CONFLICT");
+  const latest = await fetchSession();
+  const staleStandard = await fetch(standardUrl, { method: "PATCH", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ expectedVersion: after.editVersion, communications: [{ key: "recruitment_1", status: "DRAFT" }] }) });
+  assert.equal(staleStandard.status, 409);
+  const guardedStandard = await fetch(standardUrl, { method: "PATCH", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ expectedVersion: latest.editVersion, communications: [{ key: "recruitment_1", status: "PLANNED" }] }) });
+  assert.equal(guardedStandard.status, 200);
+  const postStandard = await fetchSession();
+  assert.notEqual(postStandard.editVersion, latest.editVersion);
+  const stalePreview = await fetch(`${sessionUrl}/date-impact-preview`, { method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ expectedVersion: latest.editVersion, sessionDate: "2027-03-06" }) });
+  assert.equal(stalePreview.status, 409);
+  assert.equal((await fetchSession()).sessionDate, latest.sessionDate);
+  const dstPreviewResponse = await fetch(`${sessionUrl}/date-impact-preview`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ expectedVersion: postStandard.editVersion, sessionDate: "2027-03-15" }),
+  });
+  assert.equal(dstPreviewResponse.status, 200);
+  const dstPreview = await dstPreviewResponse.json() as typeof impact & { calculatedAt: string };
+  assert.ok(Number.isFinite(Date.parse(dstPreview.calculatedAt)), "overdue is assessed at a transient preview time");
+  assert.equal(dstPreview.touches.find((touch) => touch.key === "registered_reminder")?.proposed.scheduledAt,
+    "2027-03-14T18:00:00.000Z", "24 elapsed hours before a 14:00 New York event after spring DST");
+  assert.equal(dstPreview.touches.find((touch) => touch.key === "final_reminder")?.proposed.scheduledAt,
+    "2027-03-15T17:00:00.000Z", "one elapsed hour before the event, in daylight time");
+  const dstSave = await fetch(sessionUrl, {
+    method: "PATCH", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ expectedVersion: dstPreview.editVersion, sessionDate: "2027-03-15" }),
+  });
+  assert.equal(dstSave.status, 200);
+  const dstSavedStandard = await (await fetch(standardUrl)).json() as typeof priorStandard;
+  for (const touch of dstPreview.touches) {
+    const persisted = dstSavedStandard.communications.find((candidate) => candidate.key === touch.key);
+    assert.ok(persisted);
+    assert.equal(persisted.scheduled.effectiveAt, touch.proposed.scheduledAt, touch.key);
+    assert.equal(persisted.scheduled.status, touch.proposed.status, touch.key);
+  }
+  // Overdue flags are a read-time annotation, not stored schedule instants.
+  assert.ok(dstPreview.touches.every((touch) => typeof touch.proposed.overdue === "boolean"));
 });
 
 test("activity POST provisions exactly five standard rows and replay map is idempotent", async () => {

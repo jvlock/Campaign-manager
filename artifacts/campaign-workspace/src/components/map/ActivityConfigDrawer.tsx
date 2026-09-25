@@ -33,6 +33,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, AlertCircle, Plus, Mail, Clock, Users, ListFilter } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Link } from 'wouter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -567,6 +568,12 @@ export default function ActivityConfigDrawer({
                 <Users className="h-4 w-4 text-muted-foreground" />
                 Webinar Configuration
               </h4>
+              {sessionId && (
+                <Link href={`/campaigns/${campaignId}/webinars/${sessionId}/setup`} className="flex min-h-11 items-center justify-between rounded-md border border-[hsl(var(--ww-green-400))] bg-[hsl(var(--ww-green-50))] px-3 text-sm font-semibold text-[hsl(var(--ww-green-900))] hover:underline" data-testid="link-webinar-workspace">
+                  Open guided Setup and Recruitment
+                  <span aria-hidden="true">&rarr;</span>
+                </Link>
+              )}
 
               {!webinarData ? (
                 <div className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
@@ -657,10 +664,14 @@ export default function ActivityConfigDrawer({
                     <Checkbox
                       id={`webinar-suppress`}
                       checked={webinarData.registrationRule?.suppressRecruitmentAfterRegistration || false}
-                      onCheckedChange={(c) => updateWebinar({ registrationRule: { ...webinarData.registrationRule, suppressRecruitmentAfterRegistration: !!c } })}
+                      disabled
+                      aria-describedby="webinar-suppress-note"
                     />
-                    <label htmlFor={`webinar-suppress`} className="text-xs font-medium leading-none">Suppress Recruitment After Registration</label>
+                    <label htmlFor={`webinar-suppress`} className="text-xs font-medium leading-none">Suppress Recruitment After Registration (required, read-only)</label>
                   </div>
+                  <p id="webinar-suppress-note" className="text-[11px] text-muted-foreground">
+                    {webinarData.registrationRule?.suppressRecruitmentAfterRegistration ? 'Canonical requirement: registrants are removed from recruitment. It cannot be turned off here.' : 'Warning: legacy configuration has suppression disabled. The standard requires it; no bypass is offered here.'}
+                  </p>
                 </div>
               </div>}
 

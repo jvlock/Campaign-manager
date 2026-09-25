@@ -12,6 +12,7 @@ import Portfolio from '@/pages/Portfolio';
 import CampaignList from '@/pages/campaigns/List';
 import CampaignCreate from '@/pages/campaigns/Create';
 import CampaignDetail from '@/pages/campaigns/Detail';
+import WebinarWorkspace from '@/pages/campaigns/WebinarWorkspace';
 import NotFound from '@/pages/not-found';
 import Development from '@/pages/Development';
 
@@ -46,6 +47,7 @@ function PlanningAccess() {
           <Route path="/portfolio" component={Portfolio} />
           <Route path="/campaigns" component={CampaignList} />
           <Route path="/campaigns/new" component={CampaignCreate} />
+          <Route path="/campaigns/:id/webinars/:sessionId/setup" component={WebinarWorkspace} />
           <Route path="/campaigns/:id" component={CampaignDetail} />
           <Route component={NotFound} />
         </Switch>

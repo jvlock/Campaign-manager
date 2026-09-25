@@ -5,6 +5,7 @@
  * Campaign Operating Workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { WebinarApiEvidenceListAvailableSourcesItem } from './webinarApiEvidenceListAvailableSourcesItem';
 import type { WebinarApiEvidenceRecord } from './webinarApiEvidenceRecord';
 
 export interface WebinarApiEvidenceList {
@@ -14,5 +15,7 @@ export interface WebinarApiEvidenceList {
   retrievedAt: Date;
   revision: number;
   simulationOnly: true;
+  /** Stored occurrence-scoped immutable source references, not evaluator sourceReferences or evidence assertions. Usability is assessed at retrievedAt; POST evidence independently revalidates each source. */
+  availableSources: WebinarApiEvidenceListAvailableSourcesItem[];
   records: WebinarApiEvidenceRecord[];
 }

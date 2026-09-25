@@ -33,4 +33,9 @@ export interface WebinarSession {
   recruitmentLaunchAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
+  /**
+     * Version of current session
+     * @pattern ^[0-9a-f]{64}$
+     */
+  editVersion?: string;
 }

@@ -33,9 +33,11 @@ import {
   ensureWebinarStandard,
   setWebinarCommunicationChannel,
   patchStandard,
+  previewWebinarDateImpact,
   standardForSession,
   triggerRegistrationConfirmation,
 } from "../lib/webinar-standard";
+import { expectedWebinarVersion, webinarEditVersion, WebinarEditConflict } from "../lib/webinar-edit-version";
 import { canonicalCtasForCommunication, communicationReadinessFor, DeliverableError } from "../lib/deliverables";
 import {
   assertNoFinalityRequest,
@@ -114,6 +116,10 @@ async function audienceBranchFor(campaignId: string, requestedId?: string) {
 }
 
 function reportError(error: unknown, res: Response, next: NextFunction) {
+  if (error instanceof WebinarEditConflict) {
+    res.status(409).json({ error: { code: "CONFLICT", message: error.message } });
+    return;
+  }
   if (error instanceof ActivityModelError) {
     res.status(400).json({ error: { field: error.field, code: error.code, message: error.message } });
     return;
@@ -214,7 +220,12 @@ router.get("/campaigns/:id/webinars/:sessionId", async (req, res, next): Promise
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    res.json(sessionResponse(await sessionForCampaign(parsed.data.id, parsed.data.sessionId)));
+    const response = await db.transaction(async (tx) => {
+      const session = await tx.select().from(webinarSessions).where(and(eq(webinarSessions.id, parsed.data.sessionId), eq(webinarSessions.campaignId, parsed.data.id)));
+      if (!session[0]) throw new WebinarValidationError("Webinar session not found", 404);
+      return { ...sessionResponse(session[0]), editVersion: await webinarEditVersion(parsed.data.id, parsed.data.sessionId, tx) };
+    }, { isolationLevel: "repeatable read", accessMode: "read only" });
+    res.json(response);
   } catch (error) {
     reportError(error, res, next);
   }
@@ -224,7 +235,7 @@ router.patch("/campaigns/:id/webinars/:sessionId", async (req, res, next): Promi
   try {
     assertNoSuppliedGeneratedIdentity(req.body, { includeId: true, path: "webinar" });
     const parsedParams = sessionParams.safeParse(req.params);
-    const parsedBody = webinarUpdateSchema.safeParse(req.body);
+    const parsedBody = webinarUpdateSchema.extend({ expectedVersion: z.string().regex(expectedWebinarVersion).optional() }).safeParse(req.body);
     if (!parsedParams.success || !parsedBody.success) {
       const error = !parsedParams.success
         ? parsedParams.error.message
@@ -259,6 +270,13 @@ router.patch("/campaigns/:id/webinars/:sessionId", async (req, res, next): Promi
       body.timezone !== undefined ||
       body.recruitmentLaunchAt !== undefined;
     const row = await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${campaignId}))`);
+      const [existing] = await tx.select().from(webinarSessions)
+        .where(and(eq(webinarSessions.id, sessionId), eq(webinarSessions.campaignId, campaignId))).for("update");
+      if (!existing) throw new WebinarValidationError("Webinar session not found", 404);
+      if (body.expectedVersion && body.expectedVersion !== await webinarEditVersion(campaignId, sessionId, tx)) {
+        throw new WebinarEditConflict();
+      }
       const [updated] = await tx
         .update(webinarSessions)
         .set(patch)
@@ -278,9 +296,51 @@ router.patch("/campaigns/:id/webinars/:sessionId", async (req, res, next): Promi
       }
        await ensureWebinarStandard(updated, tx);
       if (body.channel !== undefined) await setWebinarCommunicationChannel(updated.id, body.channel, tx);
-      return updated;
+      return { ...sessionResponse(updated), editVersion: await webinarEditVersion(campaignId, sessionId, tx) };
     });
-    res.json(sessionResponse(row));
+    res.json(row);
+  } catch (error) {
+    reportError(error, res, next);
+  }
+});
+
+router.post("/campaigns/:id/webinars/:sessionId/date-impact-preview", async (req, res, next): Promise<void> => {
+  try {
+    const parsedParams = sessionParams.safeParse(req.params);
+    const parsedBody = webinarUpdateSchema.pick({
+      sessionDate: true,
+      startTime: true,
+      durationMinutes: true,
+      timezone: true,
+      recruitmentLaunchAt: true,
+    }).extend({
+      expectedVersion: z.string().regex(expectedWebinarVersion),
+    }).strict().safeParse(req.body);
+    if (!parsedParams.success || !parsedBody.success) {
+      res.status(400).json({ error: { code: "VALIDATION_ERROR", message: !parsedParams.success
+        ? parsedParams.error.message
+        : !parsedBody.success ? parsedBody.error.message : "Invalid date impact preview" } });
+      return;
+    }
+    const { id: campaignId, sessionId } = parsedParams.data;
+    const body = parsedBody.data;
+    const preview = await db.transaction(async (tx) => {
+      const [session] = await tx.select().from(webinarSessions)
+        .where(and(eq(webinarSessions.id, sessionId), eq(webinarSessions.campaignId, campaignId)));
+      if (!session) throw new WebinarValidationError("Webinar session not found", 404);
+      // The preview can only project the same session timing fields saved by
+      // PATCH. It never accepts calculated fields or provider provenance.
+      return previewWebinarDateImpact(campaignId, sessionId, {
+        sessionDate: body.sessionDate ?? session.sessionDate,
+        startTime: body.startTime ?? session.startTime,
+        timezone: body.timezone ?? session.timezone,
+        durationMinutes: body.durationMinutes ?? session.durationMinutes,
+        recruitmentLaunchAt: body.recruitmentLaunchAt === undefined
+          ? session.recruitmentLaunchAt
+          : new Date(body.recruitmentLaunchAt),
+      }, body.expectedVersion, tx);
+    }, { isolationLevel: "repeatable read", accessMode: "read only" });
+    res.json(preview);
   } catch (error) {
     reportError(error, res, next);
   }
@@ -477,10 +537,11 @@ router.get("/campaigns/:id/webinars/:sessionId/standard", async (req, res, next)
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    res.json({
-      ...(await standardForSession(parsed.data.id, parsed.data.sessionId)),
-      governance: PROVISIONAL_GOVERNANCE,
+    const standard = await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${parsed.data.id}))`);
+      return standardForSession(parsed.data.id, parsed.data.sessionId, tx);
     });
+    res.json({ ...standard, governance: PROVISIONAL_GOVERNANCE });
   } catch (error) {
     reportError(error, res, next);
   }

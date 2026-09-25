@@ -1166,6 +1166,28 @@ export interface WebinarApiEvidenceRecord {
   unverified: true;
 }
 
+export type WebinarApiEvidenceListAvailableSourcesItemSourceType = typeof WebinarApiEvidenceListAvailableSourcesItemSourceType[keyof typeof WebinarApiEvidenceListAvailableSourcesItemSourceType];
+
+
+export const WebinarApiEvidenceListAvailableSourcesItemSourceType = {
+  occurrence: 'occurrence',
+  content: 'content',
+  foundation: 'foundation',
+  delivery: 'delivery',
+  measurement: 'measurement',
+} as const;
+
+export type WebinarApiEvidenceListAvailableSourcesItem = {
+  sourceId: string;
+  sourceType: WebinarApiEvidenceListAvailableSourcesItemSourceType;
+  sourceVersion: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  sourceHash: string;
+  usable: boolean;
+  /** @nullable */
+  unavailableReason: string | null;
+};
+
 export interface WebinarApiEvidenceList {
   campaignId: string;
   activityId: string;
@@ -1173,6 +1195,8 @@ export interface WebinarApiEvidenceList {
   retrievedAt: string;
   revision: number;
   simulationOnly: true;
+  /** Stored occurrence-scoped immutable source references, not evaluator sourceReferences or evidence assertions. Usability is assessed at retrievedAt; POST evidence independently revalidates each source. */
+  availableSources: WebinarApiEvidenceListAvailableSourcesItem[];
   records: WebinarApiEvidenceRecord[];
 }
 
@@ -3119,6 +3143,11 @@ export interface WebinarSession {
   recruitmentLaunchAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  /**
+     * Version of current session
+     * @pattern ^[0-9a-f]{64}$
+     */
+  editVersion?: string;
 }
 
 export interface WebinarInput {
@@ -3140,9 +3169,11 @@ export interface WebinarInput {
 }
 
 /**
- * Partial update; every property is optional.
+ * Partial update. Send expectedVersion from GET or date-impact-preview to prevent overwriting newer data. Omission remains supported for legacy callers only; the guided UI must send it.
  */
 export interface WebinarUpdate {
+  /** @pattern ^[0-9a-f]{64}$ */
+  expectedVersion?: string;
   activityId?: string;
   /** @minLength 1 */
   name?: string;
@@ -3160,6 +3191,80 @@ export interface WebinarUpdate {
   registrationRule?: RegistrationRule;
   recruitmentLaunchAt?: string;
   channel?: GovernedChannelId | null;
+}
+
+/**
+ * Partial session timing proposal; no provider output or calculated timestamps are accepted.
+ */
+export interface WebinarDateImpactInput {
+  /** @pattern ^[0-9a-f]{64}$ */
+  expectedVersion: string;
+  sessionDate?: string;
+  /** @pattern ^([01]\d|2[0-3]):[0-5]\d$ */
+  startTime?: string;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  durationMinutes?: number;
+  timezone?: string;
+  recruitmentLaunchAt?: string;
+}
+
+export interface WebinarDateImpactTouchState {
+  status: string;
+  /** @nullable */
+  scheduledAt: string | null;
+  /** @nullable */
+  skipReason: string | null;
+  /** Ephemeral assessment at the preview calculatedAt wall-clock instant; may change at the due boundary without any persisted schedule change. */
+  overdue: boolean;
+}
+
+export type WebinarDateImpactTouchTiming = typeof WebinarDateImpactTouchTiming[keyof typeof WebinarDateImpactTouchTiming];
+
+
+export const WebinarDateImpactTouchTiming = {
+  calendar: 'calendar',
+  elapsed: 'elapsed',
+  trigger: 'trigger',
+} as const;
+
+export interface WebinarDateImpactTouch {
+  key: string;
+  name: string;
+  timing: WebinarDateImpactTouchTiming;
+  previous: WebinarDateImpactTouchState;
+  proposed: WebinarDateImpactTouchState;
+  changed: boolean;
+  shortenedWindow: boolean;
+}
+
+export interface WebinarDateImpactEvent {
+  sessionDate: string;
+  startTime: string;
+  timezone: string;
+  /** @nullable */
+  recruitmentLaunchAt: string | null;
+}
+
+export interface WebinarDateImpact {
+  campaignId: string;
+  sessionId: string;
+  /** @pattern ^[0-9a-f]{64}$ */
+  editVersion: string;
+  /** Wall-clock as-of for overdue annotations */
+  calculatedAt: string;
+  timezone: string;
+  currentEvent: WebinarDateImpactEvent;
+  proposedEvent: WebinarDateImpactEvent;
+  touches: WebinarDateImpactTouch[];
+  changedCount: number;
+  newlyOverdueCount: number;
+  shortenedWindowCount: number;
+  warnings: string[];
+  /** Empty when the scheduling engine has no independent blocker classification; never inferred in the browser. */
+  blockers: string[];
 }
 
 export interface WebinarPerson {
@@ -3425,6 +3530,8 @@ export interface WebinarStandard {
   activityId: string;
   /** @nullable */
   launchAt: string | null;
+  /** @pattern ^[0-9a-f]{64}$ */
+  editVersion?: string;
   /** Persisted identity of the fixed webinar communication template. */
   templateId: WebinarStandardTemplateId;
   templateName: string;
@@ -3497,6 +3604,11 @@ export type WebinarStandardPatchCommunicationsItem = {
 };
 
 export interface WebinarStandardPatch {
+  /**
+     * Required for guarded UI edits; omission retained for legacy callers. Conflicts do not write.
+     * @pattern ^[0-9a-f]{64}$
+     */
+  expectedVersion?: string;
   launchAt?: string;
   templateConfig?: WebinarStandardPatchTemplateConfig;
   communications?: WebinarStandardPatchCommunicationsItem[];

@@ -1948,6 +1948,9 @@ export const GetWebinarStandardEvidenceParams = zod.object({
   "sessionId": zod.coerce.string().uuid()
 })
 
+export const getWebinarStandardEvidenceResponseAvailableSourcesItemSourceHashRegExp = new RegExp('^[a-f0-9]{64}$');
+
+
 export const GetWebinarStandardEvidenceResponse = zod.object({
   "campaignId": zod.string().uuid(),
   "activityId": zod.string().uuid(),
@@ -1955,6 +1958,14 @@ export const GetWebinarStandardEvidenceResponse = zod.object({
   "retrievedAt": zod.coerce.date(),
   "revision": zod.number().int(),
   "simulationOnly": zod.literal(true),
+  "availableSources": zod.array(zod.object({
+  "sourceId": zod.string().uuid(),
+  "sourceType": zod.enum(['occurrence', 'content', 'foundation', 'delivery', 'measurement']),
+  "sourceVersion": zod.string(),
+  "sourceHash": zod.string().regex(getWebinarStandardEvidenceResponseAvailableSourcesItemSourceHashRegExp),
+  "usable": zod.boolean(),
+  "unavailableReason": zod.string().nullable()
+})).describe('Stored occurrence-scoped immutable source references, not evaluator sourceReferences or evidence assertions. Usability is assessed at retrievedAt; POST evidence independently revalidates each source.'),
   "records": zod.array(zod.object({
   "id": zod.string().uuid(),
   "revision": zod.number().int(),
@@ -5285,6 +5296,8 @@ export const listWebinarsResponseRegistrationRuleSuppressRecruitmentAfterRegistr
 export const listWebinarsResponseRegistrationRuleRegisteredBranchDefault = `registered`;
 export const listWebinarsResponseRegistrationRuleAttendedBranchDefault = `attended`;
 export const listWebinarsResponseRegistrationRuleNoShowBranchDefault = `no_show`;
+export const listWebinarsResponseEditVersionRegExp = new RegExp('^[0-9a-f]{64}$');
+
 
 export const ListWebinarsResponseItem = zod.object({
   "id": zod.string().uuid(),
@@ -5309,7 +5322,8 @@ export const ListWebinarsResponseItem = zod.object({
 }),
   "recruitmentLaunchAt": zod.coerce.date().nullish().describe('Webinar campaign launch instant'),
   "createdAt": zod.coerce.date().optional(),
-  "updatedAt": zod.coerce.date().optional()
+  "updatedAt": zod.coerce.date().optional(),
+  "editVersion": zod.string().regex(listWebinarsResponseEditVersionRegExp).optional().describe('Version of current session')
 })
 export const ListWebinarsResponse = zod.array(ListWebinarsResponseItem)
 
@@ -5358,6 +5372,8 @@ export const createWebinarResponseRegistrationRuleSuppressRecruitmentAfterRegist
 export const createWebinarResponseRegistrationRuleRegisteredBranchDefault = `registered`;
 export const createWebinarResponseRegistrationRuleAttendedBranchDefault = `attended`;
 export const createWebinarResponseRegistrationRuleNoShowBranchDefault = `no_show`;
+export const createWebinarResponseEditVersionRegExp = new RegExp('^[0-9a-f]{64}$');
+
 
 export const CreateWebinarResponse = zod.object({
   "id": zod.string().uuid(),
@@ -5382,7 +5398,8 @@ export const CreateWebinarResponse = zod.object({
 }),
   "recruitmentLaunchAt": zod.coerce.date().nullish().describe('Webinar campaign launch instant'),
   "createdAt": zod.coerce.date().optional(),
-  "updatedAt": zod.coerce.date().optional()
+  "updatedAt": zod.coerce.date().optional(),
+  "editVersion": zod.string().regex(createWebinarResponseEditVersionRegExp).optional().describe('Version of current session')
 })
 
 
@@ -5400,6 +5417,8 @@ export const getWebinarResponseRegistrationRuleSuppressRecruitmentAfterRegistrat
 export const getWebinarResponseRegistrationRuleRegisteredBranchDefault = `registered`;
 export const getWebinarResponseRegistrationRuleAttendedBranchDefault = `attended`;
 export const getWebinarResponseRegistrationRuleNoShowBranchDefault = `no_show`;
+export const getWebinarResponseEditVersionRegExp = new RegExp('^[0-9a-f]{64}$');
+
 
 export const GetWebinarResponse = zod.object({
   "id": zod.string().uuid(),
@@ -5424,7 +5443,8 @@ export const GetWebinarResponse = zod.object({
 }),
   "recruitmentLaunchAt": zod.coerce.date().nullish().describe('Webinar campaign launch instant'),
   "createdAt": zod.coerce.date().optional(),
-  "updatedAt": zod.coerce.date().optional()
+  "updatedAt": zod.coerce.date().optional(),
+  "editVersion": zod.string().regex(getWebinarResponseEditVersionRegExp).optional().describe('Version of current session')
 })
 
 
@@ -5433,6 +5453,7 @@ export const UpdateWebinarParams = zod.object({
   "sessionId": zod.coerce.string().uuid()
 })
 
+export const updateWebinarBodyExpectedVersionRegExp = new RegExp('^[0-9a-f]{64}$');
 
 export const updateWebinarBodyStartTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
 export const updateWebinarBodyDurationMinutesMax = 1440;
@@ -5444,6 +5465,7 @@ export const updateWebinarBodyRegistrationRuleAttendedBranchDefault = `attended`
 export const updateWebinarBodyRegistrationRuleNoShowBranchDefault = `no_show`;
 
 export const UpdateWebinarBody = zod.object({
+  "expectedVersion": zod.string().regex(updateWebinarBodyExpectedVersionRegExp).optional(),
   "activityId": zod.string().uuid().optional(),
   "name": zod.string().min(1).optional(),
   "sessionDate": zod.coerce.date().optional(),
@@ -5464,7 +5486,7 @@ export const UpdateWebinarBody = zod.object({
 }).optional(),
   "recruitmentLaunchAt": zod.coerce.date().optional(),
   "channel": zod.union([zod.enum(['psg', 'psl', 'disp', 'orglin', 'adv', 'eml', 'emlc', 'emlp', 'evlv', 'evind', 'evvrt', 'app', 'mcp']),zod.null()]).optional()
-}).describe('Partial update; every property is optional.')
+}).describe('Partial update. Send expectedVersion from GET or date-impact-preview to prevent overwriting newer data. Omission remains supported for legacy callers only; the guided UI must send it.')
 
 
 export const updateWebinarResponseStartTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
@@ -5475,6 +5497,8 @@ export const updateWebinarResponseRegistrationRuleSuppressRecruitmentAfterRegist
 export const updateWebinarResponseRegistrationRuleRegisteredBranchDefault = `registered`;
 export const updateWebinarResponseRegistrationRuleAttendedBranchDefault = `attended`;
 export const updateWebinarResponseRegistrationRuleNoShowBranchDefault = `no_show`;
+export const updateWebinarResponseEditVersionRegExp = new RegExp('^[0-9a-f]{64}$');
+
 
 export const UpdateWebinarResponse = zod.object({
   "id": zod.string().uuid(),
@@ -5499,7 +5523,79 @@ export const UpdateWebinarResponse = zod.object({
 }),
   "recruitmentLaunchAt": zod.coerce.date().nullish().describe('Webinar campaign launch instant'),
   "createdAt": zod.coerce.date().optional(),
-  "updatedAt": zod.coerce.date().optional()
+  "updatedAt": zod.coerce.date().optional(),
+  "editVersion": zod.string().regex(updateWebinarResponseEditVersionRegExp).optional().describe('Version of current session')
+})
+
+
+/**
+ * Development-only, read-only preview of the existing fixed scheduling decision. Pass editVersion obtained from GET webinar. Does not persist any changes, send, or imply operational approval. Use the same expectedVersion on PATCH; conflicts require reload and a new preview. Scheduled instants are deterministic for an unchanged version and timing input; overdue indicators are time-relative annotations assessed at calculatedAt, not a frozen promise about their value at save.
+ */
+export const PreviewWebinarDateImpactParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "sessionId": zod.coerce.string().uuid()
+})
+
+export const previewWebinarDateImpactBodyExpectedVersionRegExp = new RegExp('^[0-9a-f]{64}$');
+export const previewWebinarDateImpactBodyStartTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const previewWebinarDateImpactBodyDurationMinutesMax = 1440;
+
+
+
+export const PreviewWebinarDateImpactBody = zod.object({
+  "expectedVersion": zod.string().regex(previewWebinarDateImpactBodyExpectedVersionRegExp),
+  "sessionDate": zod.coerce.date().optional(),
+  "startTime": zod.string().regex(previewWebinarDateImpactBodyStartTimeRegExp).optional(),
+  "durationMinutes": zod.number().int().min(1).max(previewWebinarDateImpactBodyDurationMinutesMax).optional(),
+  "timezone": zod.string().optional(),
+  "recruitmentLaunchAt": zod.coerce.date().optional()
+}).describe('Partial session timing proposal; no provider output or calculated timestamps are accepted.')
+
+export const previewWebinarDateImpactResponseEditVersionRegExp = new RegExp('^[0-9a-f]{64}$');
+
+
+export const PreviewWebinarDateImpactResponse = zod.object({
+  "campaignId": zod.string().uuid(),
+  "sessionId": zod.string().uuid(),
+  "editVersion": zod.string().regex(previewWebinarDateImpactResponseEditVersionRegExp),
+  "calculatedAt": zod.coerce.date().describe('Wall-clock as-of for overdue annotations'),
+  "timezone": zod.string(),
+  "currentEvent": zod.object({
+  "sessionDate": zod.coerce.date(),
+  "startTime": zod.string(),
+  "timezone": zod.string(),
+  "recruitmentLaunchAt": zod.coerce.date().nullable()
+}),
+  "proposedEvent": zod.object({
+  "sessionDate": zod.coerce.date(),
+  "startTime": zod.string(),
+  "timezone": zod.string(),
+  "recruitmentLaunchAt": zod.coerce.date().nullable()
+}),
+  "touches": zod.array(zod.object({
+  "key": zod.string(),
+  "name": zod.string(),
+  "timing": zod.enum(['calendar', 'elapsed', 'trigger']),
+  "previous": zod.object({
+  "status": zod.string(),
+  "scheduledAt": zod.coerce.date().nullable(),
+  "skipReason": zod.string().nullable(),
+  "overdue": zod.boolean().describe('Ephemeral assessment at the preview calculatedAt wall-clock instant; may change at the due boundary without any persisted schedule change.')
+}),
+  "proposed": zod.object({
+  "status": zod.string(),
+  "scheduledAt": zod.coerce.date().nullable(),
+  "skipReason": zod.string().nullable(),
+  "overdue": zod.boolean().describe('Ephemeral assessment at the preview calculatedAt wall-clock instant; may change at the due boundary without any persisted schedule change.')
+}),
+  "changed": zod.boolean(),
+  "shortenedWindow": zod.boolean()
+})),
+  "changedCount": zod.number().int(),
+  "newlyOverdueCount": zod.number().int(),
+  "shortenedWindowCount": zod.number().int(),
+  "warnings": zod.array(zod.string()),
+  "blockers": zod.array(zod.string()).describe('Empty when the scheduling engine has no independent blocker classification; never inferred in the browser.')
 })
 
 
@@ -5653,6 +5749,7 @@ export const GetWebinarStandardParams = zod.object({
   "sessionId": zod.coerce.string().uuid()
 })
 
+export const getWebinarStandardResponseEditVersionRegExp = new RegExp('^[0-9a-f]{64}$');
 export const getWebinarStandardResponseTemplateConfigPilotLimitsSubjectDefault = 50;
 
 export const getWebinarStandardResponseTemplateConfigPilotLimitsPreheaderDefault = 90;
@@ -5683,6 +5780,7 @@ export const GetWebinarStandardResponse = zod.object({
   "sessionId": zod.string().uuid(),
   "activityId": zod.string().uuid(),
   "launchAt": zod.coerce.date().nullable(),
+  "editVersion": zod.string().regex(getWebinarStandardResponseEditVersionRegExp).optional(),
   "templateId": zod.enum(['webinar_legacy_9', 'webinar_default_5']).describe('Persisted identity of the fixed webinar communication template.'),
   "templateName": zod.string(),
   "templateSummary": zod.string(),
@@ -5766,6 +5864,7 @@ export const UpdateWebinarStandardParams = zod.object({
   "sessionId": zod.coerce.string().uuid()
 })
 
+export const updateWebinarStandardBodyExpectedVersionRegExp = new RegExp('^[0-9a-f]{64}$');
 export const updateWebinarStandardBodyTemplateConfigPilotLimitsSubjectDefault = 50;
 
 export const updateWebinarStandardBodyTemplateConfigPilotLimitsPreheaderDefault = 90;
@@ -5789,6 +5888,7 @@ export const updateWebinarStandardBodyCommunicationsItemVariantsItemSlotMax = 4;
 
 
 export const UpdateWebinarStandardBody = zod.object({
+  "expectedVersion": zod.string().regex(updateWebinarStandardBodyExpectedVersionRegExp).optional().describe('Required for guarded UI edits; omission retained for legacy callers. Conflicts do not write.'),
   "launchAt": zod.coerce.date().optional(),
   "templateConfig": zod.object({
   "pilotLimits": zod.object({
@@ -5828,6 +5928,7 @@ export const UpdateWebinarStandardBody = zod.object({
 })).optional()
 })
 
+export const updateWebinarStandardResponseEditVersionRegExp = new RegExp('^[0-9a-f]{64}$');
 export const updateWebinarStandardResponseTemplateConfigPilotLimitsSubjectDefault = 50;
 
 export const updateWebinarStandardResponseTemplateConfigPilotLimitsPreheaderDefault = 90;
@@ -5858,6 +5959,7 @@ export const UpdateWebinarStandardResponse = zod.object({
   "sessionId": zod.string().uuid(),
   "activityId": zod.string().uuid(),
   "launchAt": zod.coerce.date().nullable(),
+  "editVersion": zod.string().regex(updateWebinarStandardResponseEditVersionRegExp).optional(),
   "templateId": zod.enum(['webinar_legacy_9', 'webinar_default_5']).describe('Persisted identity of the fixed webinar communication template.'),
   "templateName": zod.string(),
   "templateSummary": zod.string(),

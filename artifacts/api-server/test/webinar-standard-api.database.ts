@@ -134,14 +134,26 @@ test("source-bound evidence is atomic, unverified, idempotent and distinct from 
       sourceId: sessionId, sourceVersion: "test-v1", sourceHash,
       observedAt: clock, status: "available" },
   });
+  const beforeEvidenceResponse = await read("evidence");
+  assert.equal(beforeEvidenceResponse.status, 200);
+  const beforeEvidence = await beforeEvidenceResponse.json();
+  assert.deepEqual(beforeEvidence.records, [], "the read contract must expose sources before any evidence exists");
+  const available = beforeEvidence.availableSources.find((item: { sourceId: string }) => item.sourceId === source.id);
+  assert.deepEqual(available, {
+    sourceId: source.id, sourceType: "content", sourceVersion: "test-v1", sourceHash,
+    usable: true, unavailableReason: null,
+  });
+  assert.equal(beforeEvidence.revision, source.revision);
   const key = randomUUID();
-  const input = { sourceId: source.id, evidenceType: "source-observation" as const,
-    sourceType: "content" as const, sourceVersion: "test-v1", sourceHash,
-    expectedRevision: 2, idempotencyKey: key, calculationAt: clock };
-  const [first, replay] = await Promise.all([
-    submitWebinarEvidence({ campaignId, sessionId }, activityId, input),
+  const input = { sourceId: available.sourceId, evidenceType: "source-observation" as const,
+    sourceType: available.sourceType as "content", sourceVersion: available.sourceVersion, sourceHash: available.sourceHash,
+    expectedRevision: beforeEvidence.revision, idempotencyKey: key, calculationAt: clock };
+  const [createdResponse, replay] = await Promise.all([
+    post("evidence", input),
     submitWebinarEvidence({ campaignId, sessionId }, activityId, input),
   ]);
+  assert.equal(createdResponse.status, 201);
+  const first = await createdResponse.json();
   assert.equal(first.id, replay.id);
   assert.equal(first.result, "unknown");
   assert.equal(first.authenticated, false);
@@ -347,12 +359,42 @@ test("missing and expired scoped sources cannot be asserted as evidence", async 
         sourceType: "content", sourceId: sessionId, sourceVersion: "test-v1", sourceHash: hash,
         observedAt: clock, status },
     });
+    const listed = await (await read("evidence")).json();
+    assert.deepEqual(listed.availableSources.find((item: { sourceId: string }) => item.sourceId === source.id), {
+      sourceId: source.id, sourceType: "content", sourceVersion: "test-v1", sourceHash: hash,
+      usable: false, unavailableReason: status,
+    });
     const response = await post("evidence", { sourceId: source.id, sourceType: "content",
       sourceVersion: "test-v1", sourceHash: hash, evidenceType: "source-observation",
       expectedRevision: source.revision, calculationAt: clock, idempotencyKey: randomUUID() });
     assert.equal(response.status, 422);
     assert.equal((await response.json()).error.code, "MISSING_REQUIRED_INPUT");
   }
+});
+test("a stored Foundation source without a successful governed receipt is not offered as usable evidence", async () => {
+  const revision = (await pool.query("SELECT revision FROM webinar_persistence_bindings WHERE session_id=$1",
+    [sessionId])).rows[0].revision;
+  const sourceHash = simulationFingerprint("missing-governed-receipt");
+  const source = await new WebinarPersistence().append({
+    campaignId, sessionId, actorId, expectedRevision: revision,
+    idempotencyKey: randomUUID(), standard: { id: STANDARD_ID, version: STANDARD_VERSION },
+    calculationAt: clock, inputFingerprint: simulationFingerprint("missing-governed-receipt-source"),
+    operational: false, payload: { kind: "source", sourceSystem: "synthetic-api-test",
+      sourceType: "foundation", sourceId: sessionId, sourceVersion: "test-v1", sourceHash,
+      observedAt: clock, status: "available" },
+  });
+  const listed = await (await read("evidence")).json();
+  assert.deepEqual(listed.availableSources.find((item: { sourceId: string }) => item.sourceId === source.id), {
+    sourceId: source.id, sourceType: "foundation", sourceVersion: "test-v1", sourceHash,
+    usable: false, unavailableReason: "governed_receipt_unavailable",
+  });
+  const submitted = await post("evidence", {
+    sourceId: source.id, sourceType: "foundation", sourceVersion: "test-v1", sourceHash,
+    evidenceType: "source-observation", expectedRevision: source.revision,
+    calculationAt: clock, idempotencyKey: randomUUID(),
+  });
+  assert.equal(submitted.status, 422);
+  assert.equal((await submitted.json()).error.code, "MISSING_REQUIRED_INPUT");
 });
 test("a source from a separate eligible occurrence cannot be reused by this occurrence", async () => {
   const client = await pool.connect();

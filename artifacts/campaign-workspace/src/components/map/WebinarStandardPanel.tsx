@@ -14,6 +14,7 @@ import {
   useGetWebinarStandard,
   useGetWebinarStandardEligibility,
   useListWebinarPeople,
+  useGetDevelopmentStatus,
   useUpdateWebinarStandard,
 } from '@workspace/api-client-react';
 import { Input } from '@/components/ui/input';
@@ -222,10 +223,14 @@ export default function WebinarStandardPanel({
       enabled: Boolean(campaignId && sessionId),
     },
   });
+  // Same query key as App's PlanningAccess, so this reads the cached server mode.
+  const devStatus = useGetDevelopmentStatus({ query: { queryKey: ['development-status'], retry: false } });
+  const openDevelopment = devStatus.data?.mode === 'open-development';
   const peopleQuery = useListWebinarPeople(campaignId, sessionId, {
     query: {
       ...getListWebinarPeopleQueryOptions(campaignId, sessionId),
-      enabled: Boolean(campaignId && sessionId),
+      // GET .../webinars/:sessionId/people is not on the open-development allowlist (403): skip it only in that mode.
+      enabled: Boolean(campaignId && sessionId) && devStatus.isSuccess && !openDevelopment,
     },
   });
   const updateStandard = useUpdateWebinarStandard();
@@ -730,7 +735,7 @@ export default function WebinarStandardPanel({
         {eligibilityQuery.isLoading ? (
           <div className="text-xs text-muted-foreground">Loading seeded webinar people…</div>
         ) : people.length === 0 ? (
-          <div className="text-xs text-muted-foreground">No seeded webinar people are available for this session.</div>
+          <div className="text-xs text-muted-foreground">{openDevelopment ? 'Person list not requested: it is outside the open-development planning policy.' : 'No seeded webinar people are available for this session.'}</div>
         ) : (
           <div className="space-y-2">
             {people.map((person) => {

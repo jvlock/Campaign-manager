@@ -3,6 +3,8 @@ import { z } from "zod";
 import { loadWebinarApiContext, projection, webinarSummary, evaluateWebinarApi,
   historyWebinarApi, submitWebinarEvidence, requestDraftException,
   evidenceInput, exceptionInput, classifyWebinarApiError } from "../lib/webinar-standard-api";
+import { inspectFoundationObservations } from "../lib/webinar-foundation-service";
+import { configuredFoundationProvider } from "../lib/webinar-foundation";
 
 const router = Router();
 const uuid = z.string().uuid();
@@ -67,8 +69,41 @@ router.get(`${path}/evidence`, async (req, res, next) => {
   if (!parsed) return;
   try {
     const context = await loadWebinarApiContext(parsed.scope);
+    // Project only the already persisted, occurrence-scoped source identities.
+    // Match the POST's existing source/receipt inspection at this read's as-of
+    // instant; POST still independently validates every assertion in its lock.
+    const inspections = new Map<string, ReturnType<typeof inspectFoundationObservations>>();
+    const availableSources = context.sources.records.filter(r => r.kind === "source").map(r => {
+      let unavailableReason: string | null = r.payload.status === "available" ? null : String(r.payload.status ?? "unavailable");
+      if (!unavailableReason && Date.parse(r.payload.observedAt as string) > Date.parse(context.retrievedAt))
+        unavailableReason = "not_yet_observed";
+      if (!unavailableReason && r.payload.sourceType === "foundation") {
+        const receipt = r.payload.governedReceipt as {
+          response?: { status?: string }; releaseFingerprint?: string;
+          request?: { type?: string; inputFingerprint?: string };
+        } | undefined;
+        if (!receipt || receipt.response?.status !== "success" || !receipt.releaseFingerprint || !receipt.request)
+          unavailableReason = "governed_receipt_unavailable";
+        else {
+          let inspected = inspections.get(receipt.releaseFingerprint);
+          if (!inspected) {
+            inspected = inspectFoundationObservations(context.sources, new Date(context.retrievedAt),
+              configuredFoundationProvider(), receipt.releaseFingerprint);
+            inspections.set(receipt.releaseFingerprint, inspected);
+          }
+          const observation = inspected.observations.find(o =>
+            o.type === receipt.request?.type && o.inputFingerprint === receipt.request?.inputFingerprint);
+          if (!observation || observation.status !== "available")
+            unavailableReason = observation?.status ?? "unavailable";
+        }
+      }
+      return { sourceId: r.id, sourceType: r.payload.sourceType,
+        sourceVersion: r.payload.sourceVersion, sourceHash: r.payload.sourceHash,
+        usable: unavailableReason === null, unavailableReason };
+    });
     res.json({ campaignId: parsed.scope.campaignId, activityId: context.sources.activity.id, occurrenceId: parsed.scope.sessionId,
       retrievedAt: context.retrievedAt, revision: context.sources.binding!.revision, simulationOnly: true,
+      availableSources,
       records: context.sources.records.filter(r => r.kind === "evidence").map(r => ({
         id: r.id, revision: r.revision, sourceId: r.parent_id, type: r.payload.evidenceType,
         sourceType: context.sources.records.find(parent => parent.id === r.parent_id)?.payload.sourceType ?? null,

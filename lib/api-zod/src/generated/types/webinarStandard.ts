@@ -15,6 +15,8 @@ export interface WebinarStandard {
   activityId: string;
   /** @nullable */
   launchAt: Date | null;
+  /** @pattern ^[0-9a-f]{64}$ */
+  editVersion?: string;
   /** Persisted identity of the fixed webinar communication template. */
   templateId: WebinarStandardTemplateId;
   templateName: string;

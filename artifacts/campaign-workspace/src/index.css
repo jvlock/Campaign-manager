@@ -219,3 +219,54 @@
     pointer-events: none;
   }
 }
+
+/* ---------- Webinar Setup + Recruitment workspace (scoped ww-*) ---------- */
+:root {
+  /* Provisional webinar family (no approved activity-color system exists): green */
+  --ww-green-900: 152 60% 16%;
+  --ww-green-700: 152 55% 26%;
+  --ww-green-600: 152 50% 32%;
+  --ww-green-500: 150 42% 40%;
+  --ww-green-400: 148 36% 52%;
+  --ww-green-200: 146 40% 84%;
+  --ww-green-50: 146 45% 96%;
+  --ww-amber-800: 32 85% 28%;
+  --ww-amber-100: 42 95% 91%;
+  --ww-red-800: 0 70% 34%;
+  --ww-red-100: 0 85% 95%;
+  --ww-blue-800: 214 70% 30%;
+  --ww-blue-100: 214 80% 95%;
+  --ww-gray-700: 214 14% 34%;
+  --ww-gray-100: 214 16% 93%;
+  --ww-purple-800: 272 55% 34%;
+  --ww-purple-100: 272 70% 95%;
+}
+.ww-chip { display: inline-flex; align-items: center; gap: .3rem; border-radius: 999px; border: 1px solid transparent; padding: .125rem .55rem; font-size: .75rem; font-weight: 600; line-height: 1.25rem; white-space: nowrap; }
+.ww-tone-complete { background: hsl(var(--ww-green-50)); color: hsl(var(--ww-green-900)); border-color: hsl(var(--ww-green-200)); }
+.ww-tone-planned { background: hsl(var(--card)); color: hsl(var(--ww-green-700)); border-color: hsl(var(--ww-green-400)); border-style: dashed; }
+.ww-tone-attention { background: hsl(var(--ww-amber-100)); color: hsl(var(--ww-amber-800)); border-color: hsl(32 70% 70%); }
+.ww-tone-blocked { background: hsl(var(--ww-red-100)); color: hsl(var(--ww-red-800)); border-color: hsl(0 60% 80%); }
+.ww-tone-incomplete, .ww-tone-info { background: hsl(var(--ww-blue-100)); color: hsl(var(--ww-blue-800)); border-color: hsl(214 60% 82%); }
+.ww-tone-unavailable { background: hsl(var(--ww-gray-100)); color: hsl(var(--ww-gray-700)); border-color: hsl(214 14% 80%); }
+.ww-tone-simulation { background: hsl(var(--ww-purple-100)); color: hsl(var(--ww-purple-800)); border-color: hsl(272 45% 78%); border-style: dashed; }
+.ww-help { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; margin: -12px -10px; border-radius: 999px; color: hsl(var(--muted-foreground)); }
+.ww-help:focus-visible, .ww-target:focus-visible, .ww-link-btn:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.ww-target { min-height: 44px; min-width: 44px; }
+.ww-link-btn { min-height: 44px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.ww-capability { border: 1px solid hsl(var(--border)); border-radius: .6rem; padding: .6rem .75rem; background: hsl(var(--card)); }
+.ww-capability-compact { padding: .35rem .6rem; }
+.ww-region-error { display: flex; gap: .6rem; border: 1px solid hsl(0 60% 80%); background: hsl(var(--ww-red-100)); color: hsl(var(--ww-red-800)); border-radius: .6rem; padding: .75rem; }
+.ww-panel { border: 1px solid hsl(var(--border)); background: hsl(var(--card)); border-radius: .85rem; }
+.ww-sim-ribbon { background: hsl(var(--ww-purple-100)); color: hsl(var(--ww-purple-800)); border-bottom: 1px dashed hsl(272 45% 78%); }
+.ww-hero { background: hsl(var(--ww-green-50)); color: hsl(var(--ww-green-900)); border-bottom: 1px solid hsl(var(--ww-green-200)); }
+/* Flat background + darker secondary text keeps all hero text >= 4.5:1 (axe cannot resolve contrast over gradients). */
+.ww-hero .text-muted-foreground { color: hsl(var(--ww-gray-700)); }
+.ww-step[aria-current="step"] { background: hsl(var(--ww-green-50)); border-color: hsl(var(--ww-green-500)); color: hsl(var(--ww-green-900)); }
+.ww-touch-1 { --ww-touch: var(--ww-green-900); } .ww-touch-2 { --ww-touch: var(--ww-green-700); }
+.ww-touch-3 { --ww-touch: var(--ww-green-600); } .ww-touch-4 { --ww-touch: var(--ww-green-500); }
+.ww-touch-5 { --ww-touch: var(--ww-green-400); }
+.ww-touch-rail { border-left: 4px solid hsl(var(--ww-touch, var(--ww-green-500))); }
+.ww-anchor { background: hsl(var(--ww-green-700)); color: hsl(0 0% 99%); }
+.ww-reveal { animation: ww-reveal .28s ease-out both; }
+@keyframes ww-reveal { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ww-reveal { animation: none; } }

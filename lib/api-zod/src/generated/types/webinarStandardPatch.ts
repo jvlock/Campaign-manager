@@ -9,6 +9,11 @@ import type { WebinarStandardPatchCommunicationsItem } from './webinarStandardPa
 import type { WebinarStandardPatchTemplateConfig } from './webinarStandardPatchTemplateConfig';
 
 export interface WebinarStandardPatch {
+  /**
+     * Required for guarded UI edits; omission retained for legacy callers. Conflicts do not write.
+     * @pattern ^[0-9a-f]{64}$
+     */
+  expectedVersion?: string;
   launchAt?: Date;
   templateConfig?: WebinarStandardPatchTemplateConfig;
   communications?: WebinarStandardPatchCommunicationsItem[];

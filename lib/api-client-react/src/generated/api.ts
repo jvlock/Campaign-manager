@@ -158,6 +158,8 @@ import type {
   WebinarApiUnauthorizedResponse,
   WebinarApiUnavailableResponse,
   WebinarApiValidationErrorResponse,
+  WebinarDateImpact,
+  WebinarDateImpactInput,
   WebinarEvaluation,
   WebinarInput,
   WebinarPerson,
@@ -6322,7 +6324,7 @@ return customFetch<WebinarSession>(getUpdateWebinarUrl(id,sessionId),
 
 export const getUpdateWebinarMutationKey = () => ['updateWebinar'] as const;
 
-export const getUpdateWebinarMutationOptions = <TError = ErrorType<unknown>,
+export const getUpdateWebinarMutationOptions = <TError = ErrorType<ConflictResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWebinar>>, TError,UpdateWebinarMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateWebinar>>, TError,UpdateWebinarMutationVariables, TContext> => {
 
@@ -6351,10 +6353,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateWebinarMutationResult = NonNullable<Awaited<ReturnType<typeof updateWebinar>>>
     export type UpdateWebinarMutationBody = BodyType<WebinarUpdate>
-    export type UpdateWebinarMutationError = ErrorType<unknown>
+    export type UpdateWebinarMutationError = ErrorType<ConflictResponse>
     export type UpdateWebinarMutationVariables = {id: string;sessionId: string;data: BodyType<WebinarUpdate>}
 
-    export const useUpdateWebinar = <TError = ErrorType<unknown>,
+    export const useUpdateWebinar = <TError = ErrorType<ConflictResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWebinar>>, TError,UpdateWebinarMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateWebinar>>,
@@ -6363,6 +6365,94 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getUpdateWebinarMutationOptions(options));
+    }
+
+export const getPreviewWebinarDateImpactUrl = (id: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/campaigns/${id}/webinars/${sessionId}/date-impact-preview`
+}
+
+/**
+ * Development-only, read-only preview of the existing fixed scheduling decision. Pass editVersion obtained from GET webinar. Does not persist any changes, send, or imply operational approval. Use the same expectedVersion on PATCH; conflicts require reload and a new preview. Scheduled instants are deterministic for an unchanged version and timing input; overdue indicators are time-relative annotations assessed at calculatedAt, not a frozen promise about their value at save.
+ */
+export const previewWebinarDateImpact = async (id: string,
+    sessionId: string,
+    webinarDateImpactInput: WebinarDateImpactInput, options?: Parameters<typeof customFetch>[1]): Promise<WebinarDateImpact> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<WebinarDateImpact>(getPreviewWebinarDateImpactUrl(id,sessionId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(webinarDateImpactInput)
+  }
+);}
+
+
+
+
+
+export const getPreviewWebinarDateImpactMutationKey = () => ['previewWebinarDateImpact'] as const;
+
+export const getPreviewWebinarDateImpactMutationOptions = <TError = ErrorType<BadRequestResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewWebinarDateImpact>>, TError,PreviewWebinarDateImpactMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewWebinarDateImpact>>, TError,PreviewWebinarDateImpactMutationVariables, TContext> => {
+
+const mutationKey = getPreviewWebinarDateImpactMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewWebinarDateImpact>>, PreviewWebinarDateImpactMutationVariables> = (props) => {
+          const {id,sessionId,data} = props ?? {};
+
+          return  previewWebinarDateImpact(id,sessionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewWebinarDateImpactMutationResult = NonNullable<Awaited<ReturnType<typeof previewWebinarDateImpact>>>
+    export type PreviewWebinarDateImpactMutationBody = BodyType<WebinarDateImpactInput>
+    export type PreviewWebinarDateImpactMutationError = ErrorType<BadRequestResponse | ConflictResponse>
+    export type PreviewWebinarDateImpactMutationVariables = {id: string;sessionId: string;data: BodyType<WebinarDateImpactInput>}
+
+    export const usePreviewWebinarDateImpact = <TError = ErrorType<BadRequestResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewWebinarDateImpact>>, TError,PreviewWebinarDateImpactMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewWebinarDateImpact>>,
+        TError,
+        PreviewWebinarDateImpactMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPreviewWebinarDateImpactMutationOptions(options));
     }
 
 export const getListWebinarPeopleUrl = (id: string,
