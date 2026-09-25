@@ -8,3 +8,9 @@ An “unknown runtime error” with only an injected reporting stack does not es
 **Why:** A recurring campaign-map report was eventually identified by native diagnostics as “ResizeObserver loop completed with undelivered notifications.” API calls succeeded and independent screenshots often loaded normally, so a clean screenshot alone did not explain the report.
 
 **How to apply:** Preserve native diagnostic reporting. For resize feedback, defer observer-driven layout writes to an animation frame and cancel queued work on cleanup rather than globally suppressing error events. The current dependency patch covers the ESM builds consumed by this Vite app; reassess upstream behavior when upgrading React Flow.
+
+When a browser report describes mutually exclusive UI states, verify the actual selected control and captured response before changing application code.
+
+**Why:** A source picker was reported broken after clicking descriptive text, while selecting the actual radio control exposed the correct option and completed submission. The intermediate report confused an interaction failure with a data-contract defect.
+
+**How to apply:** Capture checked state, the relevant DOM branch and response fields together. Keep axe violations separate from incomplete checks; review modal focus containment and duplicate IDs explicitly rather than treating hidden background descendants as an automatic failure.
